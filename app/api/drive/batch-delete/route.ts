@@ -22,14 +22,14 @@ export async function DELETE(request: NextRequest) {
 
     if (error) throw error
 
-    const ownFiles = (files || []).filter(f => f.user_id === user.id)
-    const paths = ownFiles.map(f => f.file_path)
+    const ownFiles = (files || []).filter((f: any) => f.user_id === user.id)
+    const paths = ownFiles.map((f: any) => f.file_path)
     if (paths.length > 0) {
       await supabaseAdmin.storage.from('drive').remove(paths)
     }
-    await supabaseAdmin.from('drive_files').delete().in('id', ownFiles.map(f => f.id))
+    await supabaseAdmin.from('drive_files').delete().in('id', ownFiles.map((f: any) => f.id))
 
-    return NextResponse.json({ success: true, deleted: ownFiles.map(f => f.id) })
+    return NextResponse.json({ success: true, deleted: ownFiles.map((f: any) => f.id) })
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e.message || '删除失败' }, { status: 500 })
   }
