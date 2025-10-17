@@ -51,6 +51,11 @@ export default function Navbar() {
 
     try {
       const response = await fetch(`/api/notifications?userId=${user.id}`)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const data = await response.json()
       
       if (data.success) {
@@ -58,6 +63,12 @@ export default function Navbar() {
       }
     } catch (error) {
       console.error('获取通知失败:', error)
+      // 设置默认值，避免显示错误
+      setNotifications({
+        messages: 0,
+        fileReview: 0,
+        storageRequests: 0
+      })
     }
   }
 
