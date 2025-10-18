@@ -62,3 +62,4 @@ SELECT
 FROM pg_policies 
 WHERE tablename IN ('messages', 'conversations')
 ORDER BY tablename, policyname;
+

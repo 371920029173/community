@@ -27,3 +27,4 @@ WHERE storage_limit = 0;
 -- 设置管理员账户为100GB（请根据上面查询的结果替换UUID）
 -- 示例：UPDATE users SET storage_limit = 100 * 1024 * 1024 * 1024 WHERE id = '实际的UUID';
 
+

@@ -26,3 +26,4 @@ CREATE INDEX IF NOT EXISTS idx_storage_requests_created_at ON storage_modificati
 -- 3. 验证表创建成功
 SELECT 'storage_modification_requests table created successfully' as status;
 
+

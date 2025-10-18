@@ -69,3 +69,4 @@ echo "3. 配置环境变量"
 echo "4. 部署应用"
 echo ""
 echo "📖 详细部署指南请查看: VERCEL_DEPLOYMENT_GUIDE.md"
+

@@ -16,3 +16,4 @@ ALTER COLUMN original_name TYPE TEXT,
 ALTER COLUMN file_type TYPE TEXT,
 ALTER COLUMN mime_type TYPE TEXT;
 
+

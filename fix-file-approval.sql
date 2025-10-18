@@ -55,3 +55,4 @@ SELECT
 FROM pg_policies 
 WHERE tablename = 'files'
 ORDER BY policyname;
+

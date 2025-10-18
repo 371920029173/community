@@ -162,3 +162,4 @@ export default function MouseTrail({ enabled = true }: MouseTrailProps) {
 
   return null
 }
+

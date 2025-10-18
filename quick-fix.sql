@@ -27,3 +27,4 @@ CREATE POLICY "管理员可以更新文件" ON public.files
             AND (users.is_admin = true OR users.is_moderator = true)
         )
     );
+
