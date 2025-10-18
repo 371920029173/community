@@ -31,6 +31,7 @@ interface User {
   username: string
   nickname?: string
   nickname_color?: string
+  avatar_url?: string
 }
 
 interface Conversation {
@@ -247,9 +248,16 @@ export default function MessagesPage() {
   // 创建新会话
   const createConversation = async (otherUserId: string) => {
     try {
+      console.log('开始创建会话，目标用户ID:', otherUserId)
+      
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
+      if (!session) {
+        console.error('没有有效的会话')
+        toast.error('请先登录')
+        return
+      }
 
+      console.log('发送创建会话请求...')
       const response = await fetch('/api/messages/conversations', {
         method: 'POST',
         headers: {
@@ -259,17 +267,29 @@ export default function MessagesPage() {
         body: JSON.stringify({ otherUserId })
       })
 
+      console.log('创建会话响应状态:', response.status)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('创建会话响应数据:', data)
+        
         if (data.success) {
+          toast.success('对话创建成功')
           await fetchConversations()
           setShowNewChat(false)
           setSearchQuery('')
           setSearchResults([])
+        } else {
+          toast.error(data.error || '创建对话失败')
         }
+      } else {
+        const errorData = await response.json()
+        console.error('创建会话失败:', errorData)
+        toast.error(errorData.error || '创建对话失败')
       }
     } catch (error) {
       console.error('创建会话失败:', error)
+      toast.error('创建对话失败')
     }
   }
 
@@ -394,9 +414,17 @@ export default function MessagesPage() {
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                            {conversation.other_user?.nickname?.[0] || conversation.other_user?.username?.[0] || 'U'}
-                          </div>
+                          {conversation.other_user?.avatar_url ? (
+                            <img 
+                              src={conversation.other_user.avatar_url} 
+                              alt={conversation.other_user?.nickname || conversation.other_user?.username || '未知用户'}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                              {conversation.other_user?.nickname?.[0] || conversation.other_user?.username?.[0] || 'U'}
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-gray-800 truncate">
                               {conversation.other_user?.nickname || conversation.other_user?.username || '未知用户'}
@@ -420,9 +448,17 @@ export default function MessagesPage() {
                   {/* 消息头部 */}
                   <div className="p-4 border-b border-gray-200 bg-white/50">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                        {selectedConversation.other_user?.nickname?.[0] || selectedConversation.other_user?.username?.[0] || 'U'}
-                      </div>
+                      {selectedConversation.other_user?.avatar_url ? (
+                        <img 
+                          src={selectedConversation.other_user.avatar_url} 
+                          alt={selectedConversation.other_user?.nickname || selectedConversation.other_user?.username || '未知用户'}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                          {selectedConversation.other_user?.nickname?.[0] || selectedConversation.other_user?.username?.[0] || 'U'}
+                        </div>
+                      )}
                       <div>
                         <h3 className="font-semibold text-gray-800">
                           {selectedConversation.other_user?.nickname || selectedConversation.other_user?.username || '未知用户'}
@@ -714,9 +750,17 @@ export default function MessagesPage() {
                       onClick={() => createConversation(searchUser.id)}
                       className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
                     >
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                        {searchUser.nickname?.[0] || searchUser.username[0]}
-                      </div>
+                      {searchUser.avatar_url ? (
+                        <img 
+                          src={searchUser.avatar_url} 
+                          alt={searchUser.nickname || searchUser.username}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                          {searchUser.nickname?.[0] || searchUser.username[0]}
+                        </div>
+                      )}
                       <div>
                         <h4 className="font-medium text-gray-800">
                           {searchUser.nickname || searchUser.username}

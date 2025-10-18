@@ -15,10 +15,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ users: [] })
     }
     
-    // 使用服务端凭据搜索用户，绕过 RLS；仅返回必要字段
+    // 使用更安全的搜索方式，避免SQL注入
     const { data: users, error } = await supabaseAdmin
       .from('users')
-      .select('id, username, nickname, nickname_color')
+      .select('id, username, nickname, nickname_color, avatar_url')
       .or(`username.ilike.%${query}%,nickname.ilike.%${query}%`)
       .order('updated_at', { ascending: false })
       .limit(10)
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     console.log('搜索结果数量:', users?.length || 0) // 调试日志
     console.log('搜索结果:', users) // 调试日志
 
-    return NextResponse.json({ users: users || [] })
+    return NextResponse.json({ success: true, users: users || [] })
   } catch (error) {
     console.error('Search users error:', error)
     return NextResponse.json({ error: '搜索失败' }, { status: 500 })

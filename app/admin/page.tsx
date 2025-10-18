@@ -132,11 +132,19 @@ export default function AdminPage() {
       const res = await response.json()
       if (res.success) {
         toast.success(approve ? '头像已通过' : '头像已拒绝')
+        
         // 刷新数据，包括头像申请列表
-        fetchData()
-        // 如果是通过，刷新当前用户信息以更新头像显示
+        await fetchData()
+        
+        // 如果是通过，需要更新所有相关页面的头像显示
         if (approve) {
-          // 延迟一下再刷新，确保数据库更新完成
+          // 通知所有页面刷新用户信息
+          // 使用自定义事件通知其他页面更新头像
+          window.dispatchEvent(new CustomEvent('avatarUpdated', { 
+            detail: { userId: res.data?.user_id } 
+          }))
+          
+          // 延迟刷新当前页面，确保数据库更新完成
           setTimeout(() => {
             window.location.reload()
           }, 1000)
@@ -145,6 +153,7 @@ export default function AdminPage() {
         toast.error(res.error || '操作失败')
       }
     } catch (e) {
+      console.error('头像审核失败:', e)
       toast.error('操作失败')
     }
   }
@@ -469,11 +478,19 @@ export default function AdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                              <span className="text-sm font-medium text-gray-700">
-                                {userItem.username.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
+                            {userItem.avatar_url ? (
+                              <img 
+                                src={userItem.avatar_url} 
+                                alt={userItem.username}
+                                className="h-10 w-10 rounded-full object-cover border-2 border-gray-200"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                                <span className="text-sm font-medium text-white">
+                                  {userItem.username.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">

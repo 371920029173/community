@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         is_admin: !!isInitialAdmin,
         is_moderator: !!isInitialAdmin,
         storage_used: 0,
-        storage_limit: isInitialAdmin ? 107374182400 : 1073741824
+        storage_limit: isInitialAdmin ? 107374182400 : 21474836480
       })
       .select('*')
       .single()

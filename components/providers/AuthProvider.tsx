@@ -268,6 +268,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // 监听头像更新事件
+  useEffect(() => {
+    const handleAvatarUpdate = async (event: CustomEvent) => {
+      const { userId } = event.detail
+      // 如果是当前用户的头像更新，刷新用户信息
+      if (user?.id === userId) {
+        console.log('检测到头像更新，刷新用户信息')
+        await refreshUser()
+      }
+    }
+
+    window.addEventListener('avatarUpdated', handleAvatarUpdate as unknown as EventListener)
+    
+    return () => {
+      window.removeEventListener('avatarUpdated', handleAvatarUpdate as unknown as EventListener)
+    }
+  }, [user?.id, refreshUser])
+
   const value = {
     user,
     loading,

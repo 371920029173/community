@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { createHash } from 'crypto'
+// import { createHash } from 'crypto' // Edge Runtime 不支持 Node.js crypto
+
+export const runtime = 'edge'
 
 // 文件配置
 const FILE_CONFIG = {
@@ -115,10 +117,17 @@ function getFileType(fileName: string): string {
   return 'other'
 }
 
-function generateFileName(originalName: string, userId: string): string {
+async function generateFileName(originalName: string, userId: string): Promise<string> {
   const timestamp = Date.now()
   const random = Math.random().toString(36).substring(2, 15)
-  const hash = createHash('md5').update(`${originalName}${timestamp}${userId}`).digest('hex').substring(0, 8)
+  
+  // 使用 Web Crypto API 替代 Node.js crypto
+  const encoder = new TextEncoder()
+  const data = encoder.encode(`${originalName}${timestamp}${userId}`)
+  const hashBuffer = await crypto.subtle.digest('MD5', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 8)
+  
   const ext = originalName.split('.').pop()?.toLowerCase() || ''
   
   // 创建用户文件夹路径，格式：userId/timestamp-hash.ext
@@ -178,7 +187,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 生成文件名
-    const fileName = generateFileName(file.name, userId)
+    const fileName = await generateFileName(file.name, userId)
 
     // 根据文件类型选择存储桶
     const bucketName = isPublic ? 'files' : 'files'
@@ -204,7 +213,9 @@ export async function POST(request: NextRequest) {
 
     // 计算文件哈希
     const fileBuffer = await file.arrayBuffer()
-    const fileHash = createHash('sha256').update(Buffer.from(fileBuffer)).digest('hex')
+    const hashBuffer = await crypto.subtle.digest('SHA-256', fileBuffer)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const fileHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 
     // 保存文件信息到数据库
     const { data: fileData, error: dbError } = await supabaseAdmin

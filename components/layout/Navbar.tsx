@@ -172,7 +172,17 @@ export default function Navbar() {
                   )}
                 </div>
                 <Link href="/profile" className="text-gray-700 hover:text-primary-600 transition-colors">
-                  <User className="w-5 h-5" />
+                  {user.avatar_url ? (
+                    <img 
+                      src={user.avatar_url} 
+                      alt={user.username}
+                      className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 hover:border-primary-500 transition-colors"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                      {user.username[0].toUpperCase()}
+                    </div>
+                  )}
                 </Link>
                 <button
                   onClick={handleSignOut}
@@ -291,16 +301,29 @@ export default function Navbar() {
                   )}
                   <div className="border-t border-gray-200 pt-2 mt-2">
                     <div className="flex items-center justify-between px-3 py-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-gray-700">
-                          {user.username}
-                        </span>
-                        {user.username === '371920029173' && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-yellow-400 via-red-500 to-pink-500 text-white shadow-lg animate-pulse">
-                            <Crown className="w-3 h-3 mr-1" />
-                            超级管理员
-                          </span>
+                      <div className="flex items-center space-x-3">
+                        {user.avatar_url ? (
+                          <img 
+                            src={user.avatar_url} 
+                            alt={user.username}
+                            className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold">
+                            {user.username[0].toUpperCase()}
+                          </div>
                         )}
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            {user.username}
+                          </span>
+                          {user.username === '371920029173' && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-yellow-400 via-red-500 to-pink-500 text-white shadow-lg animate-pulse">
+                              <Crown className="w-3 h-3 mr-1" />
+                              超级管理员
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center space-x-2">
                         {user.is_admin && user.username !== '371920029173' && (

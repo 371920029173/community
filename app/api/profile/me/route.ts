@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+
+export const runtime = 'edge'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 // 通过服务端（service role）读取当前用户资料，避免前端触发 RLS
