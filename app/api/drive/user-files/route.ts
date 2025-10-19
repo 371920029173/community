@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
+export const runtime = 'edge'
+
 export async function GET(request: NextRequest) {
   try {
     const auth = request.headers.get('authorization')
@@ -23,6 +25,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: e.message || '获取失败' }, { status: 500 })
   }
 }
-
-
-

@@ -213,10 +213,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .single()
 
           if (profileError || !userProfile) {
-            console.log('无法获取用户资料，但不清除会话，尝试重新获取')
-            // 不立即清除会话，而是尝试重新获取
-            // 可能是网络问题或临时数据库问题
-            setUser(null)
+            console.log('无法获取用户资料，尝试通过API获取')
+            // 尝试通过API获取用户资料
+            try {
+              const meRes = await fetch('/api/profile/me', { 
+                headers: { 'x-user-id': session.user.id } 
+              })
+              const meJson = await meRes.json()
+              if (meJson.success && meJson.data) {
+                console.log('通过API恢复用户状态:', meJson.data.username)
+                setUser(meJson.data)
+              } else {
+                console.log('API也无法获取用户资料，清除会话')
+                await supabase.auth.signOut()
+                setUser(null)
+              }
+            } catch (apiError) {
+              console.error('API获取用户资料失败:', apiError)
+              console.log('API失败，清除会话')
+              await supabase.auth.signOut()
+              setUser(null)
+            }
           } else {
             console.log('恢复用户状态:', userProfile.username)
             setUser(userProfile)

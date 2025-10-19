@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
+export const runtime = 'edge'
+
 export async function POST(request: NextRequest) {
   try {
     const { title, content, type, authorId, authorName, isActive, expiresAt } = await request.json()

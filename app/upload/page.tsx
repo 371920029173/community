@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { supabase } from '@/lib/supabase'
 import Navbar from '@/components/layout/Navbar'
 import { SidebarAd } from '@/components/ads/AdBanner'
 import { 
@@ -80,7 +81,20 @@ export default function UploadPage() {
         fd.append('file', item.blob)
         fd.append('userId', user.id)
 
-        const res = await fetch('/api/drive/upload', { method: 'POST', body: fd })
+        // 获取认证token
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          toast.error('会话已过期，请重新登录')
+          return
+        }
+
+        const res = await fetch('/api/drive/upload', { 
+          method: 'POST', 
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: fd 
+        })
         clearInterval(tick)
 
         if (!res.ok) {

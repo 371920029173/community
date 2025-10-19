@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+
+export const runtime = 'edge'
 import { supabase } from '@/lib/supabase'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
@@ -8,8 +10,8 @@ export async function DELETE(
   context: any
 ) {
   try {
-    const params = (context as any)?.params ?? (context as unknown as { params: { id: string } }).params
-    const fileId = params.id
+    const resolvedParams = await context.params
+    const fileId = resolvedParams.id
     
     // 从请求头获取用户ID
     const authHeader = request.headers.get('authorization')
@@ -115,8 +117,8 @@ export async function PATCH(
   context: any
 ) {
   try {
-    const params = (context as any)?.params ?? (context as unknown as { params: { id: string } }).params
-    const fileId = params.id
+    const resolvedParams = await context.params
+    const fileId = resolvedParams.id
     const body = await request.json()
     
     // 从请求头获取用户ID
@@ -187,8 +189,8 @@ export async function GET(
   context: any
 ) {
   try {
-    const params = (context as any)?.params ?? (context as unknown as { params: { id: string } }).params
-    const fileId = params.id
+    const resolvedParams = await context.params
+    const fileId = resolvedParams.id
     
     // 从请求头获取用户ID
     const authHeader = request.headers.get('authorization')

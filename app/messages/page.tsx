@@ -26,6 +26,17 @@ import {
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 
+// 获取文件类型
+const getFileType = (filename: string) => {
+  const ext = filename.toLowerCase().split('.').pop()
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '')) return 'image'
+  if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'].includes(ext || '')) return 'video'
+  if (['mp3', 'wav', 'flac', 'aac', 'ogg'].includes(ext || '')) return 'audio'
+  if (['pdf'].includes(ext || '')) return 'document'
+  if (['txt', 'md', 'json', 'xml', 'js', 'html', 'css'].includes(ext || '')) return 'text'
+  return 'file'
+}
+
 interface User {
   id: string
   username: string
@@ -52,6 +63,7 @@ interface Message {
   file_type?: string
   file_url?: string
   file_size?: number
+  file_id?: string
   created_at: string
   sender?: User
 }
@@ -103,10 +115,20 @@ export default function MessagesPage() {
 
   // 发送消息
   const sendMessage = async () => {
-    if ((!inputMessage.trim() && !selectedFile) || !selectedConversation || !user) return
+    if ((!inputMessage.trim() && !selectedFile) || !selectedConversation || !user) {
+      console.log('发送消息条件检查失败:', {
+        hasMessage: !!inputMessage.trim(),
+        hasFile: !!selectedFile,
+        hasConversation: !!selectedConversation,
+        hasUser: !!user
+      })
+      return
+    }
     
     try {
       const { data: { session } } = await supabase.auth.getSession()
+      console.log('当前会话状态:', { session: !!session, userId: session?.user?.id })
+      
       if (!session) {
         toast.error('会话已过期，请重新登录')
         return
@@ -116,7 +138,8 @@ export default function MessagesPage() {
         conversationId: selectedConversation.id,
         content: inputMessage.trim() || '',
         messageType: selectedFile ? 'file' : 'text',
-        senderId: user.id
+        senderId: user.id,
+        receiverId: selectedConversation.other_user?.id // 添加接收者ID
       }
 
       // 如果有文件，先上传文件
@@ -143,12 +166,16 @@ export default function MessagesPage() {
         
         if (uploadData.success && uploadData.data && uploadData.data.file) {
           messageData.fileName = uploadData.data.file.original_name
-          messageData.fileType = uploadData.data.file.file_type
-          messageData.fileUrl = uploadData.data.file.url
-          messageData.fileSize = uploadData.data.file.size
+          messageData.fileType = getFileType(uploadData.data.file.original_name)
+          messageData.fileUrl = uploadData.data.url // 使用正确的URL字段
+          messageData.fileId = uploadData.data.file.id // 添加文件ID
+          messageData.fileSize = uploadData.data.file.file_size
+          messageData.mimeType = uploadData.data.file.mime_type // 使用正确的mime_type字段
         }
       }
 
+      console.log('发送消息数据:', messageData)
+      
       const response = await fetch('/api/messages/send', {
         method: 'POST',
         headers: {
@@ -157,6 +184,8 @@ export default function MessagesPage() {
         },
         body: JSON.stringify(messageData)
       })
+      
+      console.log('消息发送响应状态:', response.status)
       
       if (response.ok) {
         const data = await response.json()
@@ -174,6 +203,9 @@ export default function MessagesPage() {
           ))
           
           toast.success('消息发送成功')
+          // 清空输入和文件选择
+          setInputMessage('')
+          setSelectedFile(null)
         } else {
           toast.error(data.message || '消息发送失败')
         }
@@ -185,8 +217,11 @@ export default function MessagesPage() {
       console.error('发送消息失败:', error)
       toast.error('发送消息失败')
     } finally {
-      setInputMessage('')
-      setSelectedFile(null)
+      // 确保在finally中也清空状态
+      if (inputMessage.trim() || selectedFile) {
+        setInputMessage('')
+        setSelectedFile(null)
+      }
     }
   }
 
@@ -317,6 +352,17 @@ export default function MessagesPage() {
     return date.toLocaleDateString()
   }
 
+  // 过滤对话列表
+  const filteredConversations = conversations.filter(conversation => {
+    if (!searchQuery.trim()) return true
+    
+    const query = searchQuery.toLowerCase()
+    const username = conversation.other_user?.username?.toLowerCase() || ''
+    const nickname = conversation.other_user?.nickname?.toLowerCase() || ''
+    
+    return username.includes(query) || nickname.includes(query)
+  })
+
   useEffect(() => {
     if (user) {
       fetchConversations()
@@ -387,23 +433,29 @@ export default function MessagesPage() {
               </div>
 
               <div className="flex-1 overflow-y-auto">
-                {conversations.length === 0 ? (
+                {filteredConversations.length === 0 ? (
                   <div className="p-8 text-center">
                     <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
                       <MessageSquare className="w-10 h-10 text-blue-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">暂无会话</h3>
-                    <p className="text-gray-600 mb-4">开始您的第一次对话吧</p>
-                    <button
-                      onClick={() => setShowNewChat(true)}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                    >
-                      创建新对话
-                    </button>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                      {searchQuery.trim() ? `没有找到包含"${searchQuery}"的对话` : '暂无会话'}
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      {searchQuery.trim() ? '尝试其他关键词' : '开始您的第一次对话吧'}
+                    </p>
+                    {!searchQuery.trim() && (
+                      <button
+                        onClick={() => setShowNewChat(true)}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                      >
+                        创建新对话
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-1 p-2">
-                    {conversations.map((conversation) => (
+                    {filteredConversations.map((conversation) => (
                       <div
                         key={conversation.id}
                         onClick={() => setSelectedConversation(conversation)}
@@ -492,19 +544,25 @@ export default function MessagesPage() {
                                 {/* 图片直接显示 */}
                                 {message.file_type?.startsWith('image/') ? (
                                   <div className="space-y-2">
-                                    <img
-                                      src={message.file_url}
-                                      alt={message.file_name}
-                                      className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                      onClick={() => window.open(message.file_url, '_blank')}
-                                    />
+                                    {message.file_url ? (
+                                      <img
+                                        src={message.file_url}
+                                        alt={message.file_name}
+                                        className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                        onClick={() => window.open(message.file_url, '_blank')}
+                                      />
+                                    ) : (
+                                      <div className="p-4 bg-gray-100 rounded-lg text-center">
+                                        <p className="text-gray-500">图片加载失败</p>
+                                      </div>
+                                    )}
                                     <div className="flex items-center gap-2 text-sm opacity-75">
                                       {getFileIcon(message.file_type || '')}
                                       <span>{message.file_name}</span>
                                     </div>
                                     <div className="flex gap-2">
                                       <button
-                                        onClick={() => window.open(`/message-file/${message.id}`, '_blank')}
+                                        onClick={() => window.open(`/message-file/${message.file_id || message.id}`, '_blank')}
                                         className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
                                       >
                                         <Eye className="w-3 h-3" />
@@ -527,21 +585,27 @@ export default function MessagesPage() {
                                 ) : message.file_type?.startsWith('video/') ? (
                                   /* 视频直接显示 */
                                   <div className="space-y-2">
-                                    <video
-                                      controls
-                                      className="max-w-full h-auto rounded-lg"
-                                      preload="metadata"
-                                    >
-                                      <source src={message.file_url} type={message.file_type} />
-                                      您的浏览器不支持视频播放
-                                    </video>
+                                    {message.file_url ? (
+                                      <video
+                                        controls
+                                        className="max-w-full h-auto rounded-lg"
+                                        preload="metadata"
+                                      >
+                                        <source src={message.file_url} type={message.file_type} />
+                                        您的浏览器不支持视频播放
+                                      </video>
+                                    ) : (
+                                      <div className="p-4 bg-gray-100 rounded-lg text-center">
+                                        <p className="text-gray-500">视频加载失败</p>
+                                      </div>
+                                    )}
                                     <div className="flex items-center gap-2 text-sm opacity-75">
                                       {getFileIcon(message.file_type || '')}
                                       <span>{message.file_name}</span>
                                     </div>
                                     <div className="flex gap-2">
                                       <button
-                                        onClick={() => window.open(`/message-file/${message.id}`, '_blank')}
+                                        onClick={() => window.open(`/message-file/${message.file_id || message.id}`, '_blank')}
                                         className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
                                       >
                                         <Eye className="w-3 h-3" />
@@ -564,21 +628,27 @@ export default function MessagesPage() {
                                 ) : message.file_type?.startsWith('audio/') ? (
                                   /* 音频直接显示 */
                                   <div className="space-y-2">
-                                    <audio
-                                      controls
-                                      className="w-full"
-                                      preload="metadata"
-                                    >
-                                      <source src={message.file_url} type={message.file_type} />
-                                      您的浏览器不支持音频播放
-                                    </audio>
+                                    {message.file_url ? (
+                                      <audio
+                                        controls
+                                        className="w-full"
+                                        preload="metadata"
+                                      >
+                                        <source src={message.file_url} type={message.file_type} />
+                                        您的浏览器不支持音频播放
+                                      </audio>
+                                    ) : (
+                                      <div className="p-4 bg-gray-100 rounded-lg text-center">
+                                        <p className="text-gray-500">音频加载失败</p>
+                                      </div>
+                                    )}
                                     <div className="flex items-center gap-2 text-sm opacity-75">
                                       {getFileIcon(message.file_type || '')}
                                       <span>{message.file_name}</span>
                                     </div>
                                     <div className="flex gap-2">
                                       <button
-                                        onClick={() => window.open(`/message-file/${message.id}`, '_blank')}
+                                        onClick={() => window.open(`/message-file/${message.file_id || message.id}`, '_blank')}
                                         className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
                                       >
                                         <Eye className="w-3 h-3" />
@@ -607,7 +677,7 @@ export default function MessagesPage() {
                                     </div>
                                     <div className="flex gap-2">
                                       <button
-                                        onClick={() => window.open(`/message-file/${message.id}`, '_blank')}
+                                        onClick={() => window.open(`/message-file/${message.file_id || message.id}`, '_blank')}
                                         className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
                                       >
                                         <Eye className="w-3 h-3" />
@@ -647,7 +717,11 @@ export default function MessagesPage() {
                       <input
                         type="file"
                         id="file-input"
-                        onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                        onChange={(e) => {
+                          setSelectedFile(e.target.files?.[0] || null)
+                          // 清空input value，确保可以重复选择同一个文件
+                          e.target.value = ''
+                        }}
                         className="hidden"
                       />
                       <label

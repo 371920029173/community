@@ -62,12 +62,31 @@ export default function FileViewPage() {
     }
   }
 
+  // 构建文件URL
+  const getFileUrl = (file: FileItem | null): string | null => {
+    if (!file) return null
+    const { data } = supabase.storage.from('files').getPublicUrl(file.file_path)
+    return data.publicUrl
+  }
+
+  // 获取文件类型
+  const getFileType = (filename: string) => {
+    const ext = filename.toLowerCase().split('.').pop()
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '')) return 'image'
+    if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'].includes(ext || '')) return 'video'
+    if (['mp3', 'wav', 'flac', 'aac', 'ogg'].includes(ext || '')) return 'audio'
+    if (['pdf'].includes(ext || '')) return 'document'
+    if (['txt', 'md', 'json', 'xml', 'js', 'html', 'css'].includes(ext || '')) return 'text'
+    return 'file'
+  }
+
   const fetchFileContent = async () => {
-    if (!file?.file_url) return
+    const fileUrl = getFileUrl(file)
+    if (!fileUrl) return
     
     setLoadingContent(true)
     try {
-      const response = await fetch(file.file_url)
+      const response = await fetch(fileUrl)
       if (response.ok) {
         const content = await response.text()
         setFileContent(content)
@@ -108,12 +127,12 @@ export default function FileViewPage() {
   const renderFileContent = () => {
     if (!file) return null
 
-    switch (file.file_type) {
+    switch (getFileType(file.original_name)) {
       case 'image':
         return (
           <div className="text-center">
             <img 
-              src={file.file_url} 
+              src={getFileUrl(file) || ''} 
               alt={file.original_name}
               className="max-w-full h-auto rounded-lg shadow-lg"
             />
@@ -126,7 +145,7 @@ export default function FileViewPage() {
               controls 
               className="max-w-full h-auto rounded-lg shadow-lg"
             >
-              <source src={file.file_url} type="video/mp4" />
+              <source src={getFileUrl(file) || ''} type="video/mp4" />
               您的浏览器不支持视频播放
             </video>
           </div>
@@ -138,7 +157,7 @@ export default function FileViewPage() {
               controls 
               className="w-full max-w-md"
             >
-              <source src={file.file_url} type="audio/mpeg" />
+              <source src={getFileUrl(file) || ''} type="audio/mpeg" />
               您的浏览器不支持音频播放
             </audio>
           </div>
@@ -162,7 +181,7 @@ export default function FileViewPage() {
                   </div>
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => window.open(file.file_url, '_blank')}
+                      onClick={() => window.open(getFileUrl(file) || '', '_blank')}
                       className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm"
                       title="在新窗口打开"
                     >
@@ -170,7 +189,7 @@ export default function FileViewPage() {
                       打开
                     </button>
                     <a
-                      href={file.file_url}
+                      href={getFileUrl(file) || ''}
                       download={file.original_name}
                       className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm"
                       title="下载文件"
@@ -218,14 +237,9 @@ export default function FileViewPage() {
               <div className="paper-bg min-h-[600px] p-8">
                 <h1 className="text-2xl font-bold mb-4">{file.original_name}</h1>
                 <p className="text-gray-600 mb-4">
-                  作者：{file.author_name} | 
+                  作者：Unknown | 
                   发布时间：{formatDistanceToNow(new Date(file.created_at), { addSuffix: true, locale: zhCN })}
                 </p>
-                {file.description && (
-                  <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                    <p className="text-gray-700">{file.description}</p>
-                  </div>
-                )}
                 <div className="prose max-w-none">
                   <p>这是一个文档文件。点击下载按钮查看完整内容。</p>
                 </div>
@@ -287,27 +301,24 @@ export default function FileViewPage() {
           <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
             <div className="flex items-start space-x-4">
               <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                {getFileTypeIcon(file.file_type)}
+                 {getFileTypeIcon(getFileType(file.original_name))}
               </div>
               <div className="flex-1">
                 <h1 className="text-3xl font-bold mb-2">{file.original_name}</h1>
                 <div className="flex items-center space-x-6 text-sm text-blue-100 mb-4">
                   <div className="flex items-center">
-                    <span>作者：{file.author_name}</span>
+                     <span>作者：Unknown</span>
                   </div>
                   <div className="flex items-center">
                     <span>{formatDistanceToNow(new Date(file.created_at), { addSuffix: true, locale: zhCN })}</span>
                   </div>
                   <div className="flex items-center">
-                    <span>{file.likes_count || 0} 次查看</span>
+                     <span>0 次查看</span>
                   </div>
                 </div>
-                {file.description && (
-                  <p className="text-blue-100 mb-4">{file.description}</p>
-                )}
                 <div className="flex items-center space-x-4">
                   <a
-                    href={file.file_url}
+                    href={getFileUrl(file) || ''}
                     download={file.original_name}
                     className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm flex items-center"
                   >

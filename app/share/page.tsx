@@ -443,7 +443,7 @@ export default function SharePage() {
                       )}
                       
                       <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                        <span>分享者: {file.author_name}</span>
+                        <span>分享者: {file.author_name || '未知用户'}</span>
                         <span>{formatDate(file.created_at)}</span>
                     </div>
                     

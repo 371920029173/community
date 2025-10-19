@@ -5,6 +5,17 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { User, FileItem, Announcement } from '@/lib/supabase'
+
+// 获取文件类型
+const getFileType = (filename: string) => {
+  const ext = filename.toLowerCase().split('.').pop()
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '')) return 'image'
+  if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'].includes(ext || '')) return 'video'
+  if (['mp3', 'wav', 'flac', 'aac', 'ogg'].includes(ext || '')) return 'audio'
+  if (['pdf'].includes(ext || '')) return 'document'
+  if (['txt', 'md', 'json', 'xml', 'js', 'html', 'css'].includes(ext || '')) return 'text'
+  return 'file'
+}
 import Navbar from '@/components/layout/Navbar'
 import { 
   Users, 
@@ -35,6 +46,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [avatarRequests, setAvatarRequests] = useState<any[]>([])
   const [adminChangeRequests, setAdminChangeRequests] = useState<any[]>([])
+  const [fileAuthors, setFileAuthors] = useState<{[key: string]: string}>({})
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false)
   const [newAnnouncement, setNewAnnouncement] = useState({
     title: '',
@@ -85,8 +97,8 @@ export default function AdminPage() {
           fetch(`/api/admin/users?adminId=${user.id}`),
           supabase.from('files').select('*').order('created_at', { ascending: false }),
           supabase.from('announcements').select('*').order('created_at', { ascending: false }),
-          supabase.from('avatar_change_requests').select('*').order('created_at', { ascending: false }),
-          supabase.from('admin_change_requests').select('*').order('created_at', { ascending: false })
+          supabase.from('avatar_change_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
+          supabase.from('admin_change_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false })
         ])
         
         const usersResult = await usersResponse.json()
@@ -97,6 +109,23 @@ export default function AdminPage() {
         setAnnouncements(announcementsData.data || [])
         setAvatarRequests(avatarReq.data || [])
         setAdminChangeRequests(adminReq.data || [])
+        
+        // 获取文件作者信息
+        if (filesData.data && filesData.data.length > 0) {
+          const userIds = Array.from(new Set(filesData.data.map(f => f.user_id)))
+          const { data: authorsData } = await supabase
+            .from('users')
+            .select('id, username')
+            .in('id', userIds)
+          
+          if (authorsData) {
+            const authorMap: {[key: string]: string} = {}
+            authorsData.forEach(author => {
+              authorMap[author.id] = author.username
+            })
+            setFileAuthors(authorMap)
+          }
+        }
         
         // 调试信息
         console.log('管理后台获取的文件:', filesData.data)
@@ -110,7 +139,10 @@ export default function AdminPage() {
         
         setFiles(filesData || [])
         const { data: avatarReq } = await supabase
-          .from('avatar_change_requests').select('*').order('created_at', { ascending: false })
+          .from('avatar_change_requests')
+          .select('*')
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
         setAvatarRequests(avatarReq || [])
       }
     } catch (error) {
@@ -242,15 +274,46 @@ export default function AdminPage() {
 
   const handleFileApproval = async (fileId: string, approved: boolean) => {
     try {
-      const { error } = await supabase
-        .from('files')
-        .update({ is_approved: approved })
-        .eq('id', fileId)
+      console.log('开始文件审核，fileId:', fileId, 'approved:', approved)
+      
+      // 获取认证token
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        toast.error('会话已过期，请重新登录')
+        return
+      }
+      
+      // 使用API路由来确保管理员权限
+      const response = await fetch('/api/admin/files/approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          fileId,
+          approved
+        })
+      })
 
-      if (error) throw error
+      const result = await response.json()
 
-      toast.success(approved ? '文件审核通过' : '文件审核拒绝')
-      fetchData()
+      if (result.success) {
+        console.log('文件审核成功:', result)
+        toast.success(approved ? '文件审核通过' : '文件审核拒绝')
+        
+        // 立即更新本地状态，移除已处理的文件
+        setFiles(prev => {
+          const updated = prev.filter(f => f.id !== fileId)
+          console.log('文件审核后，剩余待审核文件数量:', updated.filter(f => !f.is_approved).length)
+          console.log('已处理的文件ID:', fileId, '是否从列表中移除:', !updated.find(f => f.id === fileId))
+          return updated
+        })
+      } else {
+        console.error('文件审核失败:', result.error)
+        toast.error(result.error || '操作失败')
+      }
+      
     } catch (error) {
       console.error('Error updating file approval:', error)
       toast.error('操作失败')
@@ -623,13 +686,10 @@ export default function AdminPage() {
                     <div className="flex-1">
                       <h3 className="font-medium text-gray-900">{file.original_name}</h3>
                       <p className="text-sm text-gray-500">
-                        作者：{file.author_name} | 
-                        大小：{Math.round(file.file_size / 1024)}KB | 
-                        类型：{file.file_type}
+                         作者：{fileAuthors[file.user_id] || 'Unknown'} | 
+                         大小：{Math.round(file.file_size / 1024)}KB | 
+                         类型：{getFileType(file.original_name)}
                       </p>
-                      {file.description && (
-                        <p className="text-sm text-gray-600 mt-1">{file.description}</p>
-                      )}
                     </div>
                     <div className="flex space-x-2">
                       <button

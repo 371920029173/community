@@ -11,6 +11,17 @@ interface FileCardProps {
 }
 
 export default function FileCard({ file }: FileCardProps) {
+  // 获取文件类型
+  const getFileType = (filename: string) => {
+    const ext = filename.toLowerCase().split('.').pop()
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '')) return 'image'
+    if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'].includes(ext || '')) return 'video'
+    if (['mp3', 'wav', 'flac', 'aac', 'ogg'].includes(ext || '')) return 'audio'
+    if (['pdf'].includes(ext || '')) return 'document'
+    if (['txt', 'md', 'json', 'xml', 'js', 'html', 'css'].includes(ext || '')) return 'text'
+    return 'file'
+  }
+
   const getFileTypeIcon = (fileType: string) => {
     switch (fileType) {
       case 'document':
@@ -53,9 +64,9 @@ export default function FileCard({ file }: FileCardProps) {
     <div className="card hover:shadow-lg transition-shadow duration-200 group">
       {/* 文件类型图标 */}
       <div className="flex items-center justify-between mb-4">
-        {getFileTypeIcon(file.file_type)}
+        {getFileTypeIcon(getFileType(file.original_name))}
         <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-          {getFileTypeLabel(file.file_type)}
+          {getFileTypeLabel(getFileType(file.original_name))}
         </span>
       </div>
 
@@ -64,18 +75,13 @@ export default function FileCard({ file }: FileCardProps) {
         <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
           {file.original_name}
         </h3>
-        {file.description && (
-          <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-            {file.description}
-          </p>
-        )}
       </div>
 
       {/* 文件元数据 */}
       <div className="space-y-2 mb-4">
         <div className="flex items-center text-sm text-gray-500">
           <User className="w-4 h-4 mr-2" />
-          <span className="truncate">{file.author_name}</span>
+          <span className="truncate">{file.author_name || '未知用户'}</span>
         </div>
         <div className="flex items-center text-sm text-gray-500">
           <Calendar className="w-4 h-4 mr-2" />
@@ -91,15 +97,15 @@ export default function FileCard({ file }: FileCardProps) {
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
             <Eye className="w-4 h-4 mr-1" />
-            <span>{file.likes_count}</span>
+            <span>0</span>
           </div>
           <div className="flex items-center">
             <Heart className="w-4 h-4 mr-1" />
-            <span>{file.favorites_count}</span>
+            <span>0</span>
           </div>
           <div className="flex items-center">
             <MessageCircle className="w-4 h-4 mr-1" />
-            <span>{file.comments_count}</span>
+            <span>0</span>
           </div>
         </div>
       </div>

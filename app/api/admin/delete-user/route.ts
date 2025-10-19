@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
+export const runtime = 'edge'
+
 // 仅限服务端调用：删除冲突用户（同时删 Auth 与 users 表）
 export async function POST(request: NextRequest) {
   try {

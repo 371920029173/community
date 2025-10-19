@@ -59,20 +59,24 @@ export interface FileItem {
   id: string
   original_name: string
   filename: string
+  file_path: string
   user_id: string
-  author_name: string
-  file_type: string
   file_size: number
-  file_url: string
   mime_type?: string
-  description?: string
+  file_hash?: string
   is_public: boolean
   is_approved: boolean
-  likes_count: number
-  comments_count: number
-  favorites_count: number
+  download_count?: number
   created_at: string
   updated_at: string
+  // 数据库中的额外字段（向后兼容）
+  file_type?: string
+  file_url?: string
+  author_name?: string
+  description?: string
+  likes_count?: number
+  comments_count?: number
+  favorites_count?: number
 }
 
 export interface Comment {

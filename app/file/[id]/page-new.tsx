@@ -41,27 +41,23 @@ export default function FileDetailPage() {
 
   useEffect(() => {
     if (fileId && !authLoading) {
-      // 添加延迟，避免权限检查闪烁
-      const timer = setTimeout(() => {
-        fetchFileDetails()
-        fetchComments()
-      }, 100)
-      
-      return () => clearTimeout(timer)
+      fetchFileDetails()
+      fetchComments()
     }
   }, [fileId, authLoading])
 
   useEffect(() => {
     if (file) {
       console.log('文件信息:', {
+        id: file.id,
         name: file.original_name,
-        mime_type: file.mime_type,
-        filename: file.filename,
-        isTextPlain: file.mime_type?.includes('text/plain'),
-        isTxtFile: file.original_name?.toLowerCase().endsWith('.txt')
+        type: file.mime_type,
+        size: file.file_size,
+        isPublic: file.is_public,
+        isApproved: file.is_approved
       })
       
-      // 只对文本文档获取内容，避免Word文档被当作文本处理
+      // 只对文本文档获取内容
       const fileType = getFileType(file)
       if (fileType === 'text') {
         console.log('检测到文本文档，开始获取内容...')
@@ -223,7 +219,7 @@ export default function FileDetailPage() {
         let content = decoder.decode(arrayBuffer)
         
         // 如果解码失败，尝试其他编码
-        if (content.includes('�')) {
+        if (content.includes('')) {
           try {
             const decoderGBK = new TextDecoder('gbk')
             content = decoderGBK.decode(arrayBuffer)
@@ -283,16 +279,18 @@ export default function FileDetailPage() {
       case 'video':
         return <Video className="w-8 h-8 text-purple-500" />
       case 'audio':
-        return <Music className="w-8 h-8 text-orange-500" />
+        return <Music className="w-8 h-8 text-pink-500" />
+      case 'text':
+        return <FileText className="w-8 h-8 text-orange-500" />
       default:
         return <File className="w-8 h-8 text-gray-500" />
     }
   }
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 B'
+    if (bytes === 0) return '0 Bytes'
     const k = 1024
-    const sizes = ['B', 'KB', 'MB', 'GB']
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
@@ -308,11 +306,44 @@ export default function FileDetailPage() {
            (mimeType.includes('wordprocessingml') && mimeType.includes('document'))
   }
 
+  // 检查是否为Excel文件
+  const isExcelFile = (file: FileItem | null) => {
+    if (!file) return false
+    const fileNameLower = file.original_name.toLowerCase()
+    const mimeType = file.mime_type || ''
+    
+    return fileNameLower.endsWith('.xlsx') || fileNameLower.endsWith('.xls') ||
+           mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+           mimeType === 'application/vnd.ms-excel'
+  }
+
+  // 检查是否为PowerPoint文件
+  const isPowerPointFile = (file: FileItem | null) => {
+    if (!file) return false
+    const fileNameLower = file.original_name.toLowerCase()
+    const mimeType = file.mime_type || ''
+    
+    return fileNameLower.endsWith('.pptx') || fileNameLower.endsWith('.ppt') ||
+           mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+           mimeType === 'application/vnd.ms-powerpoint'
+  }
+
+  // 检查是否为PDF文件
+  const isPdfFile = (file: FileItem | null) => {
+    if (!file) return false
+    const fileNameLower = file.original_name.toLowerCase()
+    const mimeType = file.mime_type || ''
+    
+    return fileNameLower.endsWith('.pdf') || mimeType === 'application/pdf'
+  }
+
   const renderFileContent = () => {
     if (!file) return null
 
-    // 特殊处理docx文件
+    // 特殊处理Word文档 - 使用Microsoft Office Online预览
     if (isDocxFile(file)) {
+      const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(getSafeFileUrl(file))}`
+      
       return (
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 text-white">
@@ -320,6 +351,214 @@ export default function FileDetailPage() {
               <div className="flex items-center">
                 <FileText className="w-6 h-6 mr-2" />
                 <span className="font-medium">Word文档预览</span>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => window.open(officeViewerUrl, '_blank')}
+                  className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm text-sm"
+                  title="在新窗口预览"
+                >
+                  <Eye className="w-4 h-4 inline mr-1" />
+                  预览
+                </button>
+                <a
+                  href={getSafeFileUrl(file)}
+                  download={file.original_name}
+                  className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm text-sm"
+                  title="下载文档"
+                >
+                  <Download className="w-4 h-4 inline mr-1" />
+                  下载
+                </a>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <iframe
+                src={officeViewerUrl}
+                width="100%"
+                height="600"
+                frameBorder="0"
+                className="w-full"
+                title={`预览 ${file.original_name}`}
+                onError={() => {
+                  console.log('Office Online预览失败，显示备用方案')
+                }}
+              />
+            </div>
+            <div className="mt-4 text-center text-sm text-gray-500">
+              <p>如果预览无法显示，请尝试在新窗口中打开或下载文件</p>
+              <div className="flex justify-center space-x-3 mt-2">
+                <button
+                  onClick={() => window.open(officeViewerUrl, '_blank')}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>在新窗口预览</span>
+                </button>
+                <a
+                  href={getSafeFileUrl(file)}
+                  download={file.original_name}
+                  className="text-green-600 hover:text-green-800 text-sm font-medium flex items-center space-x-1"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>下载文件</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // 特殊处理Excel文档
+    if (isExcelFile(file)) {
+      const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(getSafeFileUrl(file))}`
+      
+      return (
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <FileText className="w-6 h-6 mr-2" />
+                <span className="font-medium">Excel文档预览</span>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => window.open(officeViewerUrl, '_blank')}
+                  className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm text-sm"
+                  title="在新窗口预览"
+                >
+                  <Eye className="w-4 h-4 inline mr-1" />
+                  预览
+                </button>
+                <a
+                  href={getSafeFileUrl(file)}
+                  download={file.original_name}
+                  className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm text-sm"
+                  title="下载文档"
+                >
+                  <Download className="w-4 h-4 inline mr-1" />
+                  下载
+                </a>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <iframe
+                src={officeViewerUrl}
+                width="100%"
+                height="600"
+                frameBorder="0"
+                className="w-full"
+                title={`预览 ${file.original_name}`}
+              />
+            </div>
+            <div className="mt-4 text-center text-sm text-gray-500">
+              <p>如果预览无法显示，请尝试在新窗口中打开或下载文件</p>
+              <div className="flex justify-center space-x-3 mt-2">
+                <button
+                  onClick={() => window.open(officeViewerUrl, '_blank')}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>在新窗口预览</span>
+                </button>
+                <a
+                  href={getSafeFileUrl(file)}
+                  download={file.original_name}
+                  className="text-green-600 hover:text-green-800 text-sm font-medium flex items-center space-x-1"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>下载文件</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // 特殊处理PowerPoint文档
+    if (isPowerPointFile(file)) {
+      const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(getSafeFileUrl(file))}`
+      
+      return (
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-orange-500 to-red-600 p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <FileText className="w-6 h-6 mr-2" />
+                <span className="font-medium">PowerPoint文档预览</span>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => window.open(officeViewerUrl, '_blank')}
+                  className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm text-sm"
+                  title="在新窗口预览"
+                >
+                  <Eye className="w-4 h-4 inline mr-1" />
+                  预览
+                </button>
+                <a
+                  href={getSafeFileUrl(file)}
+                  download={file.original_name}
+                  className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm text-sm"
+                  title="下载文档"
+                >
+                  <Download className="w-4 h-4 inline mr-1" />
+                  下载
+                </a>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <iframe
+                src={officeViewerUrl}
+                width="100%"
+                height="600"
+                frameBorder="0"
+                className="w-full"
+                title={`预览 ${file.original_name}`}
+              />
+            </div>
+            <div className="mt-4 text-center text-sm text-gray-500">
+              <p>如果预览无法显示，请尝试在新窗口中打开或下载文件</p>
+              <div className="flex justify-center space-x-3 mt-2">
+                <button
+                  onClick={() => window.open(officeViewerUrl, '_blank')}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>在新窗口预览</span>
+                </button>
+                <a
+                  href={getSafeFileUrl(file)}
+                  download={file.original_name}
+                  className="text-green-600 hover:text-green-800 text-sm font-medium flex items-center space-x-1"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>下载文件</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // 特殊处理PDF文档
+    if (isPdfFile(file)) {
+      return (
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-red-500 to-pink-600 p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <FileText className="w-6 h-6 mr-2" />
+                <span className="font-medium">PDF文档预览</span>
               </div>
               <div className="flex space-x-2">
                 <button
@@ -342,48 +581,34 @@ export default function FileDetailPage() {
               </div>
             </div>
           </div>
-          <div className="p-6 text-center">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-8 border border-blue-200">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <FileText className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Word文档在线预览</h3>
-              <p className="text-gray-600 mb-4">使用Microsoft Office Online Viewer预览文档</p>
-              
-              {/* 在线预览iframe */}
-              <div className="mb-6">
-                <iframe
-                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(getSafeFileUrl(file))}`}
-                  width="100%"
-                  height="600"
-                  frameBorder="0"
-                  className="rounded-lg shadow-lg border border-gray-200"
-                  title="Word文档预览"
-                />
-              </div>
-              <div className="flex items-center justify-center space-x-4 text-sm text-gray-500 mb-6">
-                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                  {formatFileSize(file.file_size)}
-                </span>
-                <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
-                  {getFileType(file)}
-                </span>
-              </div>
-              <div className="flex justify-center space-x-4">
+          <div className="p-6">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <iframe
+                src={getSafeFileUrl(file)}
+                width="100%"
+                height="600"
+                frameBorder="0"
+                className="w-full"
+                title={`预览 ${file.original_name}`}
+              />
+            </div>
+            <div className="mt-4 text-center text-sm text-gray-500">
+              <p>如果预览无法显示，请尝试在新窗口中打开或下载文件</p>
+              <div className="flex justify-center space-x-3 mt-2">
                 <button
                   onClick={() => window.open(getSafeFileUrl(file), '_blank')}
-                  className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1"
                 >
-                  <Eye className="w-4 h-4 inline mr-2" />
-                  在新窗口打开
+                  <ExternalLink className="w-4 h-4" />
+                  <span>在新窗口打开</span>
                 </button>
                 <a
                   href={getSafeFileUrl(file)}
                   download={file.original_name}
-                  className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="text-green-600 hover:text-green-800 text-sm font-medium flex items-center space-x-1"
                 >
-                  <Download className="w-4 h-4 inline mr-2" />
-                  下载文档
+                  <Download className="w-4 h-4" />
+                  <span>下载文件</span>
                 </a>
               </div>
             </div>
@@ -424,32 +649,24 @@ export default function FileDetailPage() {
                   </div>
                 </div>
               </div>
-              <div className="p-6 text-center">
-                <div className="relative inline-block">
-            <img 
-              src={getSafeFileUrl(file) || ''} 
+              <div className="p-6">
+                <div className="relative">
+                  <img
+                    src={getSafeFileUrl(file)}
                     alt={file.original_name}
-                    className="max-w-full h-auto rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105"
-                    onClick={() => {
-                      const url = getSafeFileUrl(file)
-                      if (url) window.open(url, '_blank')
+                    className="max-w-full h-auto rounded-lg shadow-lg mx-auto"
+                    style={{ maxHeight: '70vh' }}
+                    onError={(e) => {
+                      console.error('图片加载失败:', e)
+                      e.currentTarget.style.display = 'none'
                     }}
                   />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-xl transition-all duration-300 flex items-center justify-center">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white bg-opacity-90 rounded-full p-3">
-                      <Eye className="w-6 h-6 text-gray-700" />
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 text-sm text-gray-600">
-                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full">
-                    {formatFileSize(file.file_size)}
-                  </span>
                 </div>
               </div>
             </div>
           </div>
         )
+
       case 'video':
         return (
           <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
@@ -457,7 +674,7 @@ export default function FileDetailPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <Video className="w-6 h-6 mr-2" />
-                  <span className="font-medium">视频播放</span>
+                  <span className="font-medium">视频预览</span>
                 </div>
                 <div className="flex space-x-2">
                   <button
@@ -480,31 +697,27 @@ export default function FileDetailPage() {
                 </div>
               </div>
             </div>
-            <div className="p-6 text-center">
-            <video 
-              controls 
-                className="max-w-full h-auto rounded-xl shadow-lg"
-                preload="metadata"
-            >
-              <source src={getSafeFileUrl(file)} type="video/mp4" />
-              您的浏览器不支持视频播放
-            </video>
-              <div className="mt-4 text-sm text-gray-600">
-                <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
-                  {formatFileSize(file.file_size)}
-                </span>
-              </div>
+            <div className="p-6">
+              <video
+                controls
+                className="w-full rounded-lg shadow-lg"
+                style={{ maxHeight: '70vh' }}
+              >
+                <source src={getSafeFileUrl(file)} type={file.mime_type || 'video/mp4'} />
+                您的浏览器不支持视频播放。
+              </video>
             </div>
           </div>
         )
+
       case 'audio':
         return (
           <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
-            <div className="bg-gradient-to-r from-orange-500 to-red-600 p-4 text-white">
+            <div className="bg-gradient-to-r from-pink-500 to-rose-600 p-4 text-white">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <Music className="w-6 h-6 mr-2" />
-                  <span className="font-medium">音频播放</span>
+                  <span className="font-medium">音频预览</span>
                 </div>
                 <div className="flex space-x-2">
                   <button
@@ -528,28 +741,18 @@ export default function FileDetailPage() {
               </div>
             </div>
             <div className="p-6">
-              <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-6 border border-orange-200">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center">
-                    <Music className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 text-lg">{file.original_name}</h3>
-                    <p className="text-sm text-gray-600">{formatFileSize(file.file_size)}</p>
-                  </div>
-                </div>
-            <audio 
-              controls 
-                  className="w-full"
-                  preload="metadata"
-            >
-              <source src={getSafeFileUrl(file)} type="audio/mpeg" />
-              您的浏览器不支持音频播放
-            </audio>
+              <div className="bg-gray-100 rounded-lg p-8 text-center">
+                <Music className="w-16 h-16 mx-auto mb-4 text-pink-500" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{file.original_name}</h3>
+                <audio controls className="w-full max-w-md mx-auto">
+                  <source src={getSafeFileUrl(file)} type={file.mime_type || 'audio/mpeg'} />
+                  您的浏览器不支持音频播放。
+                </audio>
               </div>
             </div>
           </div>
         )
+
       case 'text':
         return (
           <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
@@ -623,169 +826,7 @@ export default function FileDetailPage() {
             </div>
           </div>
         )
-      case 'document':
-        // 检查是否是txt文件
-        if (file.mime_type?.includes('text/plain')) {
-        return (
-            <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
-              {/* 文件头部 */}
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <FileText className="w-8 h-8 mr-3" />
-                    <div>
-                      <h2 className="text-xl font-bold">{file.original_name}</h2>
-                      <p className="text-blue-100 text-sm">
-                        {formatFileSize(file.file_size)} • 文本文件
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => window.open(getSafeFileUrl(file), '_blank')}
-                      className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm"
-                      title="在新窗口打开"
-                    >
-                      <Eye className="w-4 h-4 inline mr-1" />
-                      打开
-                    </button>
-                    <a
-                      href={getSafeFileUrl(file)}
-                      download={file.original_name}
-                      className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm"
-                      title="下载文件"
-                    >
-                      <Download className="w-4 h-4 inline mr-1" />
-                      下载
-                    </a>
-                  </div>
-                </div>
-              </div>
-              
-              {/* 文件内容 */}
-              <div className="p-6">
-                {loadingContent ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                    <span className="ml-3 text-gray-600">加载内容中...</span>
-                  </div>
-                ) : (
-                  <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <FileText className="w-4 h-4 text-blue-600" />
-                          <span className="text-sm font-medium text-gray-700">文件内容预览</span>
-                        </div>
-                        <div className="flex items-center space-x-3 text-xs text-gray-500">
-                          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                            {fileContent.length} 字符
-                          </span>
-                          <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                            {fileContent.split('\n').length} 行
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <div className="bg-gray-50 rounded-lg p-4 border">
-                        <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono leading-relaxed max-h-96 overflow-y-auto bg-white/60 backdrop-blur-sm p-4 rounded border">
-                          {fileContent || '文件内容为空'}
-                        </pre>
-                      </div>
-                      <div className="mt-3 flex justify-end">
-                        <button
-                          onClick={() => window.open(getSafeFileUrl(file), '_blank')}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>在新窗口打开</span>
-                        </button>
-                      </div>
-                    </div>
-                </div>
-              )}
-              </div>
-            </div>
-          )
-        } else {
-          // 其他文档类型
-          return (
-            <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 text-white">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <FileText className="w-6 h-6 mr-2" />
-                    <span className="font-medium">文档预览</span>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => window.open(getSafeFileUrl(file), '_blank')}
-                      className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm text-sm"
-                      title="在新窗口打开"
-                    >
-                      <Eye className="w-4 h-4 inline mr-1" />
-                      打开
-                    </button>
-                    <a
-                      href={getSafeFileUrl(file)}
-                      download={file.original_name}
-                      className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm text-sm"
-                      title="下载文档"
-                    >
-                      <Download className="w-4 h-4 inline mr-1" />
-                      下载
-                    </a>
-                  </div>
-                </div>
-              </div>
-              <div className="p-8">
-                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-gray-200">
-                  <div className="text-center mb-8">
-                    <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <FileText className="w-10 h-10 text-white" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">{file.original_name}</h2>
-                    <div className="flex items-center justify-center space-x-4 text-sm text-gray-600">
-                      <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                        {formatFileSize(file.file_size)}
-                      </span>
-                      <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
-                        {getFileType(file)}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  
-                  <div className="text-center py-8">
-                    <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6 border border-gray-200">
-                      <FileText className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">文档预览</h3>
-                      <p className="text-gray-600 mb-4">此文档类型暂不支持在线预览</p>
-                      <div className="flex justify-center space-x-4">
-                        <button
-                          onClick={() => window.open(getSafeFileUrl(file), '_blank')}
-                          className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-                        >
-                          <Eye className="w-4 h-4 inline mr-2" />
-                          在新窗口打开
-                        </button>
-                        <a
-                          href={getSafeFileUrl(file)}
-                          download={file.original_name}
-                          className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-                        >
-                          <Download className="w-4 h-4 inline mr-2" />
-                          下载文件
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-              </div>
-            </div>
-          </div>
-        )
-        }
+
       default:
         return (
           <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
@@ -816,17 +857,25 @@ export default function FileDetailPage() {
                 </div>
               </div>
             </div>
-            <div className="p-8 text-center">
-              <div className="bg-white/60 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-gray-200">
-                <div className="w-20 h-20 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <File className="w-10 h-10 text-white" />
+            <div className="p-6 text-center">
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-8 border border-gray-200">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <File className="w-8 h-8 text-gray-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">文件预览</h3>
-                <p className="text-gray-600 mb-6">此文件类型暂不支持在线预览</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">{file.original_name}</h3>
+                <p className="text-gray-600 mb-4">此文件类型暂不支持在线预览</p>
+                <div className="flex items-center justify-center space-x-4 text-sm text-gray-500 mb-6">
+                  <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                    {formatFileSize(file.file_size)}
+                  </span>
+                  <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
+                    {getFileType(file)}
+                  </span>
+                </div>
                 <div className="flex justify-center space-x-4">
                   <button
                     onClick={() => window.open(getSafeFileUrl(file), '_blank')}
-                    className="px-6 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
                   >
                     <Eye className="w-4 h-4 inline mr-2" />
                     在新窗口打开
@@ -872,21 +921,20 @@ export default function FileDetailPage() {
           <div className="mt-8 flex flex-col items-center space-y-4">
             <button
               onClick={() => window.history.back()}
-              className="flex items-center px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              返回上一页
+              <ArrowLeft className="w-4 h-4" />
+              <span>返回上一页</span>
             </button>
             {user?.is_admin && (
-              <div className="p-4 bg-blue-50 rounded-lg max-w-md">
-                <h3 className="font-medium text-blue-900 mb-2">管理员调试信息</h3>
-                <p className="text-sm text-blue-700">
-                  作为管理员，你可以查看所有文件（包括未审核的）。
-                  如果这个文件ID确实存在，可能是权限或查询条件的问题。
+              <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <h3 className="text-lg font-medium text-yellow-800 mb-2">管理员调试信息</h3>
+                <p className="text-sm text-yellow-700 mb-4">
+                  作为管理员,你可以查看所有文件(包括未审核的)。如果这个文件ID确实存在,可能是权限或查询条件的问题。
                 </p>
                 <button
                   onClick={() => window.location.href = '/admin'}
-                  className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
                 >
                   前往管理后台查看文件列表
                 </button>
@@ -899,10 +947,9 @@ export default function FileDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <Navbar />
-      
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+      <div className="max-w-6xl mx-auto px-4 py-8 relative z-10">
         {/* 文件头部信息 */}
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 mb-8 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
@@ -914,125 +961,109 @@ export default function FileDetailPage() {
                 <h1 className="text-3xl font-bold mb-2">{file.original_name}</h1>
                 <div className="flex items-center space-x-6 text-sm text-blue-100 mb-4">
                 <div className="flex items-center">
-                  <User className="w-4 h-4 mr-2" />
-                  <span>{'Unknown'}</span>
+                  <User className="w-4 h-4 mr-1" />
+                  <span>作者：Unknown</span>
                 </div>
                 <div className="flex items-center">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  <span>{formatDistanceToNow(new Date(file.created_at), { addSuffix: true, locale: zhCN })}</span>
+                  <Calendar className="w-4 h-4 mr-1" />
+                  <span>{new Date(file.created_at).toLocaleDateString('zh-CN')}</span>
                 </div>
                 <div className="flex items-center">
-                  <Eye className="w-4 h-4 mr-2" />
-                  <span>{0} 次查看</span>
+                  <FileText className="w-4 h-4 mr-1" />
+                  <span>{formatFileSize(file.file_size)}</span>
                 </div>
-                  {/* 审核状态提示 - 仅管理员可见 */}
-                  {user?.is_admin && !file.is_approved && (
-                    <div className="flex items-center bg-yellow-500/20 px-3 py-1 rounded-full">
-                      <Shield className="w-4 h-4 mr-2" />
-                      <span className="text-yellow-200 font-medium">待审核</span>
+                <div className="flex items-center">
+                  <Heart className="w-4 h-4 mr-1" />
+                  <span>0 次查看</span>
+                </div>
               </div>
-              )}
+              <div className="flex items-center space-x-2">
+                {!file.is_approved && (
+                  <span className="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                    待审核
+                  </span>
+                )}
+                {user?.is_admin && (
+                  <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                    管理员
+                  </span>
+                )}
               </div>
-              <div className="flex items-center space-x-4">
-                  <a
-                    href={getSafeFileUrl(file)}
-                    download={file.original_name}
-                    className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm flex items-center"
-                  >
-                  <Download className="w-4 h-4 mr-2" />
-                  下载文件
-                  </a>
-                  <button className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm flex items-center">
-                  <Heart className="w-4 h-4 mr-2" />
-                  收藏
+            </div>
+            <div className="flex flex-col space-y-2">
+              <button
+                onClick={() => window.history.back()}
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm text-sm flex items-center space-x-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>返回上一页</span>
+              </button>
+              <a
+                href={getSafeFileUrl(file)}
+                download={file.original_name}
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm text-sm flex items-center space-x-2"
+              >
+                <Download className="w-4 h-4" />
+                <span>下载文件</span>
+              </a>
+            </div>
+          </div>
+          </div>
+        </div>
+
+        {/* 文件预览区域 */}
+        <div className="mb-8">
+          {renderFileContent()}
+        </div>
+
+        {/* 评论区域 */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 overflow-hidden">
+          <div className="bg-gradient-to-r from-gray-500 to-gray-600 p-4 text-white">
+            <div className="flex items-center">
+              <MessageCircle className="w-5 h-5 mr-2" />
+              <span className="font-medium">评论 ({comments.length})</span>
+            </div>
+          </div>
+          <div className="p-6">
+            <form onSubmit={handleSubmitComment} className="mb-6">
+              <div className="flex space-x-4">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="添加评论..."
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button
+                  type="submit"
+                  disabled={submitting || !newComment.trim()}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {submitting ? '发布中...' : '发布'}
                 </button>
               </div>
-            </div>
-              <div className="text-right text-sm text-blue-100">
-                <div className="bg-white/20 rounded-lg p-3 backdrop-blur-sm">
-                  <div className="text-xs opacity-80">文件大小</div>
-                  <div className="font-bold text-lg">{formatFileSize(file.file_size)}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 文件内容 */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 mb-8 overflow-hidden">
-          <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 border-b border-gray-200/50">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <FileText className="w-6 h-6 mr-2 text-blue-500" />
-              文件内容
-            </h2>
-          </div>
-          <div className="p-6">
-          {renderFileContent()}
-          </div>
-        </div>
-
-        {/* 评论区 */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 overflow-hidden">
-          <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 border-b border-gray-200/50">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <MessageCircle className="w-6 h-6 mr-2 text-blue-500" />
-            评论 ({comments.length})
-          </h2>
-          </div>
-          <div className="p-6">
-          {/* 发表评论 */}
-            <form onSubmit={handleSubmitComment} className="mb-8">
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="写下你的评论..."
-                  className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white resize-none"
-              rows={3}
-            />
-                <div className="mt-3 flex justify-end">
-              <button
-                type="submit"
-                disabled={submitting || !newComment.trim()}
-                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                {submitting ? '发布中...' : '发布评论'}
-              </button>
-                </div>
-            </div>
-          </form>
-
-          {/* 评论列表 */}
-          <div className="space-y-4">
-            {comments.length === 0 ? (
-                <div className="text-center py-12">
-                  <MessageCircle className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500 text-lg">暂无评论，快来发表第一条评论吧！</p>
-                </div>
-            ) : (
-              comments.map((comment) => (
-                  <div key={comment.id} className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-start space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
-                        <User className="w-5 h-5 text-white" />
+            </form>
+            
+            <div className="space-y-4">
+              {comments.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">暂无评论，快来抢沙发吧！</p>
+              ) : (
+                comments.map((comment) => (
+                  <div key={comment.id} className="border-b border-gray-200 pb-4 last:border-b-0">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="font-semibold text-gray-900">{comment.username}</span>
+                      <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                      {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: zhCN })}
+                    </span>
                     </div>
-                    <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <span className="font-semibold text-gray-900">{comment.username}</span>
-                          <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: zhCN })}
-                        </span>
-                      </div>
-                        <p className="text-gray-700 leading-relaxed">{comment.content}</p>
-                    </div>
+                      <p className="text-gray-700 leading-relaxed">{comment.content}</p>
                   </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   )
-} 
+}

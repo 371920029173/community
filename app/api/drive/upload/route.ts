@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { createHash } from 'crypto'
+
+export const runtime = 'edge'
 
 function getFileTypeByName(name: string): string {
   const lower = name.toLowerCase()
@@ -19,8 +20,23 @@ function generateFilePath(originalName: string, userId: string) {
   return `${userId}/${ts}_${safe}${ext}`
 }
 
+// 使用 Web Crypto API 替代 Node.js crypto
+async function createHash(data: ArrayBuffer): Promise<string> {
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const auth = request.headers.get('authorization')
+    if (!auth?.startsWith('Bearer ')) {
+      return NextResponse.json({ success: false, error: '未授权访问' }, { status: 401 })
+    }
+    const token = auth.slice(7)
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
+    if (error || !user) return NextResponse.json({ success: false, error: '认证失败' }, { status: 401 })
+
     const formData = await request.formData()
     const file = formData.get('file') as File | null
     const userId = (formData.get('userId') as string) || ''
@@ -89,7 +105,7 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = await file.arrayBuffer()
-    const hash = createHash('sha256').update(Buffer.from(buffer)).digest('hex')
+    const hash = await createHash(buffer)
 
     // 保存到独立表 drive_files（需要预先存在该表）
     const { data: inserted, error: insErr } = await supabaseAdmin
@@ -128,11 +144,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: e.message || '上传失败' }, { status: 500 })
   }
 }
-
-
-
-
-
-
-
-

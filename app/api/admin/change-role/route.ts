@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
+export const runtime = 'edge'
+
 // 普通管理员发起对其它管理员的角色变更申请，由超级管理员审批
 export async function POST(request: NextRequest) {
   try {

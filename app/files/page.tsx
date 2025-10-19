@@ -34,6 +34,7 @@ export default function FilesPage() {
     used: 0,
     limit: 0
   })
+  const [isUploading, setIsUploading] = useState(false)
 
   // Get user files (cloud drive: drive_files)
   const fetchFiles = async () => {
@@ -48,7 +49,8 @@ export default function FilesPage() {
 
       const response = await fetch('/api/drive/user-files', {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
         }
       })
       if (response.ok) {
@@ -62,15 +64,78 @@ export default function FilesPage() {
           used: totalSize,
           limit: user.storage_limit || 107374182400
         })
+        
+        console.log('云盘文件加载成功:', fileList.length, '个文件')
       } else {
-        console.error('Failed to get files')
-        toast.error('Failed to get files')
+        const errorData = await response.json()
+        console.error('Failed to get files:', errorData)
+        toast.error(errorData.error || '获取文件失败')
       }
     } catch (error) {
       console.error('Failed to get files:', error)
       toast.error('Failed to get files')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Upload file to cloud drive
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !user) return
+
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('userId', user.id) // 添加userId参数
+
+      // 获取当前会话，如果过期则尝试刷新
+      let { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError || !session) {
+        console.log('会话获取失败，尝试刷新:', sessionError)
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+        if (refreshError || !refreshData.session) {
+          console.error('会话刷新失败:', refreshError)
+          toast.error('会话已过期，请重新登录')
+          return
+        }
+        session = refreshData.session
+      }
+
+      console.log('使用认证token上传文件:', session.access_token ? '有效' : '无效')
+
+      const response = await fetch('/api/drive/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: formData
+      })
+
+      console.log('上传响应状态:', response.status)
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          toast.success('文件上传成功')
+          fetchFiles() // 重新加载文件列表
+        } else {
+          toast.error(result.error || '上传失败')
+        }
+      } else {
+        const errorData = await response.json()
+        console.error('上传失败:', errorData)
+        toast.error(errorData.error || '上传失败')
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      toast.error('上传失败')
+    } finally {
+      setIsUploading(false)
+      // 清空文件输入
+      event.target.value = ''
     }
   }
 
@@ -110,7 +175,7 @@ export default function FilesPage() {
   const previewFile = async (file: FileItem) => {
     try {
       // 直接使用文件ID打开预览页面
-      window.open(`/file/${file.id}`, '_blank')
+      window.open(`/drive-file/${file.id}`, '_blank')
     } catch (error) {
       console.error('Error previewing file:', error)
       toast.error('预览失败，请重试')
@@ -369,12 +434,15 @@ export default function FilesPage() {
                   {!searchQuery ? (
                     <>
                       <p className="text-gray-600 mb-6">开始上传您的第一个文件</p>
-                      <button
-                        onClick={() => window.location.href = '/upload'}
-                        className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                      >
-                        上传文件
-                      </button>
+                      <label className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors cursor-pointer inline-block">
+                        {isUploading ? '上传中...' : '上传文件'}
+                        <input
+                          type="file"
+                          onChange={handleFileUpload}
+                          disabled={isUploading}
+                          className="hidden"
+                        />
+                      </label>
                     </>
                   ) : (
                     <p className="text-gray-600">没有找到匹配的文件</p>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+export const runtime = 'edge'
 import { supabase } from '@/lib/supabase'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
@@ -45,9 +46,15 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // 处理文件数据，确保author_name字段存在
+    const processedFiles = (files || []).map((file: any) => ({
+      ...file,
+      author_name: file.author_name || '未知用户'
+    }))
+
     return NextResponse.json({
       success: true,
-      files: files || [],
+      files: processedFiles,
       pagination: {
         page,
         limit,

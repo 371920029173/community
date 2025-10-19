@@ -6,11 +6,15 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 export async function POST(request: NextRequest) {
   try {
-    const { conversationId, otherUserId, content, messageType, receiverId, fileUrl, fileName, fileType, fileSize, mimeType } = await request.json()
+    const body = await request.json()
+    console.log('收到消息发送请求:', body)
+    
+    const { conversationId, otherUserId, content, messageType, receiverId, fileUrl, fileName, fileType, fileSize, mimeType, fileId } = body
 
     // 从请求头获取认证token
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('认证失败: 缺少认证信息')
       return NextResponse.json(
         { success: false, error: '缺少认证信息' },
         { status: 401 }
@@ -32,6 +36,7 @@ export async function POST(request: NextRequest) {
 
     // 验证必需参数
     if (!content && !fileUrl) {
+      console.log('参数验证失败: 缺少消息内容或文件', { content, fileUrl })
       return NextResponse.json(
         { success: false, error: '缺少消息内容或文件' },
         { status: 400 }
@@ -40,6 +45,7 @@ export async function POST(request: NextRequest) {
 
     // 如果没有conversationId，需要otherUserId来创建对话
     if (!conversationId && !otherUserId) {
+      console.log('参数验证失败: 缺少对话ID或用户ID', { conversationId, otherUserId })
       return NextResponse.json(
         { success: false, error: '缺少对话ID或用户ID' },
         { status: 400 }
@@ -49,6 +55,19 @@ export async function POST(request: NextRequest) {
     // 创建或获取对话
     let currentConversationId = conversationId
     let actualReceiverId = receiverId || otherUserId
+
+    console.log('消息发送参数:', {
+      conversationId,
+      otherUserId,
+      receiverId,
+      actualReceiverId,
+      content: content ? '有内容' : '无内容',
+      fileUrl: fileUrl ? '有文件' : '无文件',
+      fileName,
+      fileType,
+      fileSize,
+      mimeType
+    })
 
     if (!currentConversationId) {
       // 校验接收者是否存在
@@ -116,12 +135,21 @@ export async function POST(request: NextRequest) {
 
       // 确定接收者ID
       actualReceiverId = conversation.user1_id === senderId ? conversation.user2_id : conversation.user1_id
+      
+      console.log('从对话获取接收者ID:', {
+        conversationId: currentConversationId,
+        user1_id: conversation.user1_id,
+        user2_id: conversation.user2_id,
+        senderId,
+        actualReceiverId
+      })
     }
 
     // 发送消息 - 支持文件和文本
     const messageData: any = {
       conversation_id: currentConversationId,
       sender_id: senderId,
+      receiver_id: actualReceiverId, // 添加receiver_id字段
       content: content || '',
       message_type: messageType || 'text',
       sent_at: new Date().toISOString(),
@@ -136,7 +164,19 @@ export async function POST(request: NextRequest) {
       messageData.file_type = fileType
       messageData.file_size = fileSize
       messageData.mime_type = mimeType
+      messageData.file_id = fileId // 添加文件ID
+      
+      console.log('添加文件信息到消息:', {
+        file_url: fileUrl,
+        file_name: fileName,
+        file_type: fileType,
+        file_size: fileSize,
+        mime_type: mimeType,
+        file_id: fileId
+      })
     }
+
+    console.log('准备插入的消息数据:', messageData)
 
     const { data: message, error: messageError } = await supabaseAdmin
       .from('messages')

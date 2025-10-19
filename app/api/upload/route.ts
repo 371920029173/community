@@ -124,7 +124,7 @@ async function generateFileName(originalName: string, userId: string): Promise<s
   // 使用 Web Crypto API 替代 Node.js crypto
   const encoder = new TextEncoder()
   const data = encoder.encode(`${originalName}${timestamp}${userId}`)
-  const hashBuffer = await crypto.subtle.digest('MD5', data)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 8)
   
@@ -222,21 +222,17 @@ export async function POST(request: NextRequest) {
       .from('files')
       .insert({
         original_name: file.name,
-        filename: file.name, // 添加filename字段
+        filename: file.name,
         file_path: fileName,
         file_size: file.size,
-        file_type: getFileType(file.name),
         mime_type: file.type,
         file_hash: fileHash,
-        file_url: urlData.publicUrl,
         user_id: userId,
-        author_name: userData?.username || 'Unknown',
-        description: description || '',
         is_public: isPublic,
-        // 分享上传默认待审核，只有在“文件分享上传页”才传 isPublic=true
+        // 分享上传默认待审核，只有在"文件分享上传页"才传 isPublic=true
         is_approved: isPublic ? false : true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        // 直接存储作者名称
+        author_name: userData?.username || '未知用户'
       })
       .select()
       .single()

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
+export const runtime = 'edge'
+
 export async function DELETE(request: NextRequest) {
   try {
     const { fileIds } = await request.json()

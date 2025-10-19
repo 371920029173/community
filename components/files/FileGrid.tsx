@@ -33,17 +33,12 @@ export default function FileGrid() {
             id: '1',
             original_name: '示例文档.pdf',
             filename: '示例文档.pdf',
+            file_path: 'demo/示例文档.pdf',
             user_id: 'demo',
-            author_name: '演示用户',
-            file_type: 'document',
             file_size: 1024000,
-            file_url: '#',
-            description: '这是一个示例文档，用于演示文件分享功能。',
+            mime_type: 'application/pdf',
             is_public: true,
             is_approved: true,
-            likes_count: 5,
-            comments_count: 2,
-            favorites_count: 3,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           },
@@ -51,17 +46,12 @@ export default function FileGrid() {
             id: '2',
             original_name: '示例图片.jpg',
             filename: '示例图片.jpg',
+            file_path: 'demo/示例图片.jpg',
             user_id: 'demo',
-            author_name: '演示用户',
-            file_type: 'image',
             file_size: 2048000,
-            file_url: '#',
-            description: '这是一张示例图片，展示图片文件类型。',
+            mime_type: 'image/jpeg',
             is_public: true,
             is_approved: true,
-            likes_count: 8,
-            comments_count: 1,
-            favorites_count: 4,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           }
@@ -85,17 +75,12 @@ export default function FileGrid() {
             id: '1',
             original_name: '示例文档.pdf',
             filename: '示例文档.pdf',
+            file_path: 'demo/示例文档.pdf',
             user_id: 'demo',
-            author_name: '演示用户',
-            file_type: 'document',
             file_size: 1024000,
-            file_url: '#',
-            description: '这是一个示例文档，用于演示文件分享功能。',
+            mime_type: 'application/pdf',
             is_public: true,
             is_approved: true,
-            likes_count: 5,
-            comments_count: 2,
-            favorites_count: 3,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           }
@@ -111,17 +96,12 @@ export default function FileGrid() {
           id: '1',
           original_name: '示例文档.pdf',
           filename: '示例文档.pdf',
+          file_path: 'demo/示例文档.pdf',
           user_id: 'demo',
-          author_name: '演示用户',
-          file_type: 'document',
           file_size: 1024000,
-          file_url: '#',
-          description: '这是一个示例文档，用于演示文件分享功能。',
+          mime_type: 'application/pdf',
           is_public: true,
           is_approved: true,
-          likes_count: 5,
-          comments_count: 2,
-          favorites_count: 3,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
@@ -137,15 +117,14 @@ export default function FileGrid() {
     // 搜索过滤
     if (searchTerm) {
       filtered = filtered.filter(file =>
-        file.original_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        file.author_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        file.description?.toLowerCase().includes(searchTerm.toLowerCase())
+        file.original_name.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
     // 文件类型过滤
     if (fileTypeFilter !== 'all') {
-      filtered = filtered.filter(file => file.file_type === fileTypeFilter)
+      // 文件类型过滤暂时禁用，因为file_type字段不存在
+      // filtered = filtered.filter(file => file.file_type === fileTypeFilter)
     }
 
     setFilteredFiles(filtered)

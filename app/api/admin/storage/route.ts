@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+
+export const runtime = 'edge'
 import { ensureSuperAdminProtection, getSuperAdminId } from '@/lib/superAdminProtection'
 
 export async function POST(request: NextRequest) {
