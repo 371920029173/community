@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const runtime = 'edge'
 import { supabase } from '@/lib/supabase'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    console.log('收到消息发送请�?', body)
+    console.log('收到消息发送请求:', body)
     
     const { conversationId, otherUserId, content, messageType, receiverId, fileUrl, fileName, fileType, fileSize, mimeType, fileId } = body
 
@@ -22,7 +23,8 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.replace('Bearer ', '')
     
-    // 验证token并获取用户信�?    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    // 验证token并获取用户信息
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) {
       return NextResponse.json(
         { success: false, error: '认证失败' },
@@ -34,14 +36,15 @@ export async function POST(request: NextRequest) {
 
     // 验证必需参数
     if (!content && !fileUrl) {
-      console.log('参数验证失败: 缺少消息内容或文�?, { content, fileUrl })
+      console.log('参数验证失败: 缺少消息内容或文件', { content, fileUrl })
       return NextResponse.json(
-        { success: false, error: '缺少消息内容或文�? },
+        { success: false, error: '缺少消息内容或文件' },
         { status: 400 }
       )
     }
 
-    // 如果没有conversationId，需要otherUserId来创建对�?    if (!conversationId && !otherUserId) {
+    // 如果没有conversationId，需要otherUserId来创建对话
+    if (!conversationId && !otherUserId) {
       console.log('参数验证失败: 缺少对话ID或用户ID', { conversationId, otherUserId })
       return NextResponse.json(
         { success: false, error: '缺少对话ID或用户ID' },
@@ -49,16 +52,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 创建或获取对�?    let currentConversationId = conversationId
+    // 创建或获取对话
+    let currentConversationId = conversationId
     let actualReceiverId = receiverId || otherUserId
 
-    console.log('消息发送参�?', {
+    console.log('消息发送参数:', {
       conversationId,
       otherUserId,
       receiverId,
       actualReceiverId,
-      content: content ? '有内�? : '无内�?,
-      fileUrl: fileUrl ? '有文�? : '无文�?,
+      content: content ? '有内容' : '无内容',
+      fileUrl: fileUrl ? '有文件' : '无文件',
       fileName,
       fileType,
       fileSize,
@@ -66,14 +70,15 @@ export async function POST(request: NextRequest) {
     })
 
     if (!currentConversationId) {
-      // 校验接收者是否存�?      const { data: targetUser, error: targetErr } = await supabaseAdmin
+      // 校验接收者是否存在
+      const { data: targetUser, error: targetErr } = await supabaseAdmin
         .from('users')
         .select('id')
         .eq('id', actualReceiverId)
         .single()
 
       if (targetErr || !targetUser) {
-        return NextResponse.json({ success: false, error: '目标用户不存�? }, { status: 400 })
+        return NextResponse.json({ success: false, error: '目标用户不存在' }, { status: 400 })
       }
       // 先查是否已有双向对话
       const { data: existingConv, error: existErr } = await supabaseAdmin
@@ -85,7 +90,8 @@ export async function POST(request: NextRequest) {
       if (!existErr && existingConv) {
         currentConversationId = existingConv.id
       } else {
-        // 使用规范顺序写入，避免唯一约束冲突（较小的 UUID �?user1�?        const [u1, u2] = senderId < actualReceiverId ? [senderId, actualReceiverId] : [actualReceiverId, senderId]
+        // 使用规范顺序写入，避免唯一约束冲突（较小的 UUID 放 user1）
+        const [u1, u2] = senderId < actualReceiverId ? [senderId, actualReceiverId] : [actualReceiverId, senderId]
 
         const { data: newConversation, error: newConvError } = await supabaseAdmin
           .from('conversations')
@@ -119,9 +125,10 @@ export async function POST(request: NextRequest) {
         throw convError
       }
 
-      // 验证发送者是否在对话�?      if (conversation.user1_id !== senderId && conversation.user2_id !== senderId) {
+      // 验证发送者是否在对话中
+      if (conversation.user1_id !== senderId && conversation.user2_id !== senderId) {
         return NextResponse.json(
-          { success: false, error: '您不是此对话的参与�? },
+          { success: false, error: '您不是此对话的参与者' },
           { status: 403 }
         )
       }
@@ -138,7 +145,8 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // 发送消�?- 支持文件和文�?    const messageData: any = {
+    // 发送消息 - 支持文件和文本
+    const messageData: any = {
       conversation_id: currentConversationId,
       sender_id: senderId,
       receiver_id: actualReceiverId, // 添加receiver_id字段
@@ -158,7 +166,7 @@ export async function POST(request: NextRequest) {
       messageData.mime_type = mimeType
       messageData.file_id = fileId // 添加文件ID
       
-      console.log('添加文件信息到消�?', {
+      console.log('添加文件信息到消息:', {
         file_url: fileUrl,
         file_name: fileName,
         file_type: fileType,
@@ -168,7 +176,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    console.log('准备插入的消息数�?', messageData)
+    console.log('准备插入的消息数据:', messageData)
 
     const { data: message, error: messageError } = await supabaseAdmin
       .from('messages')
@@ -177,11 +185,12 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (messageError) {
-      console.error('发送消息失�?', messageError)
+      console.error('发送消息失败:', messageError)
       throw messageError
     }
 
-    // 更新对话最后消息时�?    await supabaseAdmin
+    // 更新对话最后消息时间
+    await supabaseAdmin
       .from('conversations')
       .update({ 
         last_message_at: new Date().toISOString(),
@@ -189,7 +198,8 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', currentConversationId)
 
-    // 确保返回完整的消息对�?    const fullMessage = {
+    // 确保返回完整的消息对象
+    const fullMessage = {
       id: message.id,
       conversation_id: message.conversation_id,
       sender_id: message.sender_id,
@@ -212,9 +222,9 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('发送消息失�?', error)
+    console.error('发送消息失败:', error)
     return NextResponse.json(
-      { success: false, error: error.message || '发送失�? },
+      { success: false, error: error.message || '发送失败' },
       { status: 500 }
     )
   }

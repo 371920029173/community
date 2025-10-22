@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
@@ -16,7 +17,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 获取对话的消息历�?    const { data: messages, error } = await supabaseAdmin
+    // 获取对话的消息历史
+    const { data: messages, error } = await supabaseAdmin
       .from('messages')
       .select('*')
       .eq('conversation_id', conversationId)

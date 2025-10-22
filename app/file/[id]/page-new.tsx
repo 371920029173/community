@@ -28,15 +28,7 @@ import toast from 'react-hot-toast'
 
 export default function FileDetailPage() {
   const params = useParams()
-  const [fileId, setFileId] = useState<string>('')
-  
-  useEffect(() => {
-    const getFileId = async () => {
-      const resolvedParams = await params
-      setFileId(resolvedParams.id as string)
-    }
-    getFileId()
-  }, [params])
+  const fileId = params.id as string
   const { user, loading: authLoading } = useAuth()
   
   const [file, setFile] = useState<FileItem | null>(null)

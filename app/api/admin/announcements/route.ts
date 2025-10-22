@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
+export const runtime = 'edge'
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,13 +34,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 创建公告 - 使用更通用的列�?    const { data: announcement, error: createError } = await supabaseAdmin
+    // 创建公告 - 使用更通用的列名
+    const { data: announcement, error: createError } = await supabaseAdmin
       .from('announcements')
       .insert({
         title,
         content,
         type: type || 'info',
-        user_id: authorId,  // 使用 user_id 而不�?author_id
+        user_id: authorId,  // 使用 user_id 而不是 author_id
         author_name: authorName || '系统',
         is_active: isActive !== false,
         expires_at: expiresAt || null

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const runtime = 'edge'
 import { supabase } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
@@ -8,7 +9,7 @@ export async function POST(request: NextRequest) {
 
     if (!query || query.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: '搜索关键词不能为�? },
+        { success: false, error: '搜索关键词不能为空' },
         { status: 400 }
       )
     }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+export const runtime = 'edge'
 import { supabase } from '@/lib/supabase'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
@@ -14,7 +15,8 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit
 
     // 构建查询条件
-    // 使用管理端绕过RLS，保证可取到作者id等信�?    let query = supabaseAdmin
+    // 使用管理端绕过RLS，保证可取到作者id等信息
+    let query = supabaseAdmin
       .from('files')
       .select('*')
       .eq('is_public', true)
@@ -26,7 +28,8 @@ export async function GET(request: NextRequest) {
       query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
     }
 
-    // 添加类型筛�?    if (type && type !== 'all') {
+    // 添加类型筛选
+    if (type && type !== 'all') {
       query = query.eq('file_type', type)
     }
 
@@ -63,7 +66,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Public files API error:', error)
     return NextResponse.json(
-      { success: false, error: error.message || '服务器错�? },
+      { success: false, error: error.message || '服务器错误' },
       { status: 500 }
     )
   }

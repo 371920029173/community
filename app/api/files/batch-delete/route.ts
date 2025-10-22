@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
+export const runtime = 'edge'
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -17,17 +18,18 @@ export async function DELETE(request: NextRequest) {
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { success: false, error: '未授权访�? },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       )
     }
 
     const token = authHeader.substring(7)
     
-    // 验证token并获取用户信�?    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    // 验证token并获取用户信息
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) {
       return NextResponse.json(
-        { success: false, error: '无效的认证令�? },
+        { success: false, error: '无效的认证令牌' },
         { status: 401 }
       )
     }
@@ -48,18 +50,21 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // 从存储桶中删除文�?    const filePaths = files.map(f => f.file_path).filter(Boolean)
+    // 从存储桶中删除文件
+    const filePaths = files.map(f => f.file_path).filter(Boolean)
     if (filePaths.length > 0) {
       const { error: storageError } = await supabase.storage
         .from('files')
         .remove(filePaths)
 
       if (storageError) {
-        console.error('存储桶删除失�?', storageError)
-        // 继续删除数据库记录，即使存储桶删除失�?      }
+        console.error('存储桶删除失败:', storageError)
+        // 继续删除数据库记录，即使存储桶删除失败
+      }
     }
 
-    // 删除数据库记�?    const { error: deleteError } = await supabase
+    // 删除数据库记录
+    const { error: deleteError } = await supabase
       .from('files')
       .delete()
       .eq('user_id', user.id)
@@ -67,7 +72,8 @@ export async function DELETE(request: NextRequest) {
 
     if (deleteError) throw deleteError
 
-    // 更新用户存储使用�?    const totalDeletedSize = files.reduce((sum, file) => sum + (file.file_size || 0), 0)
+    // 更新用户存储使用量
+    const totalDeletedSize = files.reduce((sum, file) => sum + (file.file_size || 0), 0)
     if (totalDeletedSize > 0) {
       const { data: userData } = await supabase
         .from('users')

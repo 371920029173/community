@@ -1,30 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 import { supabase } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
-    // 从请求头获取用户ID（实际应用中应该从JWT token获取�?    const authHeader = request.headers.get('authorization')
+    // 从请求头获取用户ID（实际应用中应该从JWT token获取）
+    const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { success: false, error: '未授权访�? },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       )
     }
 
     const token = authHeader.substring(7)
     
-    // 验证token并获取用户信�?    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    // 验证token并获取用户信息
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) {
       return NextResponse.json(
-        { success: false, error: '无效的认证令�? },
+        { success: false, error: '无效的认证令牌' },
         { status: 401 }
       )
     }
 
-    // 获取用户的文�?    const { data: files, error } = await supabase
+    // 获取用户的文件
+    const { data: files, error } = await supabase
       .from('files')
       .select('*')
       .eq('user_id', user.id)

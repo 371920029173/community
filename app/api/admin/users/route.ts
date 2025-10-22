@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const runtime = 'edge'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { ensureSuperAdminProtection, getSuperAdminId } from '@/lib/superAdminProtection'
 
@@ -14,7 +15,8 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    // 验证管理员权�?    const { data: adminData, error: adminError } = await supabaseAdmin
+    // 验证管理员权限
+    const { data: adminData, error: adminError } = await supabaseAdmin
       .from('users')
       .select('is_admin')
       .eq('id', adminId)
@@ -27,7 +29,8 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    // 验证字段�?    if (!['is_admin', 'is_moderator'].includes(field)) {
+    // 验证字段名
+    if (!['is_admin', 'is_moderator'].includes(field)) {
       return NextResponse.json(
         { success: false, error: '无效的字段名' },
         { status: 400 }
@@ -51,11 +54,12 @@ export async function PATCH(request: NextRequest) {
         )
       }
 
-      // 如果�?71920029173账号，拒绝任何权限修�?      if (targetUser.username === '371920029173') {
+      // 如果是371920029173账号，拒绝任何权限修改
+      if (targetUser.username === '371920029173') {
         return NextResponse.json(
           { 
             success: false, 
-            error: '无法修改超级管理员账号的权限，该账号权限受保�? 
+            error: '无法修改超级管理员账号的权限，该账号权限受保护' 
           },
           { status: 403 }
         )
@@ -101,7 +105,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 验证管理员权�?    const { data: adminData, error: adminError } = await supabaseAdmin
+    // 验证管理员权限
+    const { data: adminData, error: adminError } = await supabaseAdmin
       .from('users')
       .select('is_admin')
       .eq('id', adminId)
@@ -114,12 +119,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 确保超级管理员权限正�?    const protectionResult = await ensureSuperAdminProtection()
+    // 确保超级管理员权限正常
+    const protectionResult = await ensureSuperAdminProtection()
     if (!protectionResult.success) {
-      console.error('超级管理员保护检查失�?', protectionResult.error)
+      console.error('超级管理员保护检查失败:', protectionResult.error)
     }
 
-    // 获取所有用�?    const { data: users, error: usersError } = await supabaseAdmin
+    // 获取所有用户
+    const { data: users, error: usersError } = await supabaseAdmin
       .from('users')
       .select('*')
       .order('created_at', { ascending: false })

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const runtime = 'edge'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { getSuperAdminId } from '@/lib/superAdminProtection'
 
@@ -15,7 +16,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 验证管理员权�?    const { data: adminData, error: adminError } = await supabaseAdmin
+    // 验证管理员权限
+    const { data: adminData, error: adminError } = await supabaseAdmin
       .from('users')
       .select('is_admin, username')
       .eq('id', adminId)
@@ -23,12 +25,13 @@ export async function POST(request: NextRequest) {
 
     if (adminError || !adminData || !adminData.is_admin) {
       return NextResponse.json(
-        { success: false, error: '权限不足，只有管理员可以执行此操�? },
+        { success: false, error: '权限不足，只有管理员可以执行此操作' },
         { status: 403 }
       )
     }
 
-    // 检查是否是超级管理�?    const superAdminId = await getSuperAdminId()
+    // 检查是否是超级管理员
+    const superAdminId = await getSuperAdminId()
     if (adminId === superAdminId) {
       return NextResponse.json(
         { success: false, error: '超级管理员无需审核，请使用直接修改功能' },
@@ -45,16 +48,17 @@ export async function POST(request: NextRequest) {
 
     if (targetUserError || !targetUserData) {
       return NextResponse.json(
-        { success: false, error: '目标用户不存�? },
+        { success: false, error: '目标用户不存在' },
         { status: 404 }
       )
     }
 
-    // 检查是否尝试修改超级管理员的存储空�?    if (targetUserData.username === '371920029173') {
+    // 检查是否尝试修改超级管理员的存储空间
+    if (targetUserData.username === '371920029173') {
       return NextResponse.json(
         { 
           success: false, 
-          error: '无法修改超级管理员账号的存储空间，该账号存储空间受保�? 
+          error: '无法修改超级管理员账号的存储空间，该账号存储空间受保护' 
         },
         { status: 403 }
       )
@@ -65,7 +69,7 @@ export async function POST(request: NextRequest) {
     // 检查新限制是否合理
     if (newLimit < targetUserData.storage_used) {
       return NextResponse.json(
-        { success: false, error: '新存储限制不能小于已使用的存储空�? },
+        { success: false, error: '新存储限制不能小于已使用的存储空间' },
         { status: 400 }
       )
     }
@@ -78,19 +82,20 @@ export async function POST(request: NextRequest) {
         target_user_id: targetUserId,
         old_limit: oldLimit,
         new_limit: newLimit,
-        reason: reason || '管理员申请修改存储空�?,
+        reason: reason || '管理员申请修改存储空间',
         status: 'pending'
       })
       .select()
       .single()
 
     if (requestError) {
-      // 检查是否是表不存在的错�?      if (requestError.message.includes('Could not find the table') || 
+      // 检查是否是表不存在的错误
+      if (requestError.message.includes('Could not find the table') || 
           requestError.message.includes('storage_modification_requests')) {
         return NextResponse.json(
           { 
             success: false, 
-            error: '存储空间修改审核表不存在，请先在Supabase中执�?create-storage-approval-simple.sql 脚本',
+            error: '存储空间修改审核表不存在，请先在Supabase中执行 create-storage-approval-simple.sql 脚本',
             needsSetup: true
           },
           { status: 500 }
@@ -105,7 +110,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: '存储空间修改请求已提交，等待超级管理员审�?,
+      message: '存储空间修改请求已提交，等待超级管理员审核',
       data: {
         requestId: requestData.id,
         targetUser: targetUserData.username,
@@ -136,7 +141,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 验证管理员权�?    const { data: adminData, error: adminError } = await supabaseAdmin
+    // 验证管理员权限
+    const { data: adminData, error: adminError } = await supabaseAdmin
       .from('users')
       .select('is_admin, username')
       .eq('id', adminId)
@@ -149,7 +155,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 检查是否是超级管理�?    const superAdminId = await getSuperAdminId()
+    // 检查是否是超级管理员
+    const superAdminId = await getSuperAdminId()
     const isSuperAdmin = adminId === superAdminId
 
     let query = supabaseAdmin
@@ -162,19 +169,21 @@ export async function GET(request: NextRequest) {
       `)
       .order('created_at', { ascending: false })
 
-    // 如果不是超级管理员，只能看到自己的请�?    if (!isSuperAdmin) {
+    // 如果不是超级管理员，只能看到自己的请求
+    if (!isSuperAdmin) {
       query = query.eq('requester_id', adminId)
     }
 
     const { data: requests, error: requestsError } = await query
 
     if (requestsError) {
-      // 检查是否是表不存在的错�?      if (requestsError.message.includes('Could not find the table') || 
+      // 检查是否是表不存在的错误
+      if (requestsError.message.includes('Could not find the table') || 
           requestsError.message.includes('storage_modification_requests')) {
         return NextResponse.json(
           { 
             success: false, 
-            error: '存储空间修改审核表不存在，请先在Supabase中执�?create-storage-approval-simple.sql 脚本',
+            error: '存储空间修改审核表不存在，请先在Supabase中执行 create-storage-approval-simple.sql 脚本',
             needsSetup: true
           },
           { status: 500 }

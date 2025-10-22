@@ -51,8 +51,8 @@ export default function FileDetailPage() {
     if (fileId && !authLoading) {
       // 添加延迟，避免权限检查闪烁
       const timer = setTimeout(() => {
-        fetchFileDetails()
-        fetchComments()
+      fetchFileDetails()
+      fetchComments()
       }, 100)
       
       return () => clearTimeout(timer)

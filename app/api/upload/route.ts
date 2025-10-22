@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
-// import { createHash } from 'crypto' // Edge Runtime 不支�?Node.js crypto
+// import { createHash } from 'crypto' // Edge Runtime 不支持 Node.js crypto
 
+export const runtime = 'edge'
 
 // 文件配置
 const FILE_CONFIG = {
@@ -21,7 +22,8 @@ const FILE_CONFIG = {
 
 // 速率限制配置
 const RATE_LIMIT = {
-  maxUploads: 50, // 每分钟最�?0个文�?  maxSizePerMinute: 10 * 1024 * 1024 * 1024 // 每分钟最�?0GB
+  maxUploads: 50, // 每分钟最多50个文件
+  maxSizePerMinute: 10 * 1024 * 1024 * 1024 // 每分钟最多10GB
 }
 
 // 速率限制存储
@@ -42,18 +44,21 @@ const checkRateLimit = (clientIP: string, fileSize: number) => {
   
   const userLimit = RATE_LIMIT_STORE[clientIP]
   
-  // 重置计数�?  if (now - userLimit.lastReset > windowMs) {
+  // 重置计数器
+  if (now - userLimit.lastReset > windowMs) {
     userLimit.uploads = []
     userLimit.totalSize = 0
     userLimit.lastReset = now
   }
   
-  // 检查上传次数限�?  if (userLimit.uploads.length >= RATE_LIMIT.maxUploads) {
+  // 检查上传次数限制
+  if (userLimit.uploads.length >= RATE_LIMIT.maxUploads) {
     return { allowed: false, error: '上传次数过多，请稍后再试' }
   }
   
-  // 检查总大小限�?  if (userLimit.totalSize + fileSize > RATE_LIMIT.maxSizePerMinute) {
-    return { allowed: false, error: '上传总大小超限，请稍后再�? }
+  // 检查总大小限制
+  if (userLimit.totalSize + fileSize > RATE_LIMIT.maxSizePerMinute) {
+    return { allowed: false, error: '上传总大小超限，请稍后再试' }
   }
   
   // 记录本次上传
@@ -65,11 +70,11 @@ const checkRateLimit = (clientIP: string, fileSize: number) => {
 
 // 验证文件
 const validateFile = (file: File) => {
-  // 检查文件大�?- 拒绝 0B 文件
+  // 检查文件大小 - 拒绝 0B 文件
   if (file.size === 0) {
     return { 
       valid: false, 
-      error: '不能上传空文�?(0字节)' 
+      error: '不能上传空文件 (0字节)' 
     }
   }
   
@@ -80,7 +85,8 @@ const validateFile = (file: File) => {
     }
   }
   
-  // 检查文件类�?  const isValidType = Object.values(FILE_CONFIG.allowedTypes).flat().some(mimeType => {
+  // 检查文件类型
+  const isValidType = Object.values(FILE_CONFIG.allowedTypes).flat().some(mimeType => {
     if (mimeType.endsWith('/*')) {
       const baseType = mimeType.replace('/*', '')
       return file.type.startsWith(baseType)
@@ -101,7 +107,8 @@ const validateFile = (file: File) => {
 function getFileType(fileName: string): string {
   const ext = fileName.split('.').pop()?.toLowerCase() || ''
   
-  // 根据扩展名判断文件类�?  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'image'
+  // 根据扩展名判断文件类型
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'image'
   if (['mp4', 'avi', 'mov', 'wmv', 'flv'].includes(ext)) return 'video'
   if (['mp3', 'wav', 'flac', 'aac', 'ogg'].includes(ext)) return 'audio'
   if (['pdf', 'doc', 'docx', 'txt'].includes(ext)) return 'document'
@@ -162,13 +169,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 检查用户存储配额（使用服务端，避免RLS�?    const { data: userData, error: userError } = await supabaseAdmin
+    // 检查用户存储配额（使用服务端，避免RLS）
+    const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .select('storage_used, storage_limit, username')
       .eq('id', userId)
       .single()
 
-    // 若未找到用户资料，放行上传但跳过配额校验与统计更�?    const allowWithoutProfile = !!userError || !userData
+    // 若未找到用户资料，放行上传但跳过配额校验与统计更新
+    const allowWithoutProfile = !!userError || !userData
 
     if (!allowWithoutProfile && userData.storage_used + file.size > userData.storage_limit) {
       return NextResponse.json(
@@ -177,9 +186,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 生成文件�?    const fileName = await generateFileName(file.name, userId)
+    // 生成文件名
+    const fileName = await generateFileName(file.name, userId)
 
-    // 根据文件类型选择存储�?    const bucketName = isPublic ? 'files' : 'files'
+    // 根据文件类型选择存储桶
+    const bucketName = isPublic ? 'files' : 'files'
 
     // 上传文件到Supabase Storage
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
@@ -218,9 +229,10 @@ export async function POST(request: NextRequest) {
         file_hash: fileHash,
         user_id: userId,
         is_public: isPublic,
-        // 分享上传默认待审核，只有�?文件分享上传�?才传 isPublic=true
+        // 分享上传默认待审核，只有在"文件分享上传页"才传 isPublic=true
         is_approved: isPublic ? false : true,
-        // 直接存储作者名�?        author_name: userData?.username || '未知用户'
+        // 直接存储作者名称
+        author_name: userData?.username || '未知用户'
       })
       .select()
       .single()
@@ -264,7 +276,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 健康检查端�?export async function GET() {
+// 健康检查端点
+export async function GET() {
   return NextResponse.json({
     success: true,
     message: '文件上传服务运行正常',
