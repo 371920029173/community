@@ -23,7 +23,15 @@ import toast from 'react-hot-toast'
 
 export default function FileViewPage() {
   const params = useParams()
-  const fileId = params.id as string
+  const [fileId, setFileId] = useState<string>('')
+  
+  useEffect(() => {
+    const getFileId = async () => {
+      const resolvedParams = await params
+      setFileId(resolvedParams.id as string)
+    }
+    getFileId()
+  }, [params])
   
   const [file, setFile] = useState<FileItem | null>(null)
   const [loading, setLoading] = useState(true)
