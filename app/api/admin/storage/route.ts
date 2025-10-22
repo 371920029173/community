@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
-export const runtime = 'edge'
 import { ensureSuperAdminProtection, getSuperAdminId } from '@/lib/superAdminProtection'
 
 export async function POST(request: NextRequest) {
@@ -15,8 +14,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 验证管理员权限
-    const { data: adminData, error: adminError } = await supabaseAdmin
+    // 验证管理员权�?    const { data: adminData, error: adminError } = await supabaseAdmin
       .from('users')
       .select('is_admin')
       .eq('id', adminId)
@@ -24,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     if (adminError || !adminData || !adminData.is_admin) {
       return NextResponse.json(
-        { success: false, error: '权限不足，只有管理员可以执行此操作' },
+        { success: false, error: '权限不足，只有管理员可以执行此操�? },
         { status: 403 }
       )
     }
@@ -38,17 +36,16 @@ export async function POST(request: NextRequest) {
 
     if (targetUserError || !targetUserData) {
       return NextResponse.json(
-        { success: false, error: '目标用户不存在' },
+        { success: false, error: '目标用户不存�? },
         { status: 404 }
       )
     }
 
-    // 检查是否尝试修改超级管理员的存储空间
-    if (targetUserData.username === '371920029173') {
+    // 检查是否尝试修改超级管理员的存储空�?    if (targetUserData.username === '371920029173') {
       return NextResponse.json(
         { 
           success: false, 
-          error: '无法修改超级管理员账号的存储空间，该账号存储空间受保护' 
+          error: '无法修改超级管理员账号的存储空间，该账号存储空间受保�? 
         },
         { status: 403 }
       )
@@ -59,7 +56,7 @@ export async function POST(request: NextRequest) {
     // 检查新限制是否合理
     if (newLimit < targetUserData.storage_used) {
       return NextResponse.json(
-        { success: false, error: '新存储限制不能小于已使用的存储空间' },
+        { success: false, error: '新存储限制不能小于已使用的存储空�? },
         { status: 400 }
       )
     }
@@ -86,7 +83,7 @@ export async function POST(request: NextRequest) {
         action: 'set_storage',
         old_limit: oldLimit,
         new_limit: newLimit,
-        reason: reason || '管理员手动调整'
+        reason: reason || '管理员手动调�?
       })
 
     if (logError) {
@@ -124,8 +121,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 验证管理员权限
-    const { data: adminData, error: adminError } = await supabaseAdmin
+    // 验证管理员权�?    const { data: adminData, error: adminError } = await supabaseAdmin
       .from('users')
       .select('is_admin')
       .eq('id', adminId)
@@ -138,10 +134,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 确保超级管理员权限正常
-    const protectionResult = await ensureSuperAdminProtection()
+    // 确保超级管理员权限正�?    const protectionResult = await ensureSuperAdminProtection()
     if (!protectionResult.success) {
-      console.error('超级管理员保护检查失败:', protectionResult.error)
+      console.error('超级管理员保护检查失�?', protectionResult.error)
     }
 
     // 获取所有用户的存储使用情况
@@ -157,8 +152,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 获取存储管理日志 - 如果表不存在则跳过
-    let logs = []
+    // 获取存储管理日志 - 如果表不存在则跳�?    let logs = []
     try {
       const { data: logsData, error: logsError } = await supabaseAdmin
         .from('storage_management_logs')

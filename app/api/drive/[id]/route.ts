@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
-export const runtime = 'edge'
 
 // 删除/重命名/获取签名链接
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

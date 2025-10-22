@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
-export const runtime = 'edge'
 
 export async function POST(request: NextRequest) {
   try {
-    // 检查认证
-    const auth = request.headers.get('authorization')
+    // 检查认�?    const auth = request.headers.get('authorization')
     if (!auth?.startsWith('Bearer ')) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: '未授权访�? },
         { status: 401 }
       )
     }
@@ -23,8 +21,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 检查用户是否为管理员
-    const { data: userProfile } = await supabaseAdmin
+    // 检查用户是否为管理�?    const { data: userProfile } = await supabaseAdmin
       .from('users')
       .select('is_admin, is_moderator')
       .eq('id', user.id)
@@ -49,17 +46,16 @@ export async function POST(request: NextRequest) {
     console.log('文件审核API调用:', { fileId, approved, userId: user.id })
 
     if (approved) {
-      // 审核通过：更新文件状态
-      const { data: updateResult, error } = await supabaseAdmin
+      // 审核通过：更新文件状�?      const { data: updateResult, error } = await supabaseAdmin
         .from('files')
         .update({ is_approved: true })
         .eq('id', fileId)
         .select()
 
       if (error) {
-        console.error('数据库更新失败:', error)
+        console.error('数据库更新失�?', error)
         return NextResponse.json(
-          { success: false, error: '数据库更新失败' },
+          { success: false, error: '数据库更新失�? },
           { status: 500 }
         )
       }
@@ -71,8 +67,7 @@ export async function POST(request: NextRequest) {
         data: updateResult?.[0]
       })
     } else {
-      // 审核拒绝：直接删除文件
-      const { error: deleteError } = await supabaseAdmin
+      // 审核拒绝：直接删除文�?      const { error: deleteError } = await supabaseAdmin
         .from('files')
         .delete()
         .eq('id', fileId)
@@ -96,7 +91,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('文件审核API错误:', error)
     return NextResponse.json(
-      { success: false, error: '服务器内部错误' },
+      { success: false, error: '服务器内部错�? },
       { status: 500 }
     )
   }

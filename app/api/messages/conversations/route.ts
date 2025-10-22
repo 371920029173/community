@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 import { supabase } from '@/lib/supabase'
@@ -12,25 +11,24 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: '未授权访�? },
         { status: 401 }
       )
     }
 
     const token = authHeader.substring(7)
     
-    // 验证token并获取用户信息
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    // 验证token并获取用户信�?    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) {
       return NextResponse.json(
-        { success: false, error: '无效的认证令牌' },
+        { success: false, error: '无效的认证令�? },
         { status: 401 }
       )
     }
 
     const userId = user.id
 
-    // 获取用户的对话列表 - 使用简单的查询，不依赖外键约束名称
+    // 获取用户的对话列�?- 使用简单的查询，不依赖外键约束名称
     const { data: conversations, error } = await supabaseAdmin
       .from('conversations')
       .select(`
@@ -50,8 +48,7 @@ export async function GET(request: NextRequest) {
       throw error
     }
 
-    // 获取对话中的用户信息和最后消息
-    const processedConversations = []
+    // 获取对话中的用户信息和最后消�?    const processedConversations = []
     
     for (const conv of conversations || []) {
       try {
@@ -68,8 +65,7 @@ export async function GET(request: NextRequest) {
           continue
         }
 
-        // 获取最后一条消息
-        const { data: lastMessage, error: msgError } = await supabaseAdmin
+        // 获取最后一条消�?        const { data: lastMessage, error: msgError } = await supabaseAdmin
           .from('messages')
           .select('content, sent_at')
           .eq('conversation_id', conv.id)
@@ -78,13 +74,12 @@ export async function GET(request: NextRequest) {
           .single()
 
         if (msgError && msgError.code !== 'PGRST116') { // PGRST116 = no rows returned
-          console.error(`获取对话 ${conv.id} 最后消息失败:`, msgError)
+          console.error(`获取对话 ${conv.id} 最后消息失�?`, msgError)
         }
 
-        // 确保显示的是其他用户的用户名，而不是当前用户
-        const displayUsername = otherUser.nickname || otherUser.username || 'Unknown'
+        // 确保显示的是其他用户的用户名，而不是当前用�?        const displayUsername = otherUser.nickname || otherUser.username || 'Unknown'
         
-        console.log(`对话 ${conv.id} 的用户信息:`, {
+        console.log(`对话 ${conv.id} 的用户信�?`, {
           currentUserId: userId,
           otherUserId: otherUserId,
           otherUserData: otherUser,
@@ -130,18 +125,17 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: '未授权访�? },
         { status: 401 }
       )
     }
 
     const token = authHeader.substring(7)
     
-    // 验证token并获取用户信息
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    // 验证token并获取用户信�?    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) {
       return NextResponse.json(
-        { success: false, error: '无效的认证令牌' },
+        { success: false, error: '无效的认证令�? },
         { status: 401 }
       )
     }
@@ -157,19 +151,17 @@ export async function POST(request: NextRequest) {
 
     const senderId = user.id
 
-    // 校验接收者是否存在
-    const { data: targetUser, error: targetErr } = await supabaseAdmin
+    // 校验接收者是否存�?    const { data: targetUser, error: targetErr } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('id', otherUserId)
       .single()
 
     if (targetErr || !targetUser) {
-      return NextResponse.json({ success: false, error: '目标用户不存在' }, { status: 400 })
+      return NextResponse.json({ success: false, error: '目标用户不存�? }, { status: 400 })
     }
 
-    // 检查是否已有对话
-    const { data: existingConv, error: existErr } = await supabaseAdmin
+    // 检查是否已有对�?    const { data: existingConv, error: existErr } = await supabaseAdmin
       .from('conversations')
       .select('id, user1_id, user2_id')
       .or(`and(user1_id.eq.${senderId},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${senderId})`)
@@ -180,12 +172,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         conversation: existingConv,
-        message: '对话已存在'
+        message: '对话已存�?
       })
     }
 
-    // 创建新对话
-    const [u1, u2] = senderId < otherUserId ? [senderId, otherUserId] : [otherUserId, senderId]
+    // 创建新对�?    const [u1, u2] = senderId < otherUserId ? [senderId, otherUserId] : [otherUserId, senderId]
 
     const { data: newConversation, error: newConvError } = await supabaseAdmin
       .from('conversations')

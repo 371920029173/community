@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export const runtime = 'edge'
 import { supabase } from '@/lib/supabase'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
@@ -9,7 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ success: false, error: '未认证' }, { status: 401 })
+      return NextResponse.json({ success: false, error: '未认�? }, { status: 401 })
     }
     const token = authHeader.replace('Bearer ', '')
     const { data: { user } } = await supabase.auth.getUser(token)
@@ -33,11 +32,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 审核员/管理员审批
-export async function PUT(request: NextRequest) {
+// 审核�?管理员审�?export async function PUT(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) return NextResponse.json({ success: false, error: '未认证' }, { status: 401 })
+    if (!authHeader?.startsWith('Bearer ')) return NextResponse.json({ success: false, error: '未认�? }, { status: 401 })
     const token = authHeader.replace('Bearer ', '')
     const { data: { user } } = await supabase.auth.getUser(token)
     if (!user) return NextResponse.json({ success: false, error: '认证失败' }, { status: 401 })

@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-export const runtime = 'edge'
 
 // 普通管理员发起对其它管理员的角色变更申请，由超级管理员审批
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) return NextResponse.json({ success: false, error: '未认证' }, { status: 401 })
+    if (!authHeader?.startsWith('Bearer ')) return NextResponse.json({ success: false, error: '未认�? }, { status: 401 })
     const token = authHeader.replace('Bearer ', '')
     const { data: { user } } = await supabase.auth.getUser(token)
     if (!user) return NextResponse.json({ success: false, error: '认证失败' }, { status: 401 })
@@ -25,22 +24,20 @@ export async function POST(request: NextRequest) {
     if (error) throw error
     return NextResponse.json({ success: true, data })
   } catch (e: any) {
-    console.error('提交管理员变更申请失败:', e)
+    console.error('提交管理员变更申请失�?', e)
     return NextResponse.json({ success: false, error: e.message || '提交失败' }, { status: 500 })
   }
 }
 
-// 超级管理员审批
-export async function PUT(request: NextRequest) {
+// 超级管理员审�?export async function PUT(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) return NextResponse.json({ success: false, error: '未认证' }, { status: 401 })
+    if (!authHeader?.startsWith('Bearer ')) return NextResponse.json({ success: false, error: '未认�? }, { status: 401 })
     const token = authHeader.replace('Bearer ', '')
     const { data: { user } } = await supabase.auth.getUser(token)
     if (!user) return NextResponse.json({ success: false, error: '认证失败' }, { status: 401 })
 
-    // 简化：用户名为超级管理员账号
-    const { data: me } = await supabase.from('users').select('username').eq('id', user.id).single()
+    // 简化：用户名为超级管理员账�?    const { data: me } = await supabase.from('users').select('username').eq('id', user.id).single()
     if (me?.username !== '371920029173') return NextResponse.json({ success: false, error: '只有超级管理员可审批' }, { status: 403 })
 
     const { id, approve } = await request.json()
@@ -62,7 +59,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: updated })
   } catch (e: any) {
-    console.error('审批管理员变更失败:', e)
+    console.error('审批管理员变更失�?', e)
     return NextResponse.json({ success: false, error: e.message || '审批失败' }, { status: 500 })
   }
 }

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { ensureSuperAdminProtection } from '@/lib/superAdminProtection'
 
-export const runtime = 'edge'
 
 // 获取用户通知数量
 export async function GET(request: NextRequest) {
@@ -17,8 +16,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 确保超级管理员保护
-    await ensureSuperAdminProtection()
+    // 确保超级管理员保�?    await ensureSuperAdminProtection()
 
     // 获取用户信息
     const { data: user, error: userError } = await supabaseAdmin
@@ -29,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     if (userError || !user) {
       return NextResponse.json(
-        { success: false, error: '用户不存在' },
+        { success: false, error: '用户不存�? },
         { status: 404 }
       )
     }
@@ -55,8 +53,7 @@ export async function GET(request: NextRequest) {
       console.log('获取私信通知失败:', error)
     }
 
-    // 2. 获取待审核文件数量（仅管理员和审核员）
-    if (user.is_admin || user.is_moderator) {
+    // 2. 获取待审核文件数量（仅管理员和审核员�?    if (user.is_admin || user.is_moderator) {
       try {
         const { data: pendingFiles, error: filesError } = await supabaseAdmin
           .from('files')

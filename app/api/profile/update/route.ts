@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export const runtime = 'edge'
 import { supabase } from '@/lib/supabase'
 
 export async function PUT(request: NextRequest) {
@@ -16,7 +15,7 @@ export async function PUT(request: NextRequest) {
 
     const token = authHeader.replace('Bearer ', '')
     
-    // 验证token并获取用户信息
+    // 验证token并获取用户信�?
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) {
       return NextResponse.json(
@@ -30,14 +29,14 @@ export async function PUT(request: NextRequest) {
     // 验证输入
     if (!username || username.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: '用户名不能为空' },
+        { success: false, error: '用户名不能为�? },
         { status: 400 }
       )
     }
 
     if (username.trim().length < 2) {
       return NextResponse.json(
-        { success: false, error: '用户名至少需要2个字符' },
+        { success: false, error: '用户名至少需�?个字�? },
         { status: 400 }
       )
     }
@@ -52,7 +51,7 @@ export async function PUT(request: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json(
-        { success: false, error: '用户名已被使用' },
+        { success: false, error: '用户名已被使�? },
         { status: 400 }
       )
     }

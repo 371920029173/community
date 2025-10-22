@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export const runtime = 'edge'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 // 幂等创建/补建用户资料（强唯一策略）：
-// - 若 id 已存在：更新基础字段返回
-// - 若 username/email 与其他用户冲突：直接 409，不自动加后缀
+// - �?id 已存在：更新基础字段返回
+// - �?username/email 与其他用户冲突：直接 409，不自动加后缀
 export async function POST(request: NextRequest) {
   try {
     const { userId, username, email, isInitialAdmin } = await request.json()
@@ -37,8 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, data: updateRes.data })
     }
 
-    // 检查用户名/邮箱是否被其他用户占用
-    const dupCheck = await supabaseAdmin
+    // 检查用户名/邮箱是否被其他用户占�?    const dupCheck = await supabaseAdmin
       .from('users')
       .select('id')
       .or(`username.eq.${username},email.eq.${email}`)
@@ -46,11 +44,10 @@ export async function POST(request: NextRequest) {
       .limit(1)
 
     if (dupCheck.data && dupCheck.data.length > 0) {
-      return NextResponse.json({ success: false, error: '用户名或邮箱已存在' }, { status: 409 })
+      return NextResponse.json({ success: false, error: '用户名或邮箱已存�? }, { status: 409 })
     }
 
-    // 插入新资料
-    const insertRes = await supabaseAdmin
+    // 插入新资�?    const insertRes = await supabaseAdmin
       .from('users')
       .insert({
         id: userId,
@@ -69,7 +66,7 @@ export async function POST(request: NextRequest) {
     if (insertRes.error) {
       const err = insertRes.error
       if (err.code === '23505') {
-        return NextResponse.json({ success: false, error: '用户名或邮箱已存在' }, { status: 409 })
+        return NextResponse.json({ success: false, error: '用户名或邮箱已存�? }, { status: 409 })
       }
       return NextResponse.json({ success: false, error: err.message }, { status: 500 })
     }

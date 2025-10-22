@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
-export const runtime = 'edge'
 
 function getFileTypeByName(name: string): string {
   const lower = name.toLowerCase()
@@ -31,7 +30,7 @@ export async function POST(request: NextRequest) {
   try {
     const auth = request.headers.get('authorization')
     if (!auth?.startsWith('Bearer ')) {
-      return NextResponse.json({ success: false, error: '未授权访问' }, { status: 401 })
+      return NextResponse.json({ success: false, error: '未授权访�? }, { status: 401 })
     }
     const token = auth.slice(7)
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
@@ -53,7 +52,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (userErr || !userProfile) {
-      return NextResponse.json({ success: false, error: '用户不存在' }, { status: 400 })
+      return NextResponse.json({ success: false, error: '用户不存�? }, { status: 400 })
     }
 
     // 存储配额校验
@@ -81,22 +80,21 @@ export async function POST(request: NextRequest) {
       if (msg.includes('not found') || msg.includes('bucket') || msg.includes('does not exist')) {
         // 尝试自动创建bucket
         try {
-          // @ts-ignore createBucket 存在于 storage-js
+          // @ts-ignore createBucket 存在�?storage-js
           await (supabaseAdmin as any).storage.createBucket(bucket, { public: false })
           const retry = await supabaseAdmin.storage.from(bucket).upload(filePath, file, { cacheControl: '3600', upsert: false })
           if (retry.error) {
-            return NextResponse.json({ success: false, error: `创建bucket后上传失败: ${retry.error.message}` }, { status: 500 })
+            return NextResponse.json({ success: false, error: `创建bucket后上传失�? ${retry.error.message}` }, { status: 500 })
           }
         } catch (ce: any) {
-          return NextResponse.json({ success: false, error: '存储桶 drive 不存在且自动创建失败，请在Supabase中创建私有bucket: drive' }, { status: 500 })
+          return NextResponse.json({ success: false, error: '存储�?drive 不存在且自动创建失败，请在Supabase中创建私有bucket: drive' }, { status: 500 })
         }
       } else {
         return NextResponse.json({ success: false, error: `上传失败: ${upErr.message}` }, { status: 500 })
       }
     }
 
-    // 生成受限访问的签名URL用于客户端预览（短期）
-    const { data: signed, error: signErr } = await supabaseAdmin.storage
+    // 生成受限访问的签名URL用于客户端预览（短期�?    const { data: signed, error: signErr } = await supabaseAdmin.storage
       .from(bucket)
       .createSignedUrl(filePath, 60 * 60) // 1小时
 
@@ -118,8 +116,7 @@ export async function POST(request: NextRequest) {
         mime_type: file.type,
         file_type: getFileTypeByName(file.name),
         file_hash: hash,
-        // 存储私密文件建议不公开URL，这里保存签名URL供短期预览
-        signed_url: signed.signedUrl,
+        // 存储私密文件建议不公开URL，这里保存签名URL供短期预�?        signed_url: signed.signedUrl,
         user_id: userId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

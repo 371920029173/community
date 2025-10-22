@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export const runtime = 'edge'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { ensureSuperAdminProtection } from '@/lib/superAdminProtection'
 
@@ -16,16 +15,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 确保超级管理员权限正常
+    // 确保超级管理员权限正�?
     const protectionResult = await ensureSuperAdminProtection()
     if (!protectionResult.success) {
       return NextResponse.json(
-        { success: false, error: '超级管理员权限异常' },
+        { success: false, error: '超级管理员权限异�? },
         { status: 403 }
       )
     }
 
-    // 获取超级管理员账号信息
+    // 获取超级管理员账号信�?
     const { data: superAdmin, error: superAdminError } = await supabaseAdmin
       .from('users')
       .select('id, username, storage_limit, storage_used')
@@ -44,7 +43,7 @@ export async function POST(request: NextRequest) {
     // 检查新限制是否合理
     if (newLimit < superAdmin.storage_used) {
       return NextResponse.json(
-        { success: false, error: '新存储限制不能小于已使用的存储空间' },
+        { success: false, error: '新存储限制不能小于已使用的存储空�? },
         { status: 400 }
       )
     }
@@ -75,7 +74,7 @@ export async function POST(request: NextRequest) {
           action: 'self_set_storage',
           old_limit: oldLimit,
           new_limit: newLimit,
-          reason: reason || '超级管理员自己调整存储空间'
+          reason: reason || '超级管理员自己调整存储空�?
         })
     } catch (logError) {
       console.error('Failed to log super admin storage management action:', logError)

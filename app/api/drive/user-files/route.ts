@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
-export const runtime = 'edge'
 
 export async function GET(request: NextRequest) {
   try {
     const auth = request.headers.get('authorization')
     if (!auth?.startsWith('Bearer ')) {
-      return NextResponse.json({ success: false, error: '未授权访问' }, { status: 401 })
+      return NextResponse.json({ success: false, error: '未授权访�? }, { status: 401 })
     }
     const token = auth.slice(7)
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
