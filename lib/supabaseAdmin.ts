@@ -11,27 +11,7 @@ if (!supabaseUrl || !serviceRoleKey) {
   console.error('❌ Supabase Admin环境变量未配置！')
   console.error('URL:', supabaseUrl ? '✅' : '❌')
   console.error('Service Role Key:', serviceRoleKey ? '✅' : '❌')
-  
-  // 在构建时不抛出错误，而是创建一个假的客户端
-  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build') {
-    console.warn('⚠️ 构建时跳过Supabase Admin配置检查')
-    // 创建一个假的客户端，避免构建失败
-    supabaseAdmin = createClient('https://dummy.supabase.co', 'dummy-key', {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
-  } else {
-    // 在运行时也创建一个假的客户端，避免应用崩溃
-    console.warn('⚠️ 运行时Supabase Admin配置缺失，创建假客户端')
-    supabaseAdmin = createClient('https://dummy.supabase.co', 'dummy-key', {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
-  }
+  throw new Error('Supabase Admin环境变量未配置')
 } else {
   supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
     auth: {
