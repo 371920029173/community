@@ -4,14 +4,14 @@ export const runtime = 'edge'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== /api/profile/me GET 开始 ===')
+    console.log('=== /api/profile/me GET 开始 - 测试版本 v2.0 ===')
     
     const userId = request.headers.get('x-user-id')
     console.log('用户ID:', userId)
     
     if (!userId) {
       console.error('缺少用户ID')
-      return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
+      return NextResponse.json({ success: false, error: '缺少用户ID - 测试版本' }, { status: 400 })
     }
 
     // 检查环境变量
@@ -38,21 +38,22 @@ export async function GET(request: NextRequest) {
     }
 
     // 暂时返回模拟数据，避免 Supabase 连接问题
-    console.log('返回模拟用户数据')
+    console.log('返回模拟用户数据 - 测试版本 v2.0')
     return NextResponse.json({ 
       success: true, 
       data: {
         id: userId,
-        username: 'test_user',
+        username: 'test_user_v2',
         email: 'test@example.com',
-        nickname: '测试用户',
+        nickname: '测试用户 v2.0',
         is_admin: false,
         is_moderator: false,
         avatar_url: null,
         created_at: new Date().toISOString(),
         storage_used: 0,
         storage_limit: 1000000000
-      }
+      },
+      message: '这是测试版本 v2.0 - 如果看到这个说明部署成功'
     })
     
   } catch (error: any) {
