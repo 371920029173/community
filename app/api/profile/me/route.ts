@@ -11,6 +11,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
+    // 检查 supabaseAdmin 是否可用
+    if (!supabaseAdmin) {
+      console.error('supabaseAdmin 未初始化')
+      return NextResponse.json({ success: false, error: '数据库连接失败' }, { status: 500 })
+    }
+
     const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
@@ -18,11 +24,13 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (error) {
+      console.error('查询用户资料失败:', error)
       return NextResponse.json({ success: false, error: error.message }, { status: 404 })
     }
 
     return NextResponse.json({ success: true, data })
   } catch (error: any) {
+    console.error('获取用户资料异常:', error)
     return NextResponse.json({ success: false, error: error.message || '获取资料失败' }, { status: 500 })
   }
 }
@@ -34,6 +42,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
+    // 检查 supabaseAdmin 是否可用
+    if (!supabaseAdmin) {
+      console.error('supabaseAdmin 未初始化')
+      return NextResponse.json({ success: false, error: '数据库连接失败' }, { status: 500 })
+    }
+
     const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
@@ -41,11 +55,13 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
+      console.error('查询用户资料失败:', error)
       return NextResponse.json({ success: false, error: error.message }, { status: 404 })
     }
 
     return NextResponse.json({ success: true, data })
   } catch (error: any) {
+    console.error('获取用户资料异常:', error)
     return NextResponse.json({ success: false, error: error.message || '获取资料失败' }, { status: 500 })
   }
 }

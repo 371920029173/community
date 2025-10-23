@@ -23,7 +23,14 @@ if (!supabaseUrl || !serviceRoleKey) {
       }
     })
   } else {
-    throw new Error('Supabase admin配置缺失，请检查.env.local文件')
+    // 在运行时也创建一个假的客户端，避免应用崩溃
+    console.warn('⚠️ 运行时Supabase Admin配置缺失，创建假客户端')
+    supabaseAdmin = createClient('https://dummy.supabase.co', 'dummy-key', {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
   }
 } else {
   supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
