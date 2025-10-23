@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'edge'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
-// 通过服务端（service role）读取当前用户资料，避免前端触发 RLS
+// 简单稳定的用户资料获取
 export async function GET(request: NextRequest) {
   try {
     const userId = request.headers.get('x-user-id')
@@ -11,28 +11,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    console.log('=== /api/profile/me 开始 ===')
-    console.log('用户ID:', userId)
-    console.log('supabaseAdmin 状态:', supabaseAdmin ? '已初始化' : '未初始化')
+    // 使用环境变量创建客户端
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-    const { data, error } = await supabaseAdmin
+    if (!supabaseUrl || !serviceRoleKey) {
+      return NextResponse.json({ success: false, error: '服务器配置错误' }, { status: 500 })
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey)
+
+    // 查询用户资料
+    const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select('id, username, email, nickname, is_admin, is_moderator, avatar_url, created_at')
       .eq('id', userId)
       .single()
 
-    console.log('查询结果:', { data, error })
-
     if (error) {
-      console.error('数据库查询错误:', error)
-      return NextResponse.json({ success: false, error: error.message }, { status: 404 })
+      return NextResponse.json({ success: false, error: '用户不存在' }, { status: 404 })
     }
 
-    console.log('查询成功，用户:', data?.username)
     return NextResponse.json({ success: true, data })
   } catch (error: any) {
-    console.error('API 异常:', error)
-    return NextResponse.json({ success: false, error: error.message || '获取资料失败' }, { status: 500 })
+    return NextResponse.json({ success: false, error: '获取资料失败' }, { status: 500 })
   }
 }
 
@@ -43,27 +45,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    // 检查 supabaseAdmin 是否可用
-    if (!supabaseAdmin) {
-      console.error('supabaseAdmin 未初始化')
-      return NextResponse.json({ success: false, error: '数据库连接失败' }, { status: 500 })
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return NextResponse.json({ success: false, error: '服务器配置错误' }, { status: 500 })
     }
 
-    const { data, error } = await supabaseAdmin
+    const supabase = createClient(supabaseUrl, serviceRoleKey)
+
+    const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select('id, username, email, nickname, is_admin, is_moderator, avatar_url, created_at')
       .eq('id', userId)
       .single()
 
     if (error) {
-      console.error('查询用户资料失败:', error)
-      return NextResponse.json({ success: false, error: error.message }, { status: 404 })
+      return NextResponse.json({ success: false, error: '用户不存在' }, { status: 404 })
     }
 
     return NextResponse.json({ success: true, data })
   } catch (error: any) {
-    console.error('获取用户资料异常:', error)
-    return NextResponse.json({ success: false, error: error.message || '获取资料失败' }, { status: 500 })
+    return NextResponse.json({ success: false, error: '获取资料失败' }, { status: 500 })
   }
 }
 
