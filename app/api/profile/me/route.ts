@@ -6,8 +6,13 @@ export const runtime = 'edge'
 // 简单稳定的用户资料获取
 export async function GET(request: NextRequest) {
   try {
+    console.log('=== /api/profile/me GET 开始 ===')
+    
     const userId = request.headers.get('x-user-id')
+    console.log('用户ID:', userId)
+    
     if (!userId) {
+      console.error('缺少用户ID')
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
@@ -15,12 +20,28 @@ export async function GET(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
+    console.log('环境变量检查:', {
+      supabaseUrl: supabaseUrl ? '✅' : '❌',
+      serviceRoleKey: serviceRoleKey ? '✅' : '❌',
+      supabaseUrlValue: supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'N/A',
+      serviceRoleKeyValue: serviceRoleKey ? serviceRoleKey.substring(0, 30) + '...' : 'N/A'
+    })
+
     if (!supabaseUrl || !serviceRoleKey) {
-      return NextResponse.json({ success: false, error: '服务器配置错误' }, { status: 500 })
+      console.error('服务器配置错误：环境变量缺失')
+      return NextResponse.json({ success: false, error: '服务器配置错误：环境变量缺失' }, { status: 500 })
     }
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey)
+    console.log('开始创建 Supabase 客户端...')
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+    console.log('Supabase 客户端创建成功')
 
+    console.log('开始查询用户资料...')
     // 查询用户资料
     const { data, error } = await supabase
       .from('users')
@@ -28,13 +49,25 @@ export async function GET(request: NextRequest) {
       .eq('id', userId)
       .single()
 
+    console.log('数据库查询结果:', { 
+      hasData: !!data, 
+      hasError: !!error,
+      errorMessage: error?.message,
+      errorCode: error?.code
+    })
+
     if (error) {
-      return NextResponse.json({ success: false, error: '用户不存在' }, { status: 404 })
+      console.error('数据库查询错误:', error)
+      return NextResponse.json({ success: false, error: error.message || '用户不存在' }, { status: 404 })
     }
 
+    console.log('查询成功，用户:', data?.username)
     return NextResponse.json({ success: true, data })
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: '获取资料失败' }, { status: 500 })
+    console.error('API 异常:', error.message, error.stack)
+    return NextResponse.json({ success: false, error: error.message || '获取资料失败' }, { status: 500 })
+  } finally {
+    console.log('=== /api/profile/me GET 结束 ===')
   }
 }
 
