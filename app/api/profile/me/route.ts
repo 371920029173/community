@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     // 查询用户资料
     const { data, error } = await supabase
       .from('users')
-      .select('id, username, email, nickname, is_admin, is_moderator, avatar_url, created_at')
+      .select('id, username, email, nickname, is_admin, is_moderator, avatar_url, created_at, storage_used, storage_limit')
       .eq('id', userId)
       .single()
 
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('users')
-      .select('id, username, email, nickname, is_admin, is_moderator, avatar_url, created_at')
+      .select('id, username, email, nickname, is_admin, is_moderator, avatar_url, created_at, storage_used, storage_limit')
       .eq('id', userId)
       .single()
 
