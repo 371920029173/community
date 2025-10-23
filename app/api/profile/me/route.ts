@@ -4,7 +4,7 @@ export const runtime = 'edge'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('=== /api/profile/me GET 开始 - 测试版本 v2.0 ===')
+    console.log('=== /api/profile/me GET 开始 - 测试版本 v3.0 - nodejs_compat 修复 ===')
     
     const userId = request.headers.get('x-user-id')
     console.log('用户ID:', userId)
@@ -43,9 +43,9 @@ export async function GET(request: NextRequest) {
       success: true, 
       data: {
         id: userId,
-        username: 'test_user_v2',
+        username: 'test_user_v3',
         email: 'test@example.com',
-        nickname: '测试用户 v2.0',
+        nickname: '测试用户 v3.0 - nodejs_compat 修复',
         is_admin: false,
         is_moderator: false,
         avatar_url: null,
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         storage_used: 0,
         storage_limit: 1000000000
       },
-      message: '这是测试版本 v2.0 - 如果看到这个说明部署成功'
+      message: '这是测试版本 v3.0 - nodejs_compat 修复成功！'
     })
     
   } catch (error: any) {
