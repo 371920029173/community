@@ -2,6 +2,9 @@ name = "web-file-sharing"
 compatibility_date = "2024-05-01"
 compatibility_flags = ["nodejs_compat"]
 
+[build]
+command = "npx @cloudflare/next-on-pages@1"
+
 # Cloudflare Pages 读取的输出目录键名
 pages_build_output_dir = ".vercel/output/static"
 
