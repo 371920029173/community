@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-export const runtime = 'edge'
+// export const runtime = 'edge' // 暂时禁用 Edge Runtime 以解决云端问题
 
 // 在 Edge Runtime 中直接创建 Supabase 客户端
 const createSupabaseAdmin = () => {
