@@ -2,7 +2,7 @@ name = "web-file-sharing"
 compatibility_date = "2024-05-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Cloudflare Pages 配置
+# Cloudflare Pages 读取的输出目录键名
 pages_build_output_dir = ".vercel/output/static"
 
 [env.production.vars]
@@ -35,3 +35,4 @@ RATE_LIMIT_MAX_REQUESTS = "100"
 DEBUG = "false"
 LOG_LEVEL = "info"
 LOG_FORMAT = "json"
+

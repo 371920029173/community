@@ -52,12 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('登录成功,用户ID:', authData.user.id)
       const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': authData.user.id } })
-      
-      if (!meRes.ok) {
-        console.error('获取用户资料失败，状态:', meRes.status)
-        throw new Error(`获取用户资料失败: HTTP ${meRes.status}`)
-      }
-      
       const meJson = await meRes.json()
       if (!meJson.success) {
         throw new Error(meJson.error || '无法获取用户资料')
@@ -225,15 +219,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const meRes = await fetch('/api/profile/me', { 
                 headers: { 'x-user-id': session.user.id } 
               })
-              
-              if (!meRes.ok) {
-                console.error('API获取用户资料失败，状态:', meRes.status)
-                console.log('API失败，清除会话')
-                await supabase.auth.signOut()
-                setUser(null)
-                return
-              }
-              
               const meJson = await meRes.json()
               if (meJson.success && meJson.data) {
                 console.log('通过API恢复用户状态:', meJson.data.username)
@@ -273,39 +258,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     checkSession()
 
-    // 设置会话监听器 - 添加错误处理防止无限循环
+    // 设置会话监听器
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('认证状态变化:', event, session?.user?.id)
         
-        try {
-          if (event === 'SIGNED_IN' && session?.user) {
-            // 用户登录后，从服务端拿资料
-            const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': session.user.id } })
-            if (meRes.ok) {
-              const meJson = await meRes.json()
-              if (meJson.success) setUser(meJson.data)
-            } else {
-              console.error('获取用户资料失败，状态:', meRes.status)
-              // 不设置用户，避免无限循环
-            }
-          } else if (event === 'SIGNED_OUT') {
-            // 用户登出
-            setUser(null)
-          } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-            // Token刷新，重新获取用户信息
-            const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': session.user.id } })
-            if (meRes.ok) {
-              const meJson = await meRes.json()
-              if (meJson.success) setUser(meJson.data)
-            } else {
-              console.error('Token刷新后获取用户资料失败，状态:', meRes.status)
-              // 不设置用户，避免无限循环
-            }
-          }
-        } catch (error) {
-          console.error('认证状态变化处理失败:', error)
-          // 发生错误时不设置用户，避免无限循环
+        if (event === 'SIGNED_IN' && session?.user) {
+          // 用户登录后，从服务端拿资料
+          const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': session.user.id } })
+          const meJson = await meRes.json()
+          if (meJson.success) setUser(meJson.data)
+        } else if (event === 'SIGNED_OUT') {
+          // 用户登出
+          setUser(null)
+        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          // Token刷新，重新获取用户信息
+          const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': session.user.id } })
+          const meJson = await meRes.json()
+          if (meJson.success) setUser(meJson.data)
         }
       }
     )
