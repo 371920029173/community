@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// export const runtime = 'edge' // 暂时禁用 Edge Runtime 以解决云端问题
+export const runtime = 'edge'
 
 // 在 Edge Runtime 中直接创建 Supabase 客户端
 const createSupabaseAdmin = () => {
@@ -15,12 +15,8 @@ const createSupabaseAdmin = () => {
     throw new Error('Supabase admin配置缺失')
   }
 
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  })
+  // 简化配置，避免 Edge Runtime 兼容性问题
+  return createClient(supabaseUrl, serviceRoleKey)
 }
 
 // 通过服务端（service role）读取当前用户资料，避免前端触发 RLS
