@@ -22,9 +22,14 @@ if (!supabaseUrl || !serviceRoleKey) {
     // 添加 Edge Runtime 兼容性配置
     global: {
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Content-Type': 'application/json; charset=utf-8',
+        'Accept': 'application/json',
+        'User-Agent': 'Cloudflare-Pages-Edge-Runtime'
       }
+    },
+    // 添加重试配置
+    db: {
+      schema: 'public'
     }
   })
   

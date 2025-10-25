@@ -12,18 +12,46 @@ export async function GET(request: NextRequest) {
         status: 400,
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
-          'Cache-Control': 'no-cache'
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
         }
       })
     }
 
     console.log('Profile API: 开始查询用户', userId)
     
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    // 添加重试机制，解决网络问题
+    let data, error
+    let retryCount = 0
+    const maxRetries = 3
+    
+    while (retryCount < maxRetries) {
+      try {
+        const result = await supabaseAdmin
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single()
+        
+        data = result.data
+        error = result.error
+        
+        if (!error) break
+        
+        retryCount++
+        if (retryCount < maxRetries) {
+          console.log(`Profile API: 重试 ${retryCount}/${maxRetries}`, error.message)
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
+        }
+      } catch (retryError) {
+        retryCount++
+        if (retryCount < maxRetries) {
+          console.log(`Profile API: 重试 ${retryCount}/${maxRetries}`, retryError)
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
+        } else {
+          throw retryError
+        }
+      }
+    }
 
     if (error) {
       console.error('Profile API: Supabase 查询错误', error)
@@ -31,7 +59,7 @@ export async function GET(request: NextRequest) {
         status: 404,
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
-          'Cache-Control': 'no-cache'
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
         }
       })
     }
@@ -40,7 +68,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, data }, {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': 'no-cache'
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
       }
     })
   } catch (error: any) {
@@ -49,7 +77,7 @@ export async function GET(request: NextRequest) {
       status: 500,
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': 'no-cache'
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
       }
     })
   }

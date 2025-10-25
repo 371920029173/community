@@ -5,10 +5,6 @@ compatibility_flags = ["nodejs_compat"]
 # Cloudflare Pages 读取的输出目录键名
 pages_build_output_dir = ".vercel/output/static"
 
-# 禁用缓存以避免 JSON 解析问题
-[build]
-command = "npm run build:cf"
-
 [env.production.vars]
 NODE_ENV = "production"
 NEXT_PUBLIC_SUPABASE_URL = "https://mmnulqhurqohukuobusj.supabase.co"
