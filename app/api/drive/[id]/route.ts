@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
-// export const runtime = 'edge' // 临时禁用 Edge Runtime 解决 Supabase 兼容性问题
+export const runtime = 'edge'
 
 // 删除/重命名/获取签名链接
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

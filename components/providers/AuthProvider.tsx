@@ -155,7 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           })
         })
 
-        const result = await res.json()
+        const result = await safeJsonParse(res)
         if (!result.success) {
           console.error('用户资料创建失败:', result.error)
           throw new Error(`用户资料创建失败: ${result.error}`)

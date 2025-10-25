@@ -11,29 +11,27 @@ if (!supabaseUrl || !serviceRoleKey) {
   console.error('❌ Supabase Admin环境变量未配置！')
   console.error('URL:', supabaseUrl ? '✅' : '❌')
   console.error('Service Role Key:', serviceRoleKey ? '✅' : '❌')
-  throw new Error('Supabase admin配置缺失')
+  
+  // 在构建时不抛出错误，而是创建一个假的客户端
+  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE === 'phase-production-build') {
+    console.warn('⚠️ 构建时跳过Supabase Admin配置检查')
+    // 创建一个假的客户端，避免构建失败
+    supabaseAdmin = createClient('https://dummy.supabase.co', 'dummy-key', {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  } else {
+    throw new Error('Supabase admin配置缺失，请检查.env.local文件')
+  }
 } else {
-  // 在 Edge Runtime 中使用简化的配置，避免兼容性问题
   supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
-    },
-    // 添加 Edge Runtime 兼容性配置
-    global: {
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Accept': 'application/json',
-        'User-Agent': 'Cloudflare-Pages-Edge-Runtime'
-      }
-    },
-    // 添加重试配置
-    db: {
-      schema: 'public'
     }
   })
-  
-  console.log('✅ Supabase Admin 客户端已创建')
 }
 
 export { supabaseAdmin }
