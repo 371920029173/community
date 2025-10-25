@@ -8,9 +8,17 @@ export async function GET(request: NextRequest) {
   try {
     const userId = request.headers.get('x-user-id')
     if (!userId) {
-      return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
+      return NextResponse.json({ success: false, error: '缺少用户ID' }, { 
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-cache'
+        }
+      })
     }
 
+    console.log('Profile API: 开始查询用户', userId)
+    
     const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
@@ -18,12 +26,32 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 404 })
+      console.error('Profile API: Supabase 查询错误', error)
+      return NextResponse.json({ success: false, error: error.message }, { 
+        status: 404,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'no-cache'
+        }
+      })
     }
 
-    return NextResponse.json({ success: true, data })
+    console.log('Profile API: 查询成功', data?.username)
+    return NextResponse.json({ success: true, data }, {
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-cache'
+      }
+    })
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || '获取资料失败' }, { status: 500 })
+    console.error('Profile API: 异常错误', error)
+    return NextResponse.json({ success: false, error: error.message || '获取资料失败' }, { 
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-cache'
+      }
+    })
   }
 }
 

@@ -13,12 +13,22 @@ if (!supabaseUrl || !serviceRoleKey) {
   console.error('Service Role Key:', serviceRoleKey ? '✅' : '❌')
   throw new Error('Supabase admin配置缺失')
 } else {
+  // 在 Edge Runtime 中使用简化的配置，避免兼容性问题
   supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
+    },
+    // 添加 Edge Runtime 兼容性配置
+    global: {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
     }
   })
+  
+  console.log('✅ Supabase Admin 客户端已创建')
 }
 
 export { supabaseAdmin }
