@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export const runtime = 'edge'
+// export const runtime = 'edge' // 临时禁用 Edge Runtime 解决 Supabase 兼容性问题
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 // 幂等创建/补建用户资料（强唯一策略）：

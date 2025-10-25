@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { ensureSuperAdminProtection } from '@/lib/superAdminProtection'
 
-export const runtime = 'edge'
+// export const runtime = 'edge' // 临时禁用 Edge Runtime 解决 Supabase 兼容性问题
 
 // 获取用户通知数量
 export async function GET(request: NextRequest) {
