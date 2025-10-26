@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'edge'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 // 通过服务端（service role）读取当前用户资料，避免前端触发 RLS
 export async function GET(request: NextRequest) {
@@ -10,32 +11,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    // Cloudflare Pages + Supabase Edge Runtime 修复：在函数内部动态导入并创建客户端
-    const { createClient } = await import('@supabase/supabase-js')
-    
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-    
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      global: {
-        fetch: fetch,
-      },
-    })
-
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('id', userId)
       .single()
 
     if (error) {
-      console.error('Supabase 查询错误:', error)
       return NextResponse.json({ success: false, error: error.message }, { status: 404 })
     }
 
     return NextResponse.json({ success: true, data })
   } catch (error: any) {
-    console.error('API 错误:', error)
     return NextResponse.json({ success: false, error: error.message || '获取资料失败' }, { status: 500 })
   }
 }
@@ -47,32 +34,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    // Cloudflare Pages + Supabase Edge Runtime 修复：在函数内部动态导入并创建客户端
-    const { createClient } = await import('@supabase/supabase-js')
-    
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-    
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      global: {
-        fetch: fetch,
-      },
-    })
-
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('id', userId)
       .single()
 
     if (error) {
-      console.error('Supabase 查询错误:', error)
       return NextResponse.json({ success: false, error: error.message }, { status: 404 })
     }
 
     return NextResponse.json({ success: true, data })
   } catch (error: any) {
-    console.error('API 错误:', error)
     return NextResponse.json({ success: false, error: error.message || '获取资料失败' }, { status: 500 })
   }
 }
+
+
+
+
+
+
