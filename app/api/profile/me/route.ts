@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createEdgeSupabaseClient, edgeQuery } from '@/lib/supabaseEdgeRuntime'
 
 export const runtime = 'edge'
 
@@ -11,16 +10,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    // 使用 Edge Runtime 兼容的 Supabase 客户端
-    const supabase = createEdgeSupabaseClient()
+    // Cloudflare Pages + Supabase 标准做法：动态导入并使用 fetch
+    const { createClient } = await import('@supabase/supabase-js')
+    
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      global: {
+        fetch: fetch,
+      },
+    })
 
-    const { data, error } = await edgeQuery(() =>
-      supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single()
-    )
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
 
     if (error) {
       console.error('Supabase 查询错误:', error)
@@ -41,16 +47,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    // 使用 Edge Runtime 兼容的 Supabase 客户端
-    const supabase = createEdgeSupabaseClient()
+    const { createClient } = await import('@supabase/supabase-js')
+    
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      global: {
+        fetch: fetch,
+      },
+    })
 
-    const { data, error } = await edgeQuery(() =>
-      supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single()
-    )
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
 
     if (error) {
       console.error('Supabase 查询错误:', error)
@@ -63,9 +75,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: error.message || '获取资料失败' }, { status: 500 })
   }
 }
-
-
-
-
-
-
