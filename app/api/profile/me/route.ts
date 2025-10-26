@@ -11,34 +11,62 @@ export async function GET(request: NextRequest) {
     }
 
     // ✅ Edge Runtime 兼容：动态导入并创建 Supabase 客户端
-    const { createClient } = await import('@supabase/supabase-js')
-    
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    
-    if (!supabaseUrl || !serviceRoleKey) {
-      return NextResponse.json({ success: false, error: 'Server configuration error' }, { status: 500 })
+    let errorStep = ''
+    try {
+      errorStep = 'importing createClient'
+      const { createClient } = await import('@supabase/supabase-js')
+      
+      errorStep = 'reading environment variables'
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+      
+      if (!supabaseUrl || !serviceRoleKey) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Missing environment variables',
+          debug: {
+            hasUrl: !!supabaseUrl,
+            hasKey: !!serviceRoleKey,
+            urlLength: supabaseUrl?.length || 0,
+            keyLength: serviceRoleKey?.length || 0
+          }
+        }, { status: 500 })
+      }
+      
+      errorStep = 'creating Supabase client'
+      const supabase = createClient(supabaseUrl, serviceRoleKey, {
+        global: {
+          fetch: fetch,
+        },
+      })
+
+      errorStep = 'querying database'
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      if (error) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 404 })
+      }
+
+      return NextResponse.json({ success: true, data })
+    } catch (innerError: any) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Failed at step: ${errorStep}`,
+        details: innerError?.message || String(innerError),
+        stack: innerError?.stack
+      }, { status: 500 })
     }
-    
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      global: {
-        fetch: fetch,
-      },
-    })
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
-    if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 404 })
-    }
-
-    return NextResponse.json({ success: true, data })
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || 'Failed to fetch profile' }, { status: 500 })
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Outer error',
+      details: error?.message || String(error),
+      stack: error?.stack
+    }, { status: 500 })
   }
 }
 
@@ -50,34 +78,62 @@ export async function POST(request: NextRequest) {
     }
 
     // ✅ Edge Runtime 兼容：动态导入并创建 Supabase 客户端
-    const { createClient } = await import('@supabase/supabase-js')
-    
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    
-    if (!supabaseUrl || !serviceRoleKey) {
-      return NextResponse.json({ success: false, error: 'Server configuration error' }, { status: 500 })
+    let errorStep = ''
+    try {
+      errorStep = 'importing createClient'
+      const { createClient } = await import('@supabase/supabase-js')
+      
+      errorStep = 'reading environment variables'
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+      
+      if (!supabaseUrl || !serviceRoleKey) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Missing environment variables',
+          debug: {
+            hasUrl: !!supabaseUrl,
+            hasKey: !!serviceRoleKey,
+            urlLength: supabaseUrl?.length || 0,
+            keyLength: serviceRoleKey?.length || 0
+          }
+        }, { status: 500 })
+      }
+      
+      errorStep = 'creating Supabase client'
+      const supabase = createClient(supabaseUrl, serviceRoleKey, {
+        global: {
+          fetch: fetch,
+        },
+      })
+
+      errorStep = 'querying database'
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      if (error) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 404 })
+      }
+
+      return NextResponse.json({ success: true, data })
+    } catch (innerError: any) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Failed at step: ${errorStep}`,
+        details: innerError?.message || String(innerError),
+        stack: innerError?.stack
+      }, { status: 500 })
     }
-    
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      global: {
-        fetch: fetch,
-      },
-    })
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
-    if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 404 })
-    }
-
-    return NextResponse.json({ success: true, data })
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || 'Failed to fetch profile' }, { status: 500 })
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Outer error',
+      details: error?.message || String(error),
+      stack: error?.stack
+    }, { status: 500 })
   }
 }
 
