@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabaseEdge, edgeQuery } from '@/lib/supabaseEdge'
 
 export const runtime = 'edge'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 // 通过服务端（service role）读取当前用户资料，避免前端触发 RLS
 export async function GET(request: NextRequest) {
@@ -11,11 +11,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    const { data, error } = await edgeQuery(() =>
+      supabaseEdge
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+    )
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 404 })
@@ -34,11 +36,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    const { data, error } = await edgeQuery(() =>
+      supabaseEdge
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+    )
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 404 })
