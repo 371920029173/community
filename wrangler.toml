@@ -1,5 +1,5 @@
 name = "web-file-sharing"
-compatibility_date = "2024-05-01"
+compatibility_date = "2025-10-26"
 compatibility_flags = ["nodejs_compat"]
 
 # Cloudflare Pages 读取的输出目录键名
