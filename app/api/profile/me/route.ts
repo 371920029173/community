@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'edge'
 
@@ -11,28 +10,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !serviceRoleKey) {
-      return NextResponse.json({ success: false, error: '服务器配置错误' }, { status: 500 })
+    // 测试：直接返回环境变量和基本信息
+    const result = {
+      success: true,
+      message: 'Edge Runtime 测试',
+      userId,
+      envCheck: {
+        url: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'exists' : 'missing',
+        key: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'exists' : 'missing',
+      },
+      // 暂时不查询数据库，先测试 Edge Runtime 基本功能
+      testData: {
+        timestamp: new Date().toISOString(),
+        runtime: 'edge',
+      }
     }
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey)
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
-    if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 404 })
-    }
-
-    return NextResponse.json({ success: true, data })
+    return NextResponse.json(result)
+    
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || '获取资料失败' }, { status: 500 })
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message,
+      stack: error.stack
+    }, { status: 500 })
   }
 }
 
@@ -43,27 +44,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !serviceRoleKey) {
-      return NextResponse.json({ success: false, error: '服务器配置错误' }, { status: 500 })
+    // 测试：直接返回基本信息
+    const result = {
+      success: true,
+      message: 'Edge Runtime 测试',
+      userId,
+      envCheck: {
+        url: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'exists' : 'missing',
+        key: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'exists' : 'missing',
+      },
+      testData: {
+        timestamp: new Date().toISOString(),
+        runtime: 'edge',
+      }
     }
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey)
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
-    if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 404 })
-    }
-
-    return NextResponse.json({ success: true, data })
+    return NextResponse.json(result)
+    
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || '获取资料失败' }, { status: 500 })
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message,
+      stack: error.stack
+    }, { status: 500 })
   }
 }
