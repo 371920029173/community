@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// 暂时禁用 Edge Runtime，使用 Node.js Runtime
-// export const runtime = 'edge'
+// Cloudflare Pages 要求必须使用 Edge Runtime
+export const runtime = 'edge'
 
 export async function GET(request: NextRequest) {
   try {
