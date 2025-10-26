@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createEdgeSupabaseClient, edgeQuery } from '@/lib/supabaseEdgeRuntime'
 
 export const runtime = 'edge'
 
@@ -11,16 +10,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    // 使用 Edge Runtime 兼容的 Supabase 客户端
-    const supabase = createEdgeSupabaseClient()
+    // 使用传统的 Supabase 客户端创建方式
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-    const { data, error } = await edgeQuery(() =>
-      supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single()
-    )
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('❌ Supabase 环境变量未配置')
+      return NextResponse.json({ success: false, error: '服务器配置错误' }, { status: 500 })
+    }
+
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false
+      }
+    })
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
 
     if (error) {
       console.error('Supabase 查询错误:', error)
@@ -41,16 +53,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    // 使用 Edge Runtime 兼容的 Supabase 客户端
-    const supabase = createEdgeSupabaseClient()
+    // 使用传统的 Supabase 客户端创建方式
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-    const { data, error } = await edgeQuery(() =>
-      supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single()
-    )
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('❌ Supabase 环境变量未配置')
+      return NextResponse.json({ success: false, error: '服务器配置错误' }, { status: 500 })
+    }
+
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false
+      }
+    })
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
 
     if (error) {
       console.error('Supabase 查询错误:', error)
@@ -63,9 +88,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: error.message || '获取资料失败' }, { status: 500 })
   }
 }
-
-
-
-
-
-
