@@ -32,7 +32,6 @@ export default function UploadPage() {
   const { user } = useAuth()
   const [files, setFiles] = useState<FileItem[]>([])
   const [isUploading, setIsUploading] = useState(false)
-  const [abortController, setAbortController] = useState<AbortController | null>(null)
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = event.target.files
@@ -56,16 +55,6 @@ export default function UploadPage() {
     setFiles(prev => prev.filter(f => f.id !== fileId))
   }
 
-  const cancelUpload = () => {
-    if (abortController) {
-      abortController.abort()
-      setAbortController(null)
-    }
-    setIsUploading(false)
-    setFiles(prev => prev.map(f => f.status === 'uploading' ? { ...f, status: 'error', progress: 0 } : f))
-    toast.error('上传已取消')
-  }
-
   const startUpload = async () => {
     if (files.length === 0) {
       toast.error('请先选择文件')
@@ -78,25 +67,13 @@ export default function UploadPage() {
     }
 
     setIsUploading(true)
-    const controller = new AbortController()
-    setAbortController(controller)
-
     for (let i = 0; i < files.length; i++) {
       const item = files[i]
       if (item.status !== 'uploading' || !item.blob) continue
 
-      // 检查是否已取消
-      if (controller.signal.aborted) {
-        break
-      }
-
       try {
         // 由于我们用表单直传，无法获得原生上传进度，这里做轻量进度动画
         const tick = setInterval(() => {
-          if (controller.signal.aborted) {
-            clearInterval(tick)
-            return
-          }
           setFiles(prev => prev.map(f => f.id === item.id ? { ...f, progress: Math.min(95, (f.progress || 0) + 5) } : f))
         }, 150)
 
@@ -108,7 +85,6 @@ export default function UploadPage() {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) {
           toast.error('会话已过期，请重新登录')
-          clearInterval(tick)
           return
         }
 
@@ -117,14 +93,9 @@ export default function UploadPage() {
           headers: {
             'Authorization': `Bearer ${session.access_token}`
           },
-          body: fd,
-          signal: controller.signal
+          body: fd 
         })
         clearInterval(tick)
-
-        if (controller.signal.aborted) {
-          break
-        }
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({}))
@@ -135,17 +106,12 @@ export default function UploadPage() {
 
         setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'success', progress: 100 } : f))
       } catch (e: any) {
-        if (e.name === 'AbortError') {
-          // 上传被取消，不需要显示错误
-          break
-        }
         setFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'error', progress: 0 } : f))
         toast.error(`上传失败：${item.name}`)
       }
     }
 
     setIsUploading(false)
-    setAbortController(null)
     toast.success('上传完成，已保存至云盘。前往“我的云盘”可查看与管理。', { duration: 4000 })
   }
 
@@ -216,23 +182,13 @@ export default function UploadPage() {
               <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-gray-900">待上传文件</h3>
-                  <div className="flex gap-2">
-                    {isUploading && (
-                      <button
-                        onClick={cancelUpload}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                      >
-                        取消上传
-                      </button>
-                    )}
-                    <button
-                      onClick={startUpload}
-                      disabled={isUploading}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                    >
-                      {isUploading ? '上传中...' : '开始上传'}
-                    </button>
-                  </div>
+                  <button
+                    onClick={startUpload}
+                    disabled={isUploading}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                  >
+                    {isUploading ? '上传中...' : '开始上传'}
+                  </button>
                 </div>
                 
                 <div className="space-y-4">

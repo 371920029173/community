@@ -23,30 +23,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // 安全的 JSON 解析函数，处理非 JSON 响应
-  const safeJsonParse = async (response: Response) => {
-    try {
-      const text = await response.text()
-      if (!text) {
-        return { success: false, error: '空响应' }
-      }
-      
-      // 检查是否是 HTML 错误页面
-      if (text.includes('<html') || text.includes('<!DOCTYPE')) {
-        return { success: false, error: `服务器错误: ${response.status}` }
-      }
-      
-      // 尝试解析 JSON
-      try {
-        return JSON.parse(text)
-      } catch (parseError) {
-        return { success: false, error: `响应解析失败: ${text.substring(0, 100)}...` }
-      }
-    } catch (error) {
-      return { success: false, error: `网络错误: ${error}` }
-    }
-  }
-
   // 简化的登录函数
   const signIn = async (username: string, password: string) => {
     try {
@@ -76,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('登录成功,用户ID:', authData.user.id)
       const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': authData.user.id } })
-      const meJson = await safeJsonParse(meRes)
+      const meJson = await meRes.json()
       if (!meJson.success) {
         throw new Error(meJson.error || '无法获取用户资料')
       }
@@ -138,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let finalProfile: any = null
       {
         const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': authData.user.id } })
-        const meJson = await safeJsonParse(meRes)
+        const meJson = await meRes.json()
         if (meJson.success) finalProfile = meJson.data
       }
 
@@ -155,7 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           })
         })
 
-        const result = await safeJsonParse(res)
+        const result = await res.json()
         if (!result.success) {
           console.error('用户资料创建失败:', result.error)
           throw new Error(`用户资料创建失败: ${result.error}`)
@@ -202,7 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!user?.id) return
       
       const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': user.id } })
-      const meJson = await safeJsonParse(meRes)
+      const meJson = await meRes.json()
       if (meJson.success) {
         setUser(meJson.data)
         console.log('用户信息已刷新')
@@ -243,7 +219,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const meRes = await fetch('/api/profile/me', { 
                 headers: { 'x-user-id': session.user.id } 
               })
-              const meJson = await safeJsonParse(meRes)
+              const meJson = await meRes.json()
               if (meJson.success && meJson.data) {
                 console.log('通过API恢复用户状态:', meJson.data.username)
                 setUser(meJson.data)
@@ -290,7 +266,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (event === 'SIGNED_IN' && session?.user) {
           // 用户登录后，从服务端拿资料
           const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': session.user.id } })
-          const meJson = await safeJsonParse(meRes)
+          const meJson = await meRes.json()
           if (meJson.success) setUser(meJson.data)
         } else if (event === 'SIGNED_OUT') {
           // 用户登出
@@ -298,7 +274,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
           // Token刷新，重新获取用户信息
           const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': session.user.id } })
-          const meJson = await safeJsonParse(meRes)
+          const meJson = await meRes.json()
           if (meJson.success) setUser(meJson.data)
         }
       }

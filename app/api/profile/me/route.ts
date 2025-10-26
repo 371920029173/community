@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    // Cloudflare Pages + Supabase 标准做法：动态导入并使用 fetch
+    // Cloudflare Pages + Supabase Edge Runtime 修复：在函数内部动态导入并创建客户端
     const { createClient } = await import('@supabase/supabase-js')
     
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
+    // Cloudflare Pages + Supabase Edge Runtime 修复：在函数内部动态导入并创建客户端
     const { createClient } = await import('@supabase/supabase-js')
     
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
