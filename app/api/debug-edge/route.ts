@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     // 测试环境变量访问
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_RULE_KEY
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     console.log('Environment variables check:')
     console.log('SUPABASE_URL:', supabaseUrl ? '✅ Present' : '❌ Missing')

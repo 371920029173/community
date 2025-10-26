@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createEdgeSupabaseClient, edgeQuery } from '@/lib/supabaseEdgeRuntime'
 
 export const runtime = 'edge'
 
@@ -11,42 +11,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    // 直接在函数内部创建 Supabase 客户端，避免模块级别的环境变量问题
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    // 使用 Edge Runtime 兼容的 Supabase 客户端
+    const supabase = createEdgeSupabaseClient()
 
-    if (!supabaseUrl || !serviceRoleKey) {
-      console.error('❌ Supabase 环境变量未配置')
-      return NextResponse.json({ success: false, error: '服务器配置错误' }, { status: 500 })
-    }
-
-    // 创建 Edge Runtime 兼容的 Supabase 客户端
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false
-      },
-      global: {
-        fetch: (url, options = {}) => {
-          return fetch(url, {
-            ...options,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'User-Agent': 'Cloudflare-Pages-Edge-Runtime',
-              ...options.headers,
-            },
-          })
-        }
-      }
-    })
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    const { data, error } = await edgeQuery(() =>
+      supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+    )
 
     if (error) {
       console.error('Supabase 查询错误:', error)
@@ -67,42 +41,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少用户ID' }, { status: 400 })
     }
 
-    // 直接在函数内部创建 Supabase 客户端
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    // 使用 Edge Runtime 兼容的 Supabase 客户端
+    const supabase = createEdgeSupabaseClient()
 
-    if (!supabaseUrl || !serviceRoleKey) {
-      console.error('❌ Supabase 环境变量未配置')
-      return NextResponse.json({ success: false, error: '服务器配置错误' }, { status: 500 })
-    }
-
-    // 创建 Edge Runtime 兼容的 Supabase 客户端
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false
-      },
-      global: {
-        fetch: (url, options = {}) => {
-          return fetch(url, {
-            ...options,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'User-Agent': 'Cloudflare-Pages-Edge-Runtime',
-              ...options.headers,
-            },
-          })
-        }
-      }
-    })
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    const { data, error } = await edgeQuery(() =>
+      supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single()
+    )
 
     if (error) {
       console.error('Supabase 查询错误:', error)

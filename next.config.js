@@ -3,9 +3,6 @@ const nextConfig = {
   images: {
     domains: ['localhost', 'mmnulqhurqohukuobusj.supabase.co'],
   },
-  experimental: {
-    missingSuspenseWithCSRBailout: false,
-  },
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
