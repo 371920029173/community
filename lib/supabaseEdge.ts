@@ -1,7 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+// Edge Runtime 兼容的环境变量获取
+function getEnvVar(name: string): string {
+  // 在 Edge Runtime 中，环境变量可能通过不同的方式访问
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[name] || ''
+  }
+  // 如果 process.env 不可用，尝试其他方式
+  return ''
+}
+
+const supabaseUrl = getEnvVar('NEXT_PUBLIC_SUPABASE_URL')
+const serviceRoleKey = getEnvVar('SUPABASE_SERVICE_ROLE_KEY')
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.error('❌ Supabase Edge环境变量未配置！')
