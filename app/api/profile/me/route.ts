@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: '服务器配置错误' }, { status: 500 })
     }
 
+    // 创建 Edge Runtime 兼容的 Supabase 客户端
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: {
         autoRefreshToken: false,
@@ -75,6 +76,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '服务器配置错误' }, { status: 500 })
     }
 
+    // 创建 Edge Runtime 兼容的 Supabase 客户端
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: {
         autoRefreshToken: false,
