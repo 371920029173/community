@@ -52,7 +52,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log('登录成功,用户ID:', authData.user.id)
       const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': authData.user.id } })
-      const meJson = await meRes.json()
+      
+      // ✅ 安全检查：确保响应是JSON格式
+      if (!meRes.ok) {
+        const errorText = await meRes.text().catch(() => 'Unknown error')
+        console.error('获取用户资料失败:', meRes.status, errorText)
+        throw new Error(`获取用户资料失败: ${meRes.status} ${errorText}`)
+      }
+      
+      const meJson = await meRes.json().catch((err) => {
+        console.error('解析用户资料JSON失败:', err)
+        throw new Error('无法解析用户资料响应')
+      })
+      
       if (!meJson.success) {
         throw new Error(meJson.error || '无法获取用户资料')
       }
@@ -114,8 +126,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let finalProfile: any = null
       {
         const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': authData.user.id } })
-        const meJson = await meRes.json()
-        if (meJson.success) finalProfile = meJson.data
+        if (meRes.ok) {
+          const meJson = await meRes.json().catch(() => ({ success: false }))
+          if (meJson.success) finalProfile = meJson.data
+        }
       }
 
       if (!finalProfile) {
@@ -178,10 +192,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!user?.id) return
       
       const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': user.id } })
-      const meJson = await meRes.json()
-      if (meJson.success) {
-        setUser(meJson.data)
-        console.log('用户信息已刷新')
+      if (meRes.ok) {
+        const meJson = await meRes.json().catch(() => ({ success: false }))
+        if (meJson.success) {
+          setUser(meJson.data)
+          console.log('用户信息已刷新')
+        }
       }
     } catch (error) {
       console.error('刷新用户信息失败:', error)
@@ -219,12 +235,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const meRes = await fetch('/api/profile/me', { 
                 headers: { 'x-user-id': session.user.id } 
               })
-              const meJson = await meRes.json()
-              if (meJson.success && meJson.data) {
-                console.log('通过API恢复用户状态:', meJson.data.username)
-                setUser(meJson.data)
+              if (meRes.ok) {
+                const meJson = await meRes.json().catch(() => ({ success: false }))
+                if (meJson.success && meJson.data) {
+                  console.log('通过API恢复用户状态:', meJson.data.username)
+                  setUser(meJson.data)
+                } else {
+                  console.log('API也无法获取用户资料，清除会话')
+                  await supabase.auth.signOut()
+                  setUser(null)
+                }
               } else {
-                console.log('API也无法获取用户资料，清除会话')
+                console.log('API返回错误状态，清除会话')
                 await supabase.auth.signOut()
                 setUser(null)
               }
@@ -266,16 +288,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (event === 'SIGNED_IN' && session?.user) {
           // 用户登录后，从服务端拿资料
           const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': session.user.id } })
-          const meJson = await meRes.json()
-          if (meJson.success) setUser(meJson.data)
+          if (meRes.ok) {
+            const meJson = await meRes.json().catch(() => ({ success: false }))
+            if (meJson.success) setUser(meJson.data)
+          }
         } else if (event === 'SIGNED_OUT') {
           // 用户登出
           setUser(null)
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
           // Token刷新，重新获取用户信息
           const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': session.user.id } })
-          const meJson = await meRes.json()
-          if (meJson.success) setUser(meJson.data)
+          if (meRes.ok) {
+            const meJson = await meRes.json().catch(() => ({ success: false }))
+            if (meJson.success) setUser(meJson.data)
+          }
         }
       }
     )
