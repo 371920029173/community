@@ -34,11 +34,8 @@ export async function GET(request: NextRequest) {
       }
       
       errorStep = 'creating Supabase client'
-      const supabase = createClient(supabaseUrl, serviceRoleKey, {
-        global: {
-          fetch: fetch,
-        },
-      })
+      // Edge Runtime 中不使用 global.fetch，使用默认的 fetch
+      const supabase = createClient(supabaseUrl, serviceRoleKey)
 
       errorStep = 'querying database'
       const { data, error } = await supabase
@@ -101,11 +98,8 @@ export async function POST(request: NextRequest) {
       }
       
       errorStep = 'creating Supabase client'
-      const supabase = createClient(supabaseUrl, serviceRoleKey, {
-        global: {
-          fetch: fetch,
-        },
-      })
+      // Edge Runtime 中不使用 global.fetch，使用默认的 fetch
+      const supabase = createClient(supabaseUrl, serviceRoleKey)
 
       errorStep = 'querying database'
       const { data, error } = await supabase
