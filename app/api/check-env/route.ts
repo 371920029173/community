@@ -7,10 +7,10 @@ export async function GET(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     
-    // 检查 key 的开头
-    const expectedKeyStart = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+    // 检查 key 的开头 - Service Role Key 应该以 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ 开头
+    const expectedKeyStart = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ'
     const actualKeyStart = serviceRoleKey?.substring(0, 40)
-    const keyMatches = actualKeyStart === expectedKeyStart.substring(0, 40)
+    const keyMatches = actualKeyStart?.startsWith(expectedKeyStart)
     
     // 检查 key 的结尾
     const expectedKeyEnd = 'Sj-RzeZr2jI'
