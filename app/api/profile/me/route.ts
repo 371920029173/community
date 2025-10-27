@@ -34,6 +34,10 @@ export async function GET(request: NextRequest) {
       }
       
       errorStep = 'creating Supabase client'
+      // 调试：输出 key 的前后几个字符
+      console.log('Service Key (first 20):', serviceRoleKey?.substring(0, 20))
+      console.log('Service Key (last 20):', serviceRoleKey?.substring(serviceRoleKey?.length - 20))
+      
       // Edge Runtime 中正确创建 Supabase 客户端
       const supabase = createClient(supabaseUrl, serviceRoleKey, {
         auth: {
@@ -103,6 +107,10 @@ export async function POST(request: NextRequest) {
       }
       
       errorStep = 'creating Supabase client'
+      // 调试：输出 key 的前后几个字符
+      console.log('Service Key (first 20):', serviceRoleKey?.substring(0, 20))
+      console.log('Service Key (last 20):', serviceRoleKey?.substring(serviceRoleKey?.length - 20))
+      
       // Edge Runtime 中正确创建 Supabase 客户端
       const supabase = createClient(supabaseUrl, serviceRoleKey, {
         auth: {
