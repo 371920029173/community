@@ -54,7 +54,16 @@ export async function GET(request: NextRequest) {
         .single()
 
       if (error) {
-        return NextResponse.json({ success: false, error: error.message }, { status: 404 })
+        return NextResponse.json({ 
+          success: false, 
+          error: error.message,
+          debug: {
+            keyFirst20: serviceRoleKey?.substring(0, 20),
+            keyLast20: serviceRoleKey?.substring(serviceRoleKey?.length - 20),
+            keyLength: serviceRoleKey?.length,
+            url: supabaseUrl
+          }
+        }, { status: 404 })
       }
 
       return NextResponse.json({ success: true, data })
@@ -127,7 +136,16 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (error) {
-        return NextResponse.json({ success: false, error: error.message }, { status: 404 })
+        return NextResponse.json({ 
+          success: false, 
+          error: error.message,
+          debug: {
+            keyFirst20: serviceRoleKey?.substring(0, 20),
+            keyLast20: serviceRoleKey?.substring(serviceRoleKey?.length - 20),
+            keyLength: serviceRoleKey?.length,
+            url: supabaseUrl
+          }
+        }, { status: 404 })
       }
 
       return NextResponse.json({ success: true, data })
