@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { ensureSuperAdminProtection } from '@/lib/superAdminProtection'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 export const runtime = 'edge'
 
@@ -17,8 +16,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 确保超级管理员保护
-    await ensureSuperAdminProtection()
+    // Edge Runtime 兼容：动态创建 Supabase 客户端
+    const supabaseAdmin = await getSupabaseAdmin()
 
     // 获取用户信息
     const { data: user, error: userError } = await supabaseAdmin
