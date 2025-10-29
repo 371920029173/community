@@ -5,6 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 # Cloudflare Pages 读取的输出目录键名
 pages_build_output_dir = ".vercel/output/static"
 
+# 环境变量配置（确保密钥在一行上，无换行符）
 [vars]
 NODE_ENV = "production"
 NEXT_PUBLIC_SUPABASE_URL = "https://mmnulqhurqohukuobusj.supabase.co"
