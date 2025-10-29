@@ -13,26 +13,27 @@ async function createSupabaseClient() {
     throw new Error('Missing environment variables')
   }
 
-  // 清理并验证 key
-  const cleanKey = serviceRoleKey.trim()
+  // 清理并验证 key（移除所有空白字符，包括换行）
+  const cleanKey = serviceRoleKey.trim().replace(/\s+/g, '')
+  
+  // 验证 key 格式和长度
   if (!cleanKey.startsWith('eyJ')) {
     throw new Error(`Invalid API key format: ${cleanKey.substring(0, 30)}...`)
   }
+  
+  // Service Role Key 的标准长度应该是 219 字符
+  // 如果长度不对，可能是配置错误
+  if (cleanKey.length !== 219) {
+    console.warn(`⚠️ Service Role Key length is ${cleanKey.length}, expected 219`)
+  }
 
   // 在 Edge Runtime 中创建 Supabase 客户端
-  // 显式设置 headers 确保 API key 正确传递
+  // 注意：Supabase JS 客户端会自动处理 apikey header，不需要手动设置
   return createClient(supabaseUrl, cleanKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
       detectSessionInUrl: false
-    },
-    global: {
-      headers: {
-        'apikey': cleanKey,
-        'Authorization': `Bearer ${cleanKey}`,
-        'Content-Type': 'application/json'
-      }
     }
   })
 }
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
         // 提供详细的错误信息用于调试
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
         const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-        const cleanKey = serviceRoleKey?.trim() || ''
+        const cleanKey = (serviceRoleKey?.trim().replace(/\s+/g, '') || '')
 
         return NextResponse.json({ 
           success: false, 
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
       if (error) {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
         const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-        const cleanKey = serviceRoleKey?.trim() || ''
+        const cleanKey = (serviceRoleKey?.trim().replace(/\s+/g, '') || '')
 
         return NextResponse.json({ 
           success: false, 
