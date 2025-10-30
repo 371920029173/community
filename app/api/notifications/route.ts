@@ -19,19 +19,15 @@ export async function GET(request: NextRequest) {
     // Edge Runtime 兼容：动态创建 Supabase 客户端
     const supabaseAdmin = await getSupabaseAdmin()
 
-    // 获取用户信息
+    // 获取用户信息（若不存在也不报错，返回默认权限）
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('is_admin, is_moderator')
       .eq('id', userId)
-      .single()
+      .maybeSingle()
 
-    if (userError || !user) {
-      return NextResponse.json(
-        { success: false, error: '用户不存在' },
-        { status: 404 }
-      )
-    }
+    const isAdmin = !!user?.is_admin
+    const isModerator = !!user?.is_moderator
 
     const notifications = {
       messages: 0,
@@ -39,12 +35,12 @@ export async function GET(request: NextRequest) {
       storageRequests: 0
     }
 
-    // 1. 获取未读私信数量
+    // 1. 获取未读私信数量（统计作为接收者的未读消息）
     try {
       const { data: unreadMessages, error: messagesError } = await supabaseAdmin
         .from('messages')
         .select('id')
-        .eq('sender_id', userId)
+        .eq('receiver_id', userId)
         .eq('is_read', false)
 
       if (!messagesError) {
@@ -55,7 +51,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. 获取待审核文件数量（仅管理员和审核员）
-    if (user.is_admin || user.is_moderator) {
+    if (isAdmin || isModerator) {
       try {
         const { data: pendingFiles, error: filesError } = await supabaseAdmin
           .from('files')
@@ -71,7 +67,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. 获取存储空间修改请求数量（仅超级管理员）
-    if (user.is_admin && userId === '371920029173') {
+    if (isAdmin && userId === '371920029173') {
       try {
         const { data: pendingRequests, error: requestsError } = await supabaseAdmin
           .from('storage_modification_requests')
