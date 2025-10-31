@@ -164,15 +164,13 @@ export async function POST(request: NextRequest) {
       messageData.file_type = fileType
       messageData.file_size = fileSize
       messageData.mime_type = mimeType
-      messageData.file_id = fileId // 添加文件ID
-      
+      // 当前线上 messages 表无 file_id 列，避免插入报错（PGRST204）
       console.log('添加文件信息到消息:', {
         file_url: fileUrl,
         file_name: fileName,
         file_type: fileType,
         file_size: fileSize,
-        mime_type: mimeType,
-        file_id: fileId
+        mime_type: mimeType
       })
     }
 
