@@ -31,7 +31,9 @@ import {
   Eye,
   EyeOff,
   HardDrive,
-  X
+  X,
+  Trash,
+  Loader2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -56,6 +58,8 @@ export default function AdminPage() {
   })
   const [userSearchQuery, setUserSearchQuery] = useState('')
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
+  const [cleaningGhostAccounts, setCleaningGhostAccounts] = useState(false)
+  const [cleanupResult, setCleanupResult] = useState<any>(null)
 
   useEffect(() => {
     if (user && (user.is_admin || user.is_moderator)) {
@@ -373,6 +377,35 @@ export default function AdminPage() {
     }
   }
 
+  const handleCleanupGhostAccounts = async () => {
+    if (!user?.is_admin) return
+    
+    setCleaningGhostAccounts(true)
+    setCleanupResult(null)
+    
+    try {
+      // 使用默认 secret，也可以从环境变量获取
+      const secret = 'cleanup_ghost_accounts_2024' // 可以改为从配置读取
+      const response = await fetch(`/api/admin/cleanup-ghost-accounts?secret=${secret}`)
+      const result = await response.json()
+      
+      if (result.success) {
+        setCleanupResult(result.stats)
+        toast.success(result.message || '清理完成')
+        
+        // 刷新用户列表
+        await fetchData()
+      } else {
+        toast.error(result.error || '清理失败')
+      }
+    } catch (error: any) {
+      console.error('清理幽灵账号失败:', error)
+      toast.error('清理失败，请重试')
+    } finally {
+      setCleaningGhostAccounts(false)
+    }
+  }
+
   if (!user || (!user.is_admin && !user.is_moderator)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -494,6 +527,23 @@ export default function AdminPage() {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-gray-900">用户管理</h2>
               <div className="flex items-center space-x-4">
+                <button
+                  onClick={handleCleanupGhostAccounts}
+                  disabled={cleaningGhostAccounts}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                >
+                  {cleaningGhostAccounts ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>清理中...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash className="w-4 h-4" />
+                      <span>清理幽灵账号</span>
+                    </>
+                  )}
+                </button>
                 <div className="relative">
                   <input
                     type="text"
@@ -517,6 +567,49 @@ export default function AdminPage() {
                 </span>
               </div>
             </div>
+            
+            {/* 清理结果展示 */}
+            {cleanupResult && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="text-sm font-semibold text-blue-900 mb-2">清理结果</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">总用户数：</span>
+                    <span className="font-medium text-gray-900">{cleanupResult.totalUsers}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">有效用户：</span>
+                    <span className="font-medium text-green-600">{cleanupResult.validUsers}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">发现幽灵账号：</span>
+                    <span className="font-medium text-orange-600">{cleanupResult.ghostAccountsFound}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">已删除：</span>
+                    <span className="font-medium text-red-600">{cleanupResult.deletedAccounts}</span>
+                  </div>
+                </div>
+                {cleanupResult.deletedUsers && cleanupResult.deletedUsers.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <p className="text-xs font-medium text-gray-700 mb-1">已删除的账号：</p>
+                    <div className="flex flex-wrap gap-2">
+                      {cleanupResult.deletedUsers.map((deleted: any, index: number) => (
+                        <span key={index} className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">
+                          {deleted.username} ({deleted.email || '无邮箱'})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={() => setCleanupResult(null)}
+                  className="mt-3 text-xs text-blue-600 hover:text-blue-800"
+                >
+                  关闭
+                </button>
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
