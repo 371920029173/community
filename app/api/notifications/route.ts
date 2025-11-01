@@ -37,17 +37,26 @@ export async function GET(request: NextRequest) {
 
     // 1. 获取未读私信数量（统计作为接收者的未读消息）
     try {
-      const { data: unreadMessages, error: messagesError } = await supabaseAdmin
+      const { count: unreadCount, error: messagesError } = await supabaseAdmin
         .from('messages')
-        .select('id')
+        .select('id', { count: 'exact', head: true })
         .eq('receiver_id', userId)
         .eq('is_read', false)
 
-      if (!messagesError) {
+      if (!messagesError && unreadCount !== null) {
+        notifications.messages = unreadCount
+      } else {
+        // 如果 count 查询失败，尝试使用常规查询作为备用
+        const { data: unreadMessages } = await supabaseAdmin
+          .from('messages')
+          .select('id')
+          .eq('receiver_id', userId)
+          .eq('is_read', false)
         notifications.messages = unreadMessages?.length || 0
       }
     } catch (error) {
       console.log('获取私信通知失败:', error)
+      notifications.messages = 0
     }
 
     // 2. 获取待审核文件数量（仅管理员和审核员）

@@ -75,19 +75,32 @@ export default function Navbar() {
   // 定期获取通知
   useEffect(() => {
     if (user?.id) {
+      // 立即获取一次
       fetchNotifications()
-      // 每30秒更新一次通知
-      const interval = setInterval(fetchNotifications, 30000)
+      // 每15秒更新一次通知（更频繁的更新，提高实时性）
+      const interval = setInterval(fetchNotifications, 15000)
       return () => clearInterval(interval)
+    } else {
+      // 用户未登录时重置通知
+      setNotifications({
+        messages: 0,
+        fileReview: 0,
+        storageRequests: 0
+      })
     }
   }, [user?.id])
 
-  // 通知红点组件
+  // 通知红点组件（优化版：更明显的样式）
   const NotificationDot = ({ count, className = "" }: { count: number, className?: string }) => {
     if (count === 0) return null
     
+    // 根据数量调整大小
+    const isSmallCount = count < 10
+    const size = isSmallCount ? 'h-5 w-5' : 'h-6 min-w-6 px-1'
+    const textSize = isSmallCount ? 'text-xs' : 'text-[10px]'
+    
     return (
-      <span className={`absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold ${className}`}>
+      <span className={`absolute -top-1 -right-1 bg-red-500 text-white ${textSize} rounded-full ${size} flex items-center justify-center font-bold shadow-lg border-2 border-white z-10 animate-pulse ${className}`}>
         {count > 99 ? '99+' : count}
       </span>
     )
@@ -286,7 +299,12 @@ export default function Navbar() {
                   >
                     <MessageSquare className="w-5 h-5" />
                     私信
-                    <NotificationDot count={notifications.messages} />
+                    {notifications.messages > 0 && (
+                      <span className="ml-auto text-sm text-red-600 font-semibold">
+                        {notifications.messages}条未读
+                      </span>
+                    )}
+                    <NotificationDot count={notifications.messages} className="top-2 right-2" />
                   </Link>
                   {(user.is_admin || user.is_moderator) && (
                     <Link 
