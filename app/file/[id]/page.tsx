@@ -118,10 +118,10 @@ export default function FileDetailPage() {
         authLoading
       })
       
-      // 构建查询条件
+      // 构建查询条件（明确指定需要的字段，包括统计字段）
       let query = supabase
         .from('files')
-        .select('*')
+        .select('*, download_count, likes_count, comments_count, favorites_count')
         .eq('id', fileId)
       
       // 如果不是管理员，只能查看公开且已审核的文件
@@ -1070,7 +1070,7 @@ export default function FileDetailPage() {
                 </div>
                 <div className="flex items-center">
                   <Eye className="w-4 h-4 mr-2" />
-                  <span>{file.download_count || 0} 次查看</span>
+                  <span>{file.download_count ?? 0} 次查看</span>
                 </div>
                   {/* 审核状态提示 - 仅管理员可见 */}
                   {user?.is_admin && !file.is_approved && (
