@@ -17,6 +17,7 @@ import {
   Crown
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { getFriendlyErrorMessage } from '@/lib/utils'
 
 interface User {
   id: string
@@ -93,7 +94,7 @@ export default function StorageManagementPage() {
       }
     } catch (error) {
       console.error('获取存储信息失败:', error)
-      toast.error('Network error')
+      toast.error(getFriendlyErrorMessage(error) || '网络连接失败，请检查网络后重试')
     } finally {
       setLoading(false)
     }
@@ -177,7 +178,7 @@ export default function StorageManagementPage() {
         }
       }
     } catch (error) {
-      toast.error('Network error')
+      toast.error(getFriendlyErrorMessage(error) || '网络连接失败，请检查网络后重试')
     } finally {
       setUpdating(false)
     }
@@ -221,11 +222,11 @@ export default function StorageManagementPage() {
         fetchStorageRequests()
         fetchStorageInfo()
       } else {
-        toast.error(data.error || 'Review failed')
+        toast.error(getFriendlyErrorMessage(data.error) || '审核失败')
       }
     } catch (error) {
       console.error('审核请求失败:', error)
-      toast.error('Review failed')
+      toast.error(getFriendlyErrorMessage(error) || '审核失败，请重试')
     }
   }
 

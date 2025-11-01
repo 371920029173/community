@@ -210,11 +210,11 @@ export default function FilesPage() {
         setSelectedFiles([])
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Batch delete failed')
+        toast.error(getFriendlyErrorMessage(error.error) || '批量删除失败')
       }
     } catch (error) {
       console.error('Batch delete error:', error)
-      toast.error('Batch delete failed')
+      toast.error(getFriendlyErrorMessage(error) || '批量删除失败')
     }
   }
 
