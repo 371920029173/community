@@ -31,6 +31,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN">
+      <head>
+        {/* Google AdSense Verification Code */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4701068000566326"
+          crossOrigin="anonymous"
+        ></script>
+      </head>
       <body className={inter.className}>
         {/* 动态粒子物理效果 */}
         <ParticlePhysics />
