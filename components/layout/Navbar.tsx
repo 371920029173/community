@@ -60,7 +60,10 @@ export default function Navbar() {
       const data = await response.json()
       
       if (data.success) {
+        console.log('通知数据:', data.data) // 调试日志
         setNotifications(data.data)
+      } else {
+        console.warn('获取通知失败:', data.error)
       }
     } catch (error) {
       console.error('获取通知失败:', error)
@@ -101,7 +104,13 @@ export default function Navbar() {
     const textSize = isSmallCount ? 'text-xs' : 'text-[10px]'
     
     return (
-      <span className={`absolute -top-1 -right-1 bg-red-500 text-white ${textSize} rounded-full ${size} flex items-center justify-center font-bold shadow-lg border-2 border-white z-10 animate-pulse ${className}`}>
+      <span 
+        className={`absolute -top-1 -right-1 bg-red-500 text-white ${textSize} rounded-full ${size} flex items-center justify-center font-bold shadow-lg border-2 border-white z-[60] ${className}`}
+        style={{ 
+          pointerEvents: 'none',
+          animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+        }}
+      >
         {count > 99 ? '99+' : count}
       </span>
     )
@@ -152,8 +161,10 @@ export default function Navbar() {
                   className="relative flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" 
                   title={notifications.messages > 0 ? `私信 (${notifications.messages}条未读)` : '私信'}
                 >
-                  <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                  <NotificationDot count={notifications.messages} />
+                  <div className="relative">
+                    <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    <NotificationDot count={notifications.messages} />
+                  </div>
                 </Link>
                 {(user.is_admin || user.is_moderator) && (
                   <Link href="/admin" className="relative flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="管理后台">
