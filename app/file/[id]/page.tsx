@@ -369,6 +369,19 @@ export default function FileDetailPage() {
 
       setNewComment('')
       await fetchComments()
+      
+      // 刷新文件信息以更新评论数
+      if (file) {
+        const { data: updatedFile } = await supabase
+          .from('files')
+          .select('comments_count')
+          .eq('id', fileId)
+          .single()
+        if (updatedFile) {
+          setFile({ ...file, comments_count: updatedFile.comments_count ?? (comments.length + 1) })
+        }
+      }
+      
       toast.success(result.message || '评论发布成功')
     } catch (error: any) {
       console.error('Error submitting comment:', error)

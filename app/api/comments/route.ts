@@ -90,12 +90,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 更新文件的评论计数（如果存在 comments_count 字段）
+    // 更新文件的评论计数
     try {
-      await supabaseAdmin.rpc('increment_comments_count', { file_id: fileId })
+      // 先获取文件的当前评论数
+      const { data: currentFile } = await supabaseAdmin
+        .from('files')
+        .select('comments_count')
+        .eq('id', fileId)
+        .single()
+
+      const currentCount = currentFile?.comments_count ?? 0
+      const newCount = currentCount + 1
+
+      // 更新文件的 comments_count 字段
+      await supabaseAdmin
+        .from('files')
+        .update({ comments_count: newCount })
+        .eq('id', fileId)
     } catch (e) {
-      // 如果 RPC 不存在或失败，忽略错误（向后兼容）
-      console.warn('更新评论计数失败:', e)
+      // 如果字段不存在或更新失败，记录警告但不影响评论创建
+      console.warn('更新评论计数失败（可能字段不存在）:', e)
     }
 
     return NextResponse.json({
@@ -164,6 +178,18 @@ export async function GET(request: NextRequest) {
         }
       })
     )
+
+    // 同步评论数到文件记录（确保数据一致性）
+    try {
+      const actualCommentCount = commentsWithAvatars.length
+      await supabaseAdmin
+        .from('files')
+        .update({ comments_count: actualCommentCount })
+        .eq('id', fileId)
+    } catch (e) {
+      // 如果字段不存在，忽略错误
+      console.warn('同步评论数失败:', e)
+    }
 
     return NextResponse.json({
       success: true,
