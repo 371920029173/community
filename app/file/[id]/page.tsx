@@ -46,6 +46,7 @@ export default function FileDetailPage() {
   const [submitting, setSubmitting] = useState(false)
   const [fileContent, setFileContent] = useState<string>('')
   const [loadingContent, setLoadingContent] = useState(false)
+  const [authorName, setAuthorName] = useState<string>('')
 
   useEffect(() => {
     if (fileId && !authLoading) {
@@ -154,6 +155,35 @@ export default function FileDetailPage() {
       
       console.log('找到文件:', data)
       setFile(data)
+      
+      // 获取作者信息
+      if (data) {
+        // 优先使用 author_name 字段
+        if (data.author_name) {
+          setAuthorName(data.author_name)
+        } else if (data.user_id) {
+          // 如果 author_name 不存在，根据 user_id 查询 users 表
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('username, nickname')
+              .eq('id', data.user_id)
+              .single()
+            
+            if (!userError && userData) {
+              setAuthorName(userData.nickname || userData.username || '未知用户')
+            } else {
+              console.warn('获取作者信息失败:', userError)
+              setAuthorName('未知用户')
+            }
+          } catch (userFetchError) {
+            console.error('查询作者信息时发生错误:', userFetchError)
+            setAuthorName('未知用户')
+          }
+        } else {
+          setAuthorName('未知用户')
+        }
+      }
     } catch (error) {
       console.error('Error fetching file:', error)
       toast.error('File not found or has been deleted')
@@ -164,16 +194,41 @@ export default function FileDetailPage() {
 
   const fetchComments = async () => {
     try {
-      const { data, error } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('file_id', fileId)
-        .order('created_at', { ascending: true })
+      // 使用 API 端点获取评论
+      const response = await fetch(`/api/comments?fileId=${fileId}`)
+      const result = await response.json()
 
-      if (error) throw error
-      setComments(data || [])
+      if (result.success) {
+        setComments(result.data || [])
+      } else {
+        console.error('获取评论失败:', result.error)
+        // 如果 API 失败，尝试直接查询（向后兼容）
+        const { data, error } = await supabase
+          .from('comments')
+          .select('*')
+          .eq('file_id', fileId)
+          .order('created_at', { ascending: true })
+
+        if (!error && data) {
+          setComments(data)
+        }
+      }
     } catch (error) {
       console.error('Error fetching comments:', error)
+      // 如果 API 失败，尝试直接查询（向后兼容）
+      try {
+        const { data, error } = await supabase
+          .from('comments')
+          .select('*')
+          .eq('file_id', fileId)
+          .order('created_at', { ascending: true })
+
+        if (!error && data) {
+          setComments(data)
+        }
+      } catch (fallbackError) {
+        console.error('Fallback 查询评论也失败:', fallbackError)
+      }
     }
   }
 
@@ -205,7 +260,7 @@ export default function FileDetailPage() {
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '')) return 'image'
     if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'].includes(ext || '')) return 'video'
     if (['mp3', 'wav', 'flac', 'aac', 'ogg'].includes(ext || '')) return 'audio'
-    if (['pdf'].includes(ext || '')) return 'document'
+    if (['pdf', 'doc', 'docx'].includes(ext || '')) return 'document'
     if (['txt', 'md', 'json', 'xml', 'js', 'html', 'css'].includes(ext || '')) return 'text'
     return 'file'
   }
@@ -257,26 +312,47 @@ export default function FileDetailPage() {
     e.preventDefault()
     if (!newComment.trim()) return
 
+    // 检查用户是否登录
+    if (!user?.id) {
+      toast.error('请先登录后再发表评论')
+      return
+    }
+
     setSubmitting(true)
     try {
-      // 这里需要用户登录验证
-      const { error } = await supabase
-        .from('comments')
-        .insert({
-          file_id: fileId,
-          user_id: 'temp-user-id', // 实际使用时从认证上下文获取
-          username: '匿名用户', // 实际使用时从认证上下文获取
+      // 获取认证 token
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        toast.error('请先登录后再发表评论')
+        setSubmitting(false)
+        return
+      }
+
+      // 调用 API 端点创建评论
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          fileId: fileId,
           content: newComment.trim()
         })
+      })
 
-      if (error) throw error
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || '评论发布失败')
+      }
 
       setNewComment('')
       await fetchComments()
-      toast.success('评论发布成功')
-    } catch (error) {
+      toast.success(result.message || '评论发布成功')
+    } catch (error: any) {
       console.error('Error submitting comment:', error)
-      toast.error('Failed to post comment')
+      toast.error(error.message || '评论发布失败，请重试')
     } finally {
       setSubmitting(false)
     }
@@ -305,29 +381,41 @@ export default function FileDetailPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  // 检查是否为docx文件
-  const isDocxFile = (file: FileItem | null) => {
+  // 检查是否为 Word 文件（docx 或 doc）
+  const isWordFile = (file: FileItem | null) => {
     if (!file) return false
     const fileNameLower = file.original_name.toLowerCase()
     const mimeType = file.mime_type || ''
     
-    return fileNameLower.endsWith('.docx') ||
-           mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-           (mimeType.includes('wordprocessingml') && mimeType.includes('document'))
+    // 检查 .docx 文件
+    if (fileNameLower.endsWith('.docx') ||
+        mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        (mimeType.includes('wordprocessingml') && mimeType.includes('document'))) {
+      return true
+    }
+    
+    // 检查 .doc 文件
+    if (fileNameLower.endsWith('.doc') ||
+        mimeType === 'application/msword' ||
+        mimeType === 'application/vnd.ms-word.document.macroEnabled.12') {
+      return true
+    }
+    
+    return false
   }
 
   const renderFileContent = () => {
     if (!file) return null
 
-    // 特殊处理docx文件
-    if (isDocxFile(file)) {
+    // 特殊处理 Word 文件（docx 或 doc）
+    if (isWordFile(file)) {
       return (
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 text-white">
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
+                <div className="flex items-center">
                 <FileText className="w-6 h-6 mr-2" />
-                <span className="font-medium">Word文档预览</span>
+                <span className="font-medium">Word 文档预览</span>
               </div>
               <div className="flex space-x-2">
                 <button
@@ -355,8 +443,8 @@ export default function FileDetailPage() {
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <FileText className="w-8 h-8 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Word文档在线预览</h3>
-              <p className="text-gray-600 mb-4">使用Microsoft Office Online Viewer预览文档</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Word 文档在线预览</h3>
+              <p className="text-gray-600 mb-4">使用 Microsoft Office Online Viewer 预览文档</p>
               
               {/* 在线预览iframe */}
               <div className="mb-6">
@@ -366,7 +454,7 @@ export default function FileDetailPage() {
                   height="600"
                   frameBorder="0"
                   className="rounded-lg shadow-lg border border-gray-200"
-                  title="Word文档预览"
+                  title="Word 文档预览"
                 />
               </div>
               <div className="flex items-center justify-center space-x-4 text-sm text-gray-500 mb-6">
@@ -923,7 +1011,7 @@ export default function FileDetailPage() {
                 <div className="flex items-center space-x-6 text-sm text-blue-100 mb-4">
                 <div className="flex items-center">
                   <User className="w-4 h-4 mr-2" />
-                  <span>{'Unknown'}</span>
+                  <span>{authorName || '未知用户'}</span>
                 </div>
                 <div className="flex items-center">
                   <Calendar className="w-4 h-4 mr-2" />
