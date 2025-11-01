@@ -6,6 +6,8 @@ import { AuthProvider } from '@/components/providers/AuthProvider'
 import { UiProvider } from '@/components/providers/UiProvider'
 import MouseTrail from '@/components/effects/MouseTrail'
 import ParticlePhysics from '@/components/effects/ParticlePhysics'
+import Footer from '@/components/layout/Footer'
+import CookieConsent from '@/components/layout/CookieConsent'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -38,7 +40,11 @@ export default function RootLayout({
         
         <AuthProvider>
           <UiProvider>
-            {children}
+            <div className="flex flex-col min-h-screen">
+              {children}
+              <Footer />
+            </div>
+            <CookieConsent />
             <Toaster position="top-right" />
           </UiProvider>
         </AuthProvider>
