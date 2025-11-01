@@ -97,15 +97,15 @@ export default function FileCard({ file }: FileCardProps) {
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
             <Eye className="w-4 h-4 mr-1" />
-            <span>0</span>
+            <span>{file.download_count ?? 0}</span>
           </div>
           <div className="flex items-center">
             <Heart className="w-4 h-4 mr-1" />
-            <span>0</span>
+            <span>{file.likes_count ?? 0}</span>
           </div>
           <div className="flex items-center">
             <MessageCircle className="w-4 h-4 mr-1" />
-            <span>0</span>
+            <span>{file.comments_count ?? 0}</span>
           </div>
         </div>
       </div>

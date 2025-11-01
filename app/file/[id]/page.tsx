@@ -159,6 +159,23 @@ export default function FileDetailPage() {
       setFile(data)
       setLikesCount(data.likes_count || 0)
       
+      // 记录浏览量（打开详情页时增加）
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.access_token) {
+          // 异步更新浏览量，不等待结果
+          fetch(`/api/files/${fileId}/view`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json'
+            }
+          }).catch(err => console.warn('更新浏览量失败:', err))
+        }
+      } catch (err) {
+        console.warn('记录浏览量失败:', err)
+      }
+      
       // 获取作者信息
       if (data) {
         // 优先使用 author_name 字段

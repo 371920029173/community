@@ -46,10 +46,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 处理文件数据，确保author_name字段存在
+    // 处理文件数据，确保字段存在并统一字段名
     const processedFiles = (files || []).map((file: any) => ({
       ...file,
-      author_name: file.author_name || '未知用户'
+      author_name: file.author_name || '未知用户',
+      // 统一字段名：确保 download_count 存在（如果数据库返回 downloads_count，也映射过来）
+      download_count: file.download_count ?? file.downloads_count ?? 0,
+      likes_count: file.likes_count ?? 0,
+      comments_count: file.comments_count ?? 0
     }))
 
     return NextResponse.json({

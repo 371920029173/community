@@ -39,7 +39,7 @@ interface FileItem {
   user_id: string
   likes_count: number
   comments_count: number
-  downloads_count: number
+  download_count: number  // 统一使用单数形式，与数据库字段一致
   file_url: string
   is_approved: boolean
 }
@@ -451,7 +451,7 @@ export default function SharePage() {
                       <div className="flex items-center space-x-4 text-xs text-gray-500 mb-4">
                         <span className="flex items-center">
                           <Eye className="w-3 h-3 mr-1" />
-                          {file.downloads_count || 0}
+                          {file.download_count ?? 0}
                         </span>
                         <span className="flex items-center">
                           <Heart className="w-3 h-3 mr-1" />
