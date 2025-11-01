@@ -86,6 +86,7 @@ export interface Comment {
   username: string
   content: string
   created_at: string
+  avatar_url?: string | null
 }
 
 export interface Message {

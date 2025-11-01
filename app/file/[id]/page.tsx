@@ -47,6 +47,8 @@ export default function FileDetailPage() {
   const [fileContent, setFileContent] = useState<string>('')
   const [loadingContent, setLoadingContent] = useState(false)
   const [authorName, setAuthorName] = useState<string>('')
+  const [likesCount, setLikesCount] = useState<number>(0)
+  const [isLiking, setIsLiking] = useState(false)
 
   useEffect(() => {
     if (fileId && !authLoading) {
@@ -155,6 +157,7 @@ export default function FileDetailPage() {
       
       console.log('找到文件:', data)
       setFile(data)
+      setLikesCount(data.likes_count || 0)
       
       // 获取作者信息
       if (data) {
@@ -355,6 +358,54 @@ export default function FileDetailPage() {
       toast.error(error.message || '评论发布失败，请重试')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleLike = async () => {
+    if (!user?.id || !fileId || isLiking) return
+
+    // 检查用户是否登录
+    if (!user?.id) {
+      toast.error('请先登录后再点赞')
+      return
+    }
+
+    setIsLiking(true)
+    try {
+      // 获取认证 token
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        toast.error('请先登录后再点赞')
+        setIsLiking(false)
+        return
+      }
+
+      // 调用 API 端点点赞
+      const response = await fetch(`/api/files/${fileId}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || '点赞失败')
+      }
+
+      // 更新点赞数
+      setLikesCount(result.data.likes_count || 0)
+      if (file) {
+        setFile({ ...file, likes_count: result.data.likes_count || 0 })
+      }
+      toast.success(result.message || '点赞成功')
+    } catch (error: any) {
+      console.error('Error liking file:', error)
+      toast.error(error.message || '点赞失败，请重试')
+    } finally {
+      setIsLiking(false)
     }
   }
 
@@ -1019,7 +1070,7 @@ export default function FileDetailPage() {
                 </div>
                 <div className="flex items-center">
                   <Eye className="w-4 h-4 mr-2" />
-                  <span>{0} 次查看</span>
+                  <span>{file.download_count || 0} 次查看</span>
                 </div>
                   {/* 审核状态提示 - 仅管理员可见 */}
                   {user?.is_admin && !file.is_approved && (
@@ -1038,10 +1089,14 @@ export default function FileDetailPage() {
                   <Download className="w-4 h-4 mr-2" />
                   下载文件
                   </a>
-                  <button className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm flex items-center">
-                  <Heart className="w-4 h-4 mr-2" />
-                  收藏
-                </button>
+                  <button
+                    onClick={handleLike}
+                    disabled={isLiking || !user?.id}
+                    className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Heart className={`w-4 h-4 mr-2 ${likesCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
+                    {likesCount > 0 ? likesCount : ''} 点赞
+                  </button>
               </div>
             </div>
               <div className="text-right text-sm text-blue-100">
@@ -1109,7 +1164,20 @@ export default function FileDetailPage() {
               comments.map((comment) => (
                   <div key={comment.id} className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-start space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                      {comment.avatar_url ? (
+                        <img
+                          src={comment.avatar_url}
+                          alt={comment.username}
+                          className="w-10 h-10 rounded-full object-cover shadow-lg border-2 border-white"
+                          onError={(e) => {
+                            // 如果头像加载失败，显示默认头像
+                            const target = e.target as HTMLImageElement
+                            target.style.display = 'none'
+                            target.nextElementSibling?.classList.remove('hidden')
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg ${comment.avatar_url ? 'hidden' : ''}`}>
                         <User className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1">

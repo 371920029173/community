@@ -55,11 +55,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 获取用户信息（username, nickname）
+    // 获取用户信息（username, nickname, avatar_url）
     const supabaseAdmin = await getSupabaseAdmin()
     const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
-      .select('username, nickname')
+      .select('username, nickname, avatar_url')
       .eq('id', authUser.id)
       .single()
 
@@ -76,6 +76,11 @@ export async function POST(request: NextRequest) {
       })
       .select('*')
       .single()
+
+    // 添加用户头像信息到返回的评论对象
+    if (comment && userData) {
+      comment.avatar_url = userData.avatar_url || null
+    }
 
     if (insertError) {
       console.error('创建评论失败:', insertError)
@@ -137,9 +142,32 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // 为每条评论获取用户头像信息
+    const commentsWithAvatars = await Promise.all(
+      (comments || []).map(async (comment) => {
+        try {
+          const { data: userData } = await supabaseAdmin
+            .from('users')
+            .select('avatar_url')
+            .eq('id', comment.user_id)
+            .single()
+
+          return {
+            ...comment,
+            avatar_url: userData?.avatar_url || null
+          }
+        } catch (err) {
+          return {
+            ...comment,
+            avatar_url: null
+          }
+        }
+      })
+    )
+
     return NextResponse.json({
       success: true,
-      data: comments || []
+      data: commentsWithAvatars
     })
 
   } catch (error: any) {
