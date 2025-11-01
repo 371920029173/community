@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useUi } from '@/components/providers/UiProvider'
+import { getFriendlyErrorMessage } from '@/lib/utils'
 import { 
   Home, 
   User, 
@@ -53,7 +54,7 @@ export default function Navbar() {
       const response = await fetch(`/api/notifications?userId=${user.id}`)
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(`HTTP ${response.status}: 网络请求失败`)
       }
       
       const data = await response.json()
@@ -146,7 +147,11 @@ export default function Navbar() {
             </Link>
             {user && (
               <>
-                <Link href="/messages" className="relative flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="私信">
+                <Link 
+                  href="/messages" 
+                  className="relative flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" 
+                  title={notifications.messages > 0 ? `私信 (${notifications.messages}条未读)` : '私信'}
+                >
                   <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
                   <NotificationDot count={notifications.messages} />
                 </Link>

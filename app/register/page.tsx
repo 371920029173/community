@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Eye, EyeOff, User, Lock, Palette } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { getFriendlyErrorMessage } from '@/lib/utils'
 
 const nicknameColors = [
   '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
@@ -49,7 +50,7 @@ export default function RegisterPage() {
       toast.success('注册成功！请登录')
       router.push('/login')
     } catch (error: any) {
-      toast.error(error.message || '注册失败，请重试')
+      toast.error(getFriendlyErrorMessage(error) || '注册失败，请重试')
     } finally {
       setIsLoading(false)
     }

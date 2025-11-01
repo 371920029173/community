@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Eye, EyeOff, User, Lock } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { getFriendlyErrorMessage } from '@/lib/utils'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -31,7 +32,7 @@ export default function LoginPage() {
       toast.success('登录成功！')
       router.push('/')
     } catch (error: any) {
-      toast.error(error.message || '登录失败，请重试')
+      toast.error(getFriendlyErrorMessage(error) || '登录失败，请重试')
     } finally {
       setIsLoading(false)
     }

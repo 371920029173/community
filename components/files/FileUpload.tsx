@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone'
 import { Upload, X, File, Image, Video, Music, FileText, Globe, Lock } from 'lucide-react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import toast from 'react-hot-toast'
+import { getFriendlyErrorMessage } from '@/lib/utils'
 
 interface FileUploadProps {
   onUploadSuccess?: (file: any) => void
@@ -121,7 +122,7 @@ export default function FileUpload({ onUploadSuccess, onClose, defaultPublic = f
 
     } catch (error: any) {
       console.error('Upload error:', error)
-      toast.error(error.message || '上传失败')
+      toast.error(getFriendlyErrorMessage(error) || '上传失败')
     } finally {
       setUploading(false)
     }

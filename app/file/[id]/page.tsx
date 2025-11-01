@@ -25,6 +25,7 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import toast from 'react-hot-toast'
+import { getFriendlyErrorMessage } from '@/lib/utils'
 
 export default function FileDetailPage() {
   const params = useParams()
@@ -206,7 +207,7 @@ export default function FileDetailPage() {
       }
     } catch (error) {
       console.error('Error fetching file:', error)
-      toast.error('File not found or has been deleted')
+      toast.error(getFriendlyErrorMessage(error))
     } finally {
       setLoading(false)
     }
@@ -318,11 +319,11 @@ export default function FileDetailPage() {
         
         setFileContent(content)
       } else {
-        setFileContent('Unable to load file content')
+        setFileContent('无法加载文件内容，请检查文件是否存在')
       }
     } catch (error) {
       console.error('Error fetching file content:', error)
-      setFileContent('Error loading file content')
+      setFileContent('文件内容加载失败，请刷新页面后重试')
     } finally {
       setLoadingContent(false)
     }
@@ -385,7 +386,7 @@ export default function FileDetailPage() {
       toast.success(result.message || '评论发布成功')
     } catch (error: any) {
       console.error('Error submitting comment:', error)
-      toast.error(error.message || '评论发布失败，请重试')
+      toast.error(getFriendlyErrorMessage(error) || '评论发布失败，请重试')
     } finally {
       setSubmitting(false)
     }
@@ -433,7 +434,7 @@ export default function FileDetailPage() {
       toast.success(result.message || '点赞成功')
     } catch (error: any) {
       console.error('Error liking file:', error)
-      toast.error(error.message || '点赞失败，请重试')
+      toast.error(getFriendlyErrorMessage(error) || '点赞失败，请重试')
     } finally {
       setIsLiking(false)
     }

@@ -89,7 +89,7 @@ export default function StorageManagementPage() {
         setLogs(data.data.logs)
         console.log('设置用户数据:', data.data.users)
       } else {
-        toast.error(data.error || 'Failed to get information')
+        toast.error(getFriendlyErrorMessage(data.error) || '获取信息失败')
       }
     } catch (error) {
       console.error('获取存储信息失败:', error)
@@ -173,7 +173,7 @@ export default function StorageManagementPage() {
           setSelectedUser(null)
           fetchStorageRequests() // 刷新审核请求列表
         } else {
-          toast.error(data.error || 'Failed to submit request')
+          toast.error(getFriendlyErrorMessage(data.error) || '提交申请失败')
         }
       }
     } catch (error) {

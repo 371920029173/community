@@ -10,6 +10,7 @@ import {
   MoreVertical, Upload, Search, Grid, List, Eye
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { getFriendlyErrorMessage } from '@/lib/utils'
 
 interface FileItem {
   id: string
@@ -73,7 +74,7 @@ export default function FilesPage() {
       }
     } catch (error) {
       console.error('Failed to get files:', error)
-      toast.error('Failed to get files')
+      toast.error(getFriendlyErrorMessage(error) || '获取文件失败')
     } finally {
       setIsLoading(false)
     }

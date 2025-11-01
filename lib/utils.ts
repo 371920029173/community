@@ -206,4 +206,86 @@ export function createFilePreviewUrl(file: File): string {
 // 清理文件预览URL
 export function revokeFilePreviewUrl(url: string): void {
   URL.revokeObjectURL(url)
+}
+
+/**
+ * 将技术性错误转换为用户友好的中文提示
+ * 
+ * "failed to fetch" = 网络连接失败，无法连接到服务器
+ * "load failed" = 资源加载失败，文件或图片无法加载
+ */
+export function getFriendlyErrorMessage(error: any): string {
+  if (!error) return '操作失败，请重试'
+  
+  const errorMessage = error?.message || String(error) || ''
+  const errorString = errorMessage.toLowerCase()
+  
+  // 网络相关错误
+  if (errorString.includes('failed to fetch') || 
+      errorString.includes('networkerror') ||
+      errorString.includes('network error') ||
+      errorString.includes('fetch failed')) {
+    return '网络连接失败，请检查网络后重试'
+  }
+  
+  // 资源加载失败
+  if (errorString.includes('load failed') ||
+      errorString.includes('failed to load') ||
+      errorString.includes('loading failed')) {
+    return '资源加载失败，请刷新页面后重试'
+  }
+  
+  // 超时错误
+  if (errorString.includes('timeout') || errorString.includes('timed out')) {
+    return '请求超时，请稍后重试'
+  }
+  
+  // 404 错误
+  if (errorString.includes('404') || errorString.includes('not found')) {
+    return '内容不存在或已被删除'
+  }
+  
+  // 401/403 权限错误
+  if (errorString.includes('401') || errorString.includes('unauthorized')) {
+    return '请先登录'
+  }
+  if (errorString.includes('403') || errorString.includes('forbidden')) {
+    return '您没有权限执行此操作'
+  }
+  
+  // 500 服务器错误
+  if (errorString.includes('500') || errorString.includes('internal server error')) {
+    return '服务器暂时无法处理，请稍后重试'
+  }
+  
+  // 数据库相关错误
+  if (errorString.includes('database') || errorString.includes('sql')) {
+    return '数据操作失败，请重试'
+  }
+  
+  // 认证相关错误
+  if (errorString.includes('invalid') && errorString.includes('token')) {
+    return '登录已过期，请重新登录'
+  }
+  
+  if (errorString.includes('invalid') && errorString.includes('credentials')) {
+    return '用户名或密码错误'
+  }
+  
+  // 文件相关错误
+  if (errorString.includes('file') && errorString.includes('too large')) {
+    return '文件过大，请选择较小的文件'
+  }
+  
+  if (errorString.includes('file') && errorString.includes('not supported')) {
+    return '不支持的文件类型'
+  }
+  
+  // 如果是中文错误消息，直接返回
+  if (/[\u4e00-\u9fa5]/.test(errorMessage)) {
+    return errorMessage
+  }
+  
+  // 默认返回通用错误提示
+  return '操作失败，请重试'
 } 

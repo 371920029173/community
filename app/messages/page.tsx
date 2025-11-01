@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
+import { getFriendlyErrorMessage } from '@/lib/utils'
 
 // 获取文件类型
 const getFileType = (filename: string) => {
@@ -211,11 +212,11 @@ export default function MessagesPage() {
         }
       } else {
         const error = await response.json()
-        toast.error(error.message || '消息发送失败')
+          toast.error(getFriendlyErrorMessage(error) || '消息发送失败')
       }
     } catch (error) {
       console.error('发送消息失败:', error)
-      toast.error('发送消息失败')
+      toast.error(getFriendlyErrorMessage(error) || '发送消息失败')
     } finally {
       // 确保在finally中也清空状态
       if (inputMessage.trim() || selectedFile) {
