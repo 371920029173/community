@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useUi } from '@/components/providers/UiProvider'
@@ -47,7 +47,7 @@ export default function Navbar() {
   }
 
   // 获取通知数量
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!user?.id) return
 
     try {
@@ -60,7 +60,6 @@ export default function Navbar() {
       const data = await response.json()
       
       if (data.success) {
-        console.log('通知数据:', data.data) // 调试日志
         setNotifications(data.data)
       } else {
         console.warn('获取通知失败:', data.error)
@@ -74,14 +73,14 @@ export default function Navbar() {
         storageRequests: 0
       })
     }
-  }
+  }, [user?.id])
 
   // 定期获取通知
   useEffect(() => {
     if (user?.id) {
       // 立即获取一次
       fetchNotifications()
-      // 每15秒更新一次通知（更频繁的更新，提高实时性）
+      // 每15秒更新一次通知
       const interval = setInterval(fetchNotifications, 15000)
       return () => clearInterval(interval)
     } else {
@@ -92,9 +91,9 @@ export default function Navbar() {
         storageRequests: 0
       })
     }
-  }, [user?.id])
+  }, [user?.id, fetchNotifications])
 
-  // 通知红点组件（优化版：更明显的样式）
+  // 通知红点组件（确保图层正确，在最上层显示）
   const NotificationDot = ({ count, className = "" }: { count: number, className?: string }) => {
     if (count === 0) return null
     
@@ -105,7 +104,7 @@ export default function Navbar() {
     
     return (
       <span 
-        className={`absolute -top-1 -right-1 bg-red-500 text-white ${textSize} rounded-full ${size} flex items-center justify-center font-bold shadow-lg border-2 border-white z-[60] ${className}`}
+        className={`absolute -top-1 -right-1 bg-red-500 text-white ${textSize} rounded-full ${size} flex items-center justify-center font-bold shadow-lg border-2 border-white z-[9999] ${className}`}
         style={{ 
           pointerEvents: 'none',
           animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
