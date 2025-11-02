@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useUi } from '@/components/providers/UiProvider'
 import { getFriendlyErrorMessage } from '@/lib/utils'
-import MessageNotificationBadge from './MessageNotificationBadge'
 import { 
   Home, 
   User, 
@@ -159,11 +158,11 @@ export default function Navbar() {
                 <Link 
                   href="/messages" 
                   className="relative flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" 
-                  title="私信"
+                  title={notifications.messages > 0 ? `私信 (${notifications.messages}条未读)` : '私信'}
                 >
                   <div className="relative">
                     <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    <MessageNotificationBadge userId={user?.id} />
+                    <NotificationDot count={notifications.messages} />
                   </div>
                 </Link>
                 {(user.is_admin || user.is_moderator) && (
@@ -315,9 +314,14 @@ export default function Navbar() {
                   >
                     <div className="relative">
                       <MessageSquare className="w-5 h-5" />
-                      <MessageNotificationBadge userId={user?.id} />
+                      <NotificationDot count={notifications.messages} />
                     </div>
                     <span>私信</span>
+                    {notifications.messages > 0 && (
+                      <span className="ml-auto text-sm text-red-600 font-semibold">
+                        {notifications.messages}条未读
+                      </span>
+                    )}
                   </Link>
                   {(user.is_admin || user.is_moderator) && (
                     <Link 
