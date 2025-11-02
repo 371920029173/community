@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useUi } from '@/components/providers/UiProvider'
 import { getFriendlyErrorMessage } from '@/lib/utils'
+import MessageNotificationBadge from './MessageNotificationBadge'
 import { 
   Home, 
   User, 
@@ -158,11 +159,11 @@ export default function Navbar() {
                 <Link 
                   href="/messages" 
                   className="relative flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" 
-                  title={notifications.messages > 0 ? `私信 (${notifications.messages}条未读)` : '私信'}
+                  title="私信"
                 >
                   <div className="relative">
                     <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    <NotificationDot count={notifications.messages} />
+                    <MessageNotificationBadge userId={user?.id} />
                   </div>
                 </Link>
                 {(user.is_admin || user.is_moderator) && (
@@ -312,14 +313,11 @@ export default function Navbar() {
                     className="relative flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    <MessageSquare className="w-5 h-5" />
-                    私信
-                    {notifications.messages > 0 && (
-                      <span className="ml-auto text-sm text-red-600 font-semibold">
-                        {notifications.messages}条未读
-                      </span>
-                    )}
-                    <NotificationDot count={notifications.messages} className="top-2 right-2" />
+                    <div className="relative">
+                      <MessageSquare className="w-5 h-5" />
+                      <MessageNotificationBadge userId={user?.id} />
+                    </div>
+                    <span>私信</span>
                   </Link>
                   {(user.is_admin || user.is_moderator) && (
                     <Link 
