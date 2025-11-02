@@ -60,6 +60,7 @@ export default function Navbar() {
       const data = await response.json()
       
       if (data.success) {
+        console.log('[Navbar] 通知数据:', data.data, 'messages:', data.data?.messages) // 调试日志
         setNotifications(data.data)
       } else {
         console.warn('获取通知失败:', data.error)
@@ -104,10 +105,12 @@ export default function Navbar() {
     
     return (
       <span 
-        className={`absolute -top-1 -right-1 bg-red-500 text-white ${textSize} rounded-full ${size} flex items-center justify-center font-bold shadow-lg border-2 border-white z-[9999] ${className}`}
+        className={`absolute -top-1 -right-1 bg-red-500 text-white ${textSize} rounded-full ${size} flex items-center justify-center font-bold shadow-lg border-2 border-white ${className}`}
         style={{ 
           pointerEvents: 'none',
-          animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+          animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          zIndex: 10000,
+          position: 'absolute'
         }}
       >
         {count > 99 ? '99+' : count}
