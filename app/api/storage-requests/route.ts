@@ -30,15 +30,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 检查是否是超级管理员
-    const superAdminId = await getSuperAdminId()
-    if (adminId === superAdminId) {
-      return NextResponse.json(
-        { success: false, error: '超级管理员无需审核，请使用直接修改功能' },
-        { status: 400 }
-      )
-    }
-
     // 验证目标用户是否存在
     const { data: targetUserData, error: targetUserError } = await supabaseAdmin
       .from('users')
@@ -108,9 +99,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 检查是否是超级管理员提交的请求
+    const superAdminId = await getSuperAdminId()
+    const isSuperAdminRequest = adminId === superAdminId
+    
     return NextResponse.json({
       success: true,
-      message: '存储空间修改请求已提交，等待超级管理员审核',
+      message: isSuperAdminRequest 
+        ? '存储空间修改请求已提交，等待审核' 
+        : '存储空间修改请求已提交，等待超级管理员审核',
       data: {
         requestId: requestData.id,
         targetUser: targetUserData.username,

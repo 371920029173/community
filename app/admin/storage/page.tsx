@@ -126,8 +126,8 @@ export default function StorageManagementPage() {
 
     setUpdating(true)
     try {
-      // 如果是超级管理员修改自己的存储空间，使用特殊API
-      if (isSuperAdmin && selectedUser.username === '371920029173') {
+      // 如果是超级管理员修改自己的存储空间，使用特殊API（自己改自己不需要审核）
+      if (isSuperAdmin && selectedUser.username === '371920029173' && selectedUser.id === user.id) {
         const response = await fetch('/api/super-admin/storage', {
           method: 'POST',
           headers: {
@@ -151,7 +151,7 @@ export default function StorageManagementPage() {
           toast.error(data.error || 'Modification failed')
         }
       } else {
-        // 普通管理员修改其他用户的存储空间，需要提交审核请求
+        // 所有管理员（包括超级管理员）修改其他用户的存储空间，都需要提交审核请求
         const response = await fetch('/api/storage-requests', {
           method: 'POST',
           headers: {
@@ -168,7 +168,7 @@ export default function StorageManagementPage() {
         const data = await response.json()
         
         if (data.success) {
-          toast.success('存储空间修改请求已提交，等待超级管理员审核')
+          toast.success('存储空间修改请求已提交，等待审核')
           setNewLimit('')
           setReason('')
           setSelectedUser(null)
