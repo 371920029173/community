@@ -151,10 +151,10 @@ export default function HomePage() {
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text'
             }}>
-              文件分享平台
+              资源同频
             </h1>
             <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              简单、安全、高效的文件分享服务，让您的文件管理更加便捷
+              资源与你同频，信息予你无限
             </p>
             
             {/* 快速操作按钮 */}

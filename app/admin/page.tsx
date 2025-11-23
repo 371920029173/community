@@ -33,7 +33,8 @@ import {
   HardDrive,
   X,
   Trash,
-  Loader2
+  Loader2,
+  Coins
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -60,6 +61,8 @@ export default function AdminPage() {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [cleaningGhostAccounts, setCleaningGhostAccounts] = useState(false)
   const [cleanupResult, setCleanupResult] = useState<any>(null)
+  const [givingCoins, setGivingCoins] = useState<{userId: string, coins: number} | null>(null)
+  const [coinsAmount, setCoinsAmount] = useState('')
 
   useEffect(() => {
     if (user && (user.is_admin || user.is_moderator)) {
@@ -679,7 +682,7 @@ export default function AdminPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         {userItem.id !== user.id && (
-                          <div className="flex space-x-2">
+                          <div className="flex space-x-2 flex-wrap gap-2">
                             <button
                               onClick={() => handleUserRoleChange(userItem.id, 'is_admin', !userItem.is_admin)}
                               className={`px-3 py-1 rounded text-xs ${
@@ -700,6 +703,15 @@ export default function AdminPage() {
                             >
                               {userItem.is_moderator ? '取消审核员' : '设为审核员'}
                             </button>
+                            {user.username === '371920029173' && (
+                              <button
+                                onClick={() => setGivingCoins({ userId: userItem.id, coins: 0 })}
+                                className="px-3 py-1 rounded text-xs bg-amber-100 text-amber-800 hover:bg-amber-200 flex items-center gap-1"
+                              >
+                                <Coins className="w-3 h-3" />
+                                给沙币
+                              </button>
+                            )}
                           </div>
                         )}
                       </td>

@@ -20,7 +20,9 @@ import {
   Upload,
   Search,
   Sparkles,
-  Coins
+  Coins,
+  Users,
+  FileText
 } from 'lucide-react'
 
 interface Notifications {
@@ -163,12 +165,12 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo and Site Name */}
           <Link href="/" className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-accent-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">同</span>
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+              <FileText className="w-5 h-5 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="text-lg font-semibold text-gray-900 leading-tight">资源同频</span>
-              <span className="text-xs text-gray-500 leading-tight" style={{ fontWeight: 'normal' }}>资源与你同频，信息予你无限</span>
+              <span className="text-lg font-semibold text-gray-900 leading-tight">文件分享平台</span>
+              <span className="text-xs text-gray-500 leading-tight" style={{ fontWeight: 'normal' }}>简单、安全、高效的文件分享服务</span>
             </div>
           </Link>
 
@@ -208,6 +210,9 @@ export default function Navbar() {
             </Link>
             <Link href="/fortune" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="占卜">
               <Sparkles className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            </Link>
+            <Link href="/forums" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="论坛大厅">
+              <Users className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
             {user && (
               <>
@@ -352,6 +357,14 @@ export default function Navbar() {
               >
                 <Sparkles className="w-5 h-5" />
                 占卜
+              </Link>
+              <Link 
+                href="/forums" 
+                className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Users className="w-5 h-5" />
+                论坛大厅
               </Link>
               {user && (
                 <>
