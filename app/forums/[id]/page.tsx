@@ -70,6 +70,7 @@ export default function ForumDetailPage({ params }: { params: Promise<{ id: stri
   const [sending, setSending] = useState(false)
   const [sandCoins, setSandCoins] = useState(0)
   const [forumId, setForumId] = useState<string>('')
+  const [lastMessageCount, setLastMessageCount] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // 解析 params
