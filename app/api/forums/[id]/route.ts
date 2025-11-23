@@ -25,6 +25,7 @@ export async function GET(
         current_topic,
         announcement,
         owner_id,
+        is_hidden,
         expires_at,
         created_at,
         owner:users!forums_owner_id_fkey (
