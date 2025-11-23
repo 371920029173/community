@@ -150,7 +150,7 @@ export default function HomePage() {
               backgroundClip: 'text',
               marginBottom: '40px'
             }}>
-              资源同频
+              文件分享
             </h1>
             <p className="text-xl text-gray-600 text-left leading-relaxed" style={{ fontWeight: 'normal', letterSpacing: '5px' }}>
               资源与你同频，信息予你无限

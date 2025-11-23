@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { Noto_Sans_SC, Noto_Serif_SC } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/components/providers/AuthProvider'
@@ -10,10 +11,20 @@ import Footer from '@/components/layout/Footer'
 import CookieConsent from '@/components/layout/CookieConsent'
 
 const inter = Inter({ subsets: ['latin'] })
+const notoSansSC = Noto_Sans_SC({ 
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-noto-sans-sc'
+})
+const notoSerifSC = Noto_Serif_SC({ 
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-noto-serif-sc'
+})
 
 export const metadata: Metadata = {
-  title: '资源同频 - 信息无限',
-  description: '资源与你同频，信息予你无限',
+  title: '文件分享',
+  description: '资源与你同频，信息予你无限。在这里分享文件、交流想法、创建论坛。',
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
@@ -39,7 +50,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         ></script>
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} ${notoSansSC.variable} ${notoSerifSC.variable}`}>
         {/* 动态粒子物理效果 */}
         <ParticlePhysics />
         
