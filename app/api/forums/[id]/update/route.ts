@@ -8,12 +8,12 @@ const UPDATE_FORUM_COST = 3
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { current_topic, announcement } = await request.json()
     const authHeader = request.headers.get('authorization')
-    const forumId = params.id
+    const { id: forumId } = await params
 
     if (!authHeader) {
       return NextResponse.json({ success: false, error: '未授权' }, { status: 401 })

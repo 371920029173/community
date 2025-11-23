@@ -8,11 +8,11 @@ export const revalidate = 0
 // 获取消息列表
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization')
-    const forumId = params.id
+    const { id: forumId } = await params
 
     if (!authHeader) {
       return NextResponse.json({ success: false, error: '未授权' }, { status: 401 })
@@ -95,11 +95,11 @@ export async function GET(
 // 发送消息
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization')
-    const forumId = params.id
+    const { id: forumId } = await params
     const { content } = await request.json()
 
     if (!authHeader) {

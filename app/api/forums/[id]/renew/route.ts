@@ -9,11 +9,11 @@ const RENEW_DAYS = 30
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization')
-    const forumId = params.id
+    const { id: forumId } = await params
 
     if (!authHeader) {
       return NextResponse.json({ success: false, error: '未授权' }, { status: 401 })
