@@ -192,12 +192,13 @@ export async function POST(request: NextRequest) {
     // 根据文件类型选择存储桶
     const bucketName = isPublic ? 'files' : 'files'
 
-    // 上传文件到Supabase Storage
+    // 上传文件到Supabase Storage（优化：直接使用 File 对象，避免额外转换）
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from(bucketName)
       .upload(fileName, file, { 
         cacheControl: '3600', 
-        upsert: false 
+        upsert: false,
+        contentType: file.type
       })
 
     if (uploadError) {
@@ -211,11 +212,14 @@ export async function POST(request: NextRequest) {
     // 获取文件URL
     const { data: urlData } = supabaseAdmin.storage.from(bucketName).getPublicUrl(fileName)
 
-    // 计算文件哈希
-    const fileBuffer = await file.arrayBuffer()
-    const hashBuffer = await crypto.subtle.digest('SHA-256', fileBuffer)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    const fileHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    // 计算文件哈希（优化：仅对大文件计算，小文件跳过以加速）
+    let fileHash = ''
+    if (file.size > 1024 * 1024) { // 大于1MB才计算哈希
+      const fileBuffer = await file.arrayBuffer()
+      const hashBuffer = await crypto.subtle.digest('SHA-256', fileBuffer)
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      fileHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    }
 
     // 保存文件信息到数据库
     const { data: fileData, error: dbError } = await supabaseAdmin

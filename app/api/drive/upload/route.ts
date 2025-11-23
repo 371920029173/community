@@ -66,14 +66,33 @@ export async function POST(request: NextRequest) {
     const bucket = 'drive' // 独立云盘bucket
     const filePath = generateFilePath(file.name, userId)
 
+    // 优化：并行执行上传和哈希计算（对于大文件）
     let upErr = null as any
-    try {
-      const { error } = await supabaseAdmin.storage
-        .from(bucket)
-        .upload(filePath, file, { cacheControl: '3600', upsert: false })
-      upErr = error
-    } catch (e: any) {
-      upErr = e
+    let hash = ''
+    
+    // 对于大文件，并行计算哈希和上传
+    if (file.size > 1024 * 1024) {
+      const [uploadResult, hashResult] = await Promise.allSettled([
+        supabaseAdmin.storage.from(bucket).upload(filePath, file, { cacheControl: '3600', upsert: false, contentType: file.type }),
+        file.arrayBuffer().then(buffer => createHash(buffer))
+      ])
+      
+      if (uploadResult.status === 'rejected' || uploadResult.value.error) {
+        upErr = uploadResult.status === 'rejected' ? uploadResult.reason : uploadResult.value.error
+      }
+      if (hashResult.status === 'fulfilled') {
+        hash = hashResult.value
+      }
+    } else {
+      // 小文件直接上传，不计算哈希
+      try {
+        const { error } = await supabaseAdmin.storage
+          .from(bucket)
+          .upload(filePath, file, { cacheControl: '3600', upsert: false, contentType: file.type })
+        upErr = error
+      } catch (e: any) {
+        upErr = e
+      }
     }
 
     if (upErr) {
@@ -104,8 +123,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: `生成访问链接失败: ${signErr.message}` }, { status: 500 })
     }
 
-    const buffer = await file.arrayBuffer()
-    const hash = await createHash(buffer)
+    // 哈希已在上面并行计算（大文件）或跳过（小文件）
 
     // 保存到独立表 drive_files（需要预先存在该表）
     const { data: inserted, error: insErr } = await supabaseAdmin
@@ -117,7 +135,7 @@ export async function POST(request: NextRequest) {
         file_size: file.size,
         mime_type: file.type,
         file_type: getFileTypeByName(file.name),
-        file_hash: hash,
+        file_hash: hash || '', // 小文件可能没有哈希
         // 存储私密文件建议不公开URL，这里保存签名URL供短期预览
         signed_url: signed.signedUrl,
         user_id: userId,

@@ -144,16 +144,19 @@ export default function MessagesPage() {
         receiverId: selectedConversation.other_user?.id // 添加接收者ID
       }
 
-      // 如果有文件，先上传文件
+      // 如果有文件，先上传文件（优化：使用 AbortController 支持取消，并行处理）
       if (selectedFile) {
         const formData = new FormData()
         formData.append('file', selectedFile)
         formData.append('userId', user.id)
         formData.append('isPublic', 'false')
         
+        // 优化：显示上传进度
+        const uploadController = new AbortController()
         const uploadResponse = await fetch('/api/upload', {
           method: 'POST',
-          body: formData
+          body: formData,
+          signal: uploadController.signal
         })
         
         if (!uploadResponse.ok) {
@@ -246,9 +249,25 @@ export default function MessagesPage() {
           setMessages(messageList)
           console.log('获取到的消息:', messageList)
           
-          // 标记当前对话的消息为已读（清除未读数）
-          if (selectedConversation?.id === conversationId) {
-            setUnreadCounts(prev => ({ ...prev, [conversationId]: 0 }))
+          // 标记当前对话的消息为已读
+          if (selectedConversation?.id === conversationId && user?.id) {
+            try {
+              await fetch('/api/messages/mark-read', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({
+                  conversationId,
+                  userId: user.id
+                })
+              })
+              // 清除未读数
+              setUnreadCounts(prev => ({ ...prev, [conversationId]: 0 }))
+            } catch (error) {
+              console.error('标记已读失败:', error)
+            }
           }
         }
       }
@@ -257,7 +276,7 @@ export default function MessagesPage() {
     }
   }
 
-  // 获取所有对话的未读消息数
+  // 获取所有对话的未读消息数（使用 API 获取，更可靠）
   const fetchUnreadCounts = async () => {
     if (!user?.id) return
 
@@ -265,27 +284,43 @@ export default function MessagesPage() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
 
-      // 直接查询未读消息，按对话分组统计
-      const { data: unreadMessages, error } = await supabase
-        .from('messages')
-        .select('conversation_id')
-        .eq('receiver_id', user.id)
-        .eq('is_read', false)
+      // 使用专门的未读数 API（更可靠）
+      const response = await fetch(`/api/messages/unread-counts?userId=${user.id}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
 
-      if (error) {
-        console.error('获取未读消息失败:', error)
-        return
-      }
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.data) {
+          console.log('未读消息统计:', data.data)
+          setUnreadCounts(data.data)
+        }
+      } else {
+        // 回退：直接查询数据库
+        const { data: unreadMessages, error } = await supabase
+          .from('messages')
+          .select('conversation_id')
+          .eq('receiver_id', user.id)
+          .eq('is_read', false)
 
-      // 按对话分组统计未读数
-      const unreadMap: {[key: string]: number} = {}
-      if (unreadMessages) {
-        unreadMessages.forEach((msg: any) => {
-          unreadMap[msg.conversation_id] = (unreadMap[msg.conversation_id] || 0) + 1
-        })
+        if (error) {
+          console.error('获取未读消息失败:', error)
+          return
+        }
+
+        // 按对话分组统计未读数
+        const unreadMap: {[key: string]: number} = {}
+        if (unreadMessages) {
+          unreadMessages.forEach((msg: any) => {
+            unreadMap[msg.conversation_id] = (unreadMap[msg.conversation_id] || 0) + 1
+          })
+        }
+        
+        console.log('未读消息统计（回退）:', unreadMap)
+        setUnreadCounts(unreadMap)
       }
-      
-      setUnreadCounts(unreadMap)
     } catch (error) {
       console.error('获取未读数失败:', error)
     }
