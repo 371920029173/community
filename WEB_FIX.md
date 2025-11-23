@@ -34,41 +34,33 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Edge Runtime 兼容：动态创建 Supabase Admin 客户端
-// 注意：在 Edge Runtime 中必须使用 async 函数和动态导入
+// 注意：直接使用 createClient，不需要动态导入（与 web 项目保持一致）
 export async function getSupabaseAdmin() {
-  try {
-    // 动态导入 createClient，确保在 Edge Runtime 中正常工作
-    const { createClient } = await import('@supabase/supabase-js')
-    
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-    if (!url || !serviceRoleKey) {
-      throw new Error('Supabase Admin环境变量未配置')
-    }
-
-    // 清理并验证 key（移除所有空白字符，包括换行）
-    const cleanKey = serviceRoleKey.trim().replace(/\s+/g, '')
-
-    // 验证 key 格式
-    if (!cleanKey.startsWith('eyJ')) {
-      throw new Error(`Invalid API key format: ${cleanKey.substring(0, 30)}...`)
-    }
-
-    // 在 Edge Runtime 中创建 Supabase 客户端
-    return createClient(url, cleanKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false
-      }
-    })
-  } catch (error) {
-    console.error('创建 Supabase Admin 客户端失败:', error)
-    throw error
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Supabase Admin环境变量未配置')
   }
+
+  // 清理并验证 key（移除所有空白字符，包括换行）
+  const cleanKey = serviceRoleKey.trim().replace(/\s+/g, '')
+
+  // 在 Edge Runtime 中创建 Supabase 客户端
+  return createClient(supabaseUrl, cleanKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false
+    }
+  })
 }
 ```
+
+**重要发现**：
+- ❌ **错误做法**：使用 `await import('@supabase/supabase-js')` 动态导入
+- ✅ **正确做法**：直接使用 `import { createClient } from '@supabase/supabase-js'` 然后在函数中使用
+- 原因：在 Edge Runtime 中，直接导入 `createClient` 是可以正常工作的，动态导入反而可能导致问题
 
 #### 2. 在 API 路由中使用统一函数
 
@@ -159,12 +151,12 @@ export async function GET() {
 
 ### 关键要点总结
 
-1. **必须使用异步函数**：`getSupabaseAdmin()` 必须是 `async` 函数
-2. **必须使用动态导入**：在函数内部使用 `await import('@supabase/supabase-js')`
+1. **必须使用异步函数**：`getSupabaseAdmin()` 必须是 `async` 函数（即使函数体是同步的）
+2. **直接导入 createClient**：在文件顶部使用 `import { createClient } from '@supabase/supabase-js'`，**不要**使用动态导入
 3. **清理密钥**：使用 `trim().replace(/\s+/g, '')` 移除所有空白字符
-4. **验证密钥格式**：检查密钥是否以 `eyJ` 开头（JWT token 标准格式）
-5. **统一管理**：所有 API 路由都使用同一个 `getSupabaseAdmin()` 函数
-6. **错误处理**：始终检查客户端是否成功创建
+4. **统一管理**：所有 API 路由都使用同一个 `getSupabaseAdmin()` 函数
+5. **错误处理**：在调用 `getSupabaseAdmin()` 时使用 try-catch 捕获错误
+6. **环境变量配置**：确保 `wrangler.toml` 中的环境变量正确配置，Cloudflare Pages 会自动读取
 
 ### 测试方法
 
