@@ -723,6 +723,79 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* 给沙币模态框（仅超管） */}
+        {givingCoins && user.username === '371920029173' && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">给用户沙币</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">沙币数量</label>
+                  <input
+                    type="number"
+                    value={coinsAmount}
+                    onChange={(e) => setCoinsAmount(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="输入要给予的沙币数量"
+                    min="1"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={async () => {
+                    if (!coinsAmount || parseInt(coinsAmount) <= 0) {
+                      toast.error('请输入有效的沙币数量')
+                      return
+                    }
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession()
+                      if (!session) {
+                        toast.error('会话已过期')
+                        return
+                      }
+                      const response = await fetch('/api/admin/give-coins', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${session.access_token}`
+                        },
+                        body: JSON.stringify({
+                          userId: givingCoins.userId,
+                          coins: parseInt(coinsAmount)
+                        })
+                      })
+                      const result = await response.json()
+                      if (result.success) {
+                        toast.success(result.message)
+                        setGivingCoins(null)
+                        setCoinsAmount('')
+                        fetchData()
+                      } else {
+                        toast.error(result.error || '操作失败')
+                      }
+                    } catch (error: any) {
+                      toast.error('操作失败')
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  确认给予
+                </button>
+                <button
+                  onClick={() => {
+                    setGivingCoins(null)
+                    setCoinsAmount('')
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 头像审核面板 */}
         {activeTab === 'avatar' && (
           <div className="card">
