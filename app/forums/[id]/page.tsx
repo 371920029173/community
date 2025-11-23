@@ -228,6 +228,8 @@ export default function ForumDetailPage({ params }: { params: Promise<{ id: stri
     }
   }, [user, fetchForum, fetchSandCoins])
 
+  const [lastMessageCount, setLastMessageCount] = useState(0)
+
   useEffect(() => {
     if (isMember || isOwner) {
       fetchMessages()
@@ -237,9 +239,16 @@ export default function ForumDetailPage({ params }: { params: Promise<{ id: stri
     }
   }, [isMember, isOwner, fetchMessages])
 
+  // 只在有新消息时滚动到底部
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    if (messages.length > lastMessageCount && messages.length > 0) {
+      // 延迟一下，确保DOM已更新
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
+      setLastMessageCount(messages.length)
+    }
+  }, [messages.length, lastMessageCount])
 
   if (loading) {
     return (
