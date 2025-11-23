@@ -12,8 +12,8 @@ import CookieConsent from '@/components/layout/CookieConsent'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: '文件分享平台',
-  description: '安全、快速、智能的文件分享服务',
+  title: '资源同频 - 信息无限',
+  description: '资源与你同频，信息予你无限',
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },

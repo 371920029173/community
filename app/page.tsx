@@ -1,8 +1,12 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import { TopAdBanner } from '@/components/ads/AdBanner'
 import { BottomAdBanner } from '@/components/ads/AdBanner'
 import Navbar from '@/components/layout/Navbar'
 import FileGrid from '@/components/files/FileGrid'
 import AnnouncementBanner from '@/components/announcements/AnnouncementBanner'
+import { useAuth } from '@/components/providers/AuthProvider'
 import { 
   Upload, 
   Search, 
@@ -18,11 +22,16 @@ import {
   Eye,
   FolderOpen,
   MessageSquare,
-  Sparkles
+  Sparkles,
+  Calendar,
+  Crown
 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function HomePage() {
+  const { user } = useAuth()
+  const [forumPreview, setForumPreview] = useState<any[]>([])
+  const [loadingForums, setLoadingForums] = useState(true)
   // 实时功能入口
   const quickActions = [
     {
@@ -79,29 +88,42 @@ export default function HomePage() {
     }
   ]
 
-  const latestUpdates = [
-    {
-      status: 'new',
-      time: '2小时前',
-      title: '新增AI文件分析功能',
-      description: '现在可以使用AI智能分析您的文件内容，提供更精准的标签和描述。',
-      color: 'bg-green-500'
-    },
-    {
-      status: 'feature',
-      time: '1天前',
-      title: '私信系统上线',
-      description: '全新的私信功能，支持一对一和群组聊天，让交流更加便捷。',
-      color: 'bg-blue-500'
-    },
-    {
-      status: 'update',
-      time: '3天前',
-      title: '性能优化升级',
-      description: '大幅提升文件上传和下载速度，优化用户体验。',
-      color: 'bg-purple-500'
+  // 获取论坛预览
+  useEffect(() => {
+    const fetchForumPreview = async () => {
+      try {
+        setLoadingForums(true)
+        const response = await fetch('/api/forums/list?public=true')
+        const result = await response.json()
+        if (result.success) {
+          setForumPreview(result.data?.slice(0, 3) || [])
+        }
+      } catch (error) {
+        console.error('获取论坛预览失败:', error)
+      } finally {
+        setLoadingForums(false)
+      }
     }
-  ]
+
+    fetchForumPreview()
+  }, [])
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diff = date.getTime() - now.getTime()
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
+    
+    if (days < 0) {
+      return '已过期'
+    } else if (days === 0) {
+      return '今天过期'
+    } else if (days <= 5) {
+      return `${days}天后过期`
+    } else {
+      return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+    }
+  }
 
   return (
     <div className="min-h-screen">
@@ -171,29 +193,53 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 最新动态 */}
+        {/* 论坛大厅映射窗口 */}
         <div className="mb-12">
           <div className="card-minimal p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-slate-800 flex items-center">
-                <TrendingUp className="w-6 h-6 mr-2 text-slate-600" />
-                最新动态
+                <Users className="w-6 h-6 mr-2 text-slate-600" />
+                论坛大厅
               </h2>
-              <Link href="/news" className="text-blue-600 hover:text-blue-700 font-medium">
+              <Link href="/forums" className="text-blue-600 hover:text-blue-700 font-medium">
                 查看全部 →
               </Link>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {latestUpdates.map((update, index) => (
-                <div key={index} className="p-4 bg-slate-50/50 backdrop-blur-sm rounded-xl border border-slate-200/50">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
-                    <span className="text-sm text-slate-500">{update.time}</span>
-                  </div>
-                  <h3 className="font-medium text-slate-800 mb-1">{update.title}</h3>
-                  <p className="text-sm text-slate-600">{update.description}</p>
+            <div id="forum-preview" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {loadingForums ? (
+                <div className="p-4 bg-slate-50/50 backdrop-blur-sm rounded-xl border border-slate-200/50 text-center text-slate-500">
+                  加载中...
                 </div>
-              ))}
+              ) : forumPreview.length === 0 ? (
+                <div className="p-4 bg-slate-50/50 backdrop-blur-sm rounded-xl border border-slate-200/50 text-center text-slate-500">
+                  暂无论坛
+                </div>
+              ) : (
+                forumPreview.map((forum) => (
+                  <Link
+                    key={forum.id}
+                    href={`/forums/${forum.id}`}
+                    className="p-4 bg-slate-50/50 backdrop-blur-sm rounded-xl border border-slate-200/50 hover:border-blue-300 hover:shadow-md transition-all"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-medium text-slate-800 flex-1 truncate">{forum.title}</h3>
+                      {forum.owner_id === user?.id && (
+                        <Crown className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                      )}
+                    </div>
+                    {forum.current_topic && (
+                      <p className="text-sm text-slate-600 mb-2 line-clamp-2">{forum.current_topic}</p>
+                    )}
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>{forum.owner?.nickname || forum.owner?.username}</span>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        <span>{formatTime(forum.expires_at)}</span>
+                      </div>
+                    </div>
+                  </Link>
+                ))
+              )}
             </div>
           </div>
         </div>

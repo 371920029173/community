@@ -19,13 +19,29 @@ import {
   Share2,
   Upload,
   Search,
-  Sparkles
+  Sparkles,
+  Coins
 } from 'lucide-react'
 
 interface Notifications {
   messages: number
   fileReview: number
   storageRequests: number
+}
+
+interface UserWithCoins {
+  id: string
+  username: string
+  email?: string
+  avatar_url?: string
+  nickname?: string
+  nickname_color?: string
+  is_admin: boolean
+  is_moderator: boolean
+  created_at: string
+  storage_used: number
+  storage_limit: number
+  sand_coins?: number
 }
 
 export default function Navbar() {
@@ -37,6 +53,7 @@ export default function Navbar() {
     fileReview: 0,
     storageRequests: 0
   })
+  const [sandCoins, setSandCoins] = useState<number>(0)
 
   const handleSignOut = async () => {
     try {
@@ -76,23 +93,45 @@ export default function Navbar() {
     }
   }, [user?.id])
 
-  // 定期获取通知
+  // 获取沙币数量
+  const fetchSandCoins = useCallback(async () => {
+    if (!user?.id) return
+
+    try {
+      const response = await fetch(`/api/user/coins?userId=${user.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          setSandCoins(data.coins || 0)
+        }
+      }
+    } catch (error) {
+      console.error('获取沙币失败:', error)
+    }
+  }, [user?.id])
+
+  // 定期获取通知和沙币
   useEffect(() => {
     if (user?.id) {
       // 立即获取一次
       fetchNotifications()
-      // 每15秒更新一次通知
-      const interval = setInterval(fetchNotifications, 15000)
+      fetchSandCoins()
+      // 每15秒更新一次通知和沙币
+      const interval = setInterval(() => {
+        fetchNotifications()
+        fetchSandCoins()
+      }, 15000)
       return () => clearInterval(interval)
     } else {
-      // 用户未登录时重置通知
+      // 用户未登录时重置通知和沙币
       setNotifications({
         messages: 0,
         fileReview: 0,
         storageRequests: 0
       })
+      setSandCoins(0)
     }
-  }, [user?.id, fetchNotifications])
+  }, [user?.id, fetchNotifications, fetchSandCoins])
 
   // 通知红点组件（确保图层正确，在最上层显示）
   const NotificationDot = ({ count, className = "" }: { count: number, className?: string }) => {
@@ -122,15 +161,32 @@ export default function Navbar() {
     <nav className="nav-minimal sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
+          {/* Logo and Site Name */}
+          <Link href="/" className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-accent-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">F</span>
+              <span className="text-white font-bold text-lg">同</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-semibold text-gray-900 leading-tight">资源同频</span>
+              <span className="text-xs text-gray-500 leading-tight" style={{ fontWeight: 'normal' }}>资源与你同频，信息予你无限</span>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
+            {/* 沙币显示（电脑版左侧） */}
+            {user && (
+              <div className="flex items-center space-x-1 px-3 py-1 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="relative">
+                  <div className="w-4 h-4 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center">
+                    <div className="w-2 h-2 bg-amber-700 rounded-full"></div>
+                  </div>
+                  <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
+                  <div className="absolute -bottom-0.5 -left-0.5 w-1 h-1 bg-amber-400 rounded-full"></div>
+                </div>
+                <span className="text-sm font-medium text-amber-700">{sandCoins}</span>
+              </div>
+            )}
             <button
               onClick={toggleUiMode}
               className="text-xs px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
@@ -396,6 +452,24 @@ export default function Navbar() {
                   >
                     注册
                   </Link>
+                </div>
+              )}
+              {/* 沙币显示（手机版菜单底部） */}
+              {user && (
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <div className="flex items-center justify-between px-3 py-2 bg-amber-50 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <div className="relative">
+                        <div className="w-5 h-5 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center">
+                          <div className="w-2.5 h-2.5 bg-amber-700 rounded-full"></div>
+                        </div>
+                        <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full"></div>
+                        <div className="absolute -bottom-0.5 -left-0.5 w-1.5 h-1.5 bg-amber-400 rounded-full"></div>
+                      </div>
+                      <span className="text-sm font-medium text-amber-700">沙币</span>
+                    </div>
+                    <span className="text-lg font-bold text-amber-800">{sandCoins}</span>
+                  </div>
                 </div>
               )}
             </div>

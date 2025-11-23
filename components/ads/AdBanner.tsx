@@ -1,6 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useAuth } from '@/components/providers/AuthProvider'
+import { supabase } from '@/lib/supabase'
+import toast from 'react-hot-toast'
 
 interface AdBannerProps {
   position: 'top' | 'sidebar' | 'bottom'
@@ -12,8 +15,64 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
   if (!hasContent) {
     return null
   }
+  const { user } = useAuth()
   const [currentAdIndex, setCurrentAdIndex] = useState(0)
   const [ads, setAds] = useState<Array<{ id: string; content: string; type: string }>>([])
+  const clickTimestampRef = useRef<number>(0)
+  const isProcessingRef = useRef<boolean>(false)
+
+  // 处理广告点击
+  const handleAdClick = async (e: React.MouseEvent) => {
+    if (!user) return // 未登录用户不奖励
+
+    // 防止重复点击
+    if (isProcessingRef.current) return
+
+    const now = Date.now()
+    // 防止快速连续点击（至少间隔1秒）
+    if (now - clickTimestampRef.current < 1000) return
+
+    clickTimestampRef.current = now
+    isProcessingRef.current = true
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        isProcessingRef.current = false
+        return
+      }
+
+      const response = await fetch('/api/ads/click', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          position,
+          userAgent: navigator.userAgent,
+          timestamp: now
+        })
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        toast.success(`获得${result.coinsAwarded}个沙币！`)
+      } else if (result.alreadyClicked) {
+        // 今天已经点击过，不显示错误提示
+      } else {
+        // 其他错误不显示提示，避免打扰用户
+        console.warn('广告点击奖励失败:', result.error)
+      }
+    } catch (error) {
+      console.error('广告点击处理失败:', error)
+    } finally {
+      // 延迟重置，防止快速连续点击
+      setTimeout(() => {
+        isProcessingRef.current = false
+      }, 2000)
+    }
+  }
 
   useEffect(() => {
     // 模拟广告数据，实际使用时替换为真实的Google AdSense代码
@@ -69,7 +128,11 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
   }
 
   return (
-    <div className={`${getAdStyles()} transition-all duration-500 ease-in-out`}>
+    <div 
+      className={`${getAdStyles()} transition-all duration-500 ease-in-out ${user ? 'cursor-pointer hover:opacity-90' : ''}`}
+      onClick={user ? handleAdClick : undefined}
+      title={user ? '点击广告可获得5个沙币（每天每个位置限1次）' : undefined}
+    >
       {getAdContent()}
     </div>
   )
