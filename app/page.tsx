@@ -138,8 +138,26 @@ export default function HomePage() {
         
         {/* 主要内容 */}
         <div className="mb-12">
-          {/* 快速操作按钮 */}
-          <div className="flex flex-wrap gap-4 mb-8">
+          {/* 标题部分 - 左对齐，居中偏左 */}
+          <div className="mb-8" style={{ marginLeft: 'calc(50% - 50%)', maxWidth: 'max-content' }}>
+            <h1 className="text-5xl font-bold mb-3 text-left" style={{
+              fontFamily: "'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif",
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+              background: 'linear-gradient(135deg, #1e293b 0%, #475569 50%, #64748b 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
+              资源同频
+            </h1>
+            <p className="text-xl text-gray-600 text-left leading-relaxed" style={{ fontWeight: 'normal' }}>
+              资源与你同频，信息予你无限
+            </p>
+          </div>
+          
+          {/* 快速操作按钮 - 居中 */}
+          <div className="flex flex-wrap justify-center gap-4 mb-8">
             {quickActions.map((action, index) => (
               <Link
                 key={index}

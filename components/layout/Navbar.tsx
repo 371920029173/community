@@ -162,7 +162,7 @@ export default function Navbar() {
   return (
     <nav className="nav-minimal sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-center items-center h-16">
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
             {/* 沙币显示（电脑版左侧） */}
@@ -226,7 +226,7 @@ export default function Navbar() {
           </div>
 
           {/* User Menu */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-4 ml-6">
             {user ? (
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2">
