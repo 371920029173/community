@@ -229,8 +229,6 @@ export default function ForumDetailPage({ params }: { params: Promise<{ id: stri
     }
   }, [user, fetchForum, fetchSandCoins])
 
-  const [lastMessageCount, setLastMessageCount] = useState(0)
-
   useEffect(() => {
     if (isMember || isOwner) {
       fetchMessages()
