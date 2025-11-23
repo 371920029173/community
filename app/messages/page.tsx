@@ -80,7 +80,7 @@ export default function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [isSearching, setIsSearching] = useState(false)
-  const [lastMessageCount, setLastMessageCount] = useState(0) // 用于检测新消息
+  const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({}) // 每个对话的未读消息数
 
   // 获取会话列表
   const fetchConversations = async () => {
@@ -244,12 +244,50 @@ export default function MessagesPage() {
         if (data.success) {
           const messageList = data.data || []
           setMessages(messageList)
-          setLastMessageCount(messageList.length) // 更新消息计数
           console.log('获取到的消息:', messageList)
+          
+          // 标记当前对话的消息为已读（清除未读数）
+          if (selectedConversation?.id === conversationId) {
+            setUnreadCounts(prev => ({ ...prev, [conversationId]: 0 }))
+          }
         }
       }
     } catch (error) {
       console.error('获取消息失败:', error)
+    }
+  }
+
+  // 获取所有对话的未读消息数
+  const fetchUnreadCounts = async () => {
+    if (!user?.id) return
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      // 直接查询未读消息，按对话分组统计
+      const { data: unreadMessages, error } = await supabase
+        .from('messages')
+        .select('conversation_id')
+        .eq('receiver_id', user.id)
+        .eq('is_read', false)
+
+      if (error) {
+        console.error('获取未读消息失败:', error)
+        return
+      }
+
+      // 按对话分组统计未读数
+      const unreadMap: {[key: string]: number} = {}
+      if (unreadMessages) {
+        unreadMessages.forEach((msg: any) => {
+          unreadMap[msg.conversation_id] = (unreadMap[msg.conversation_id] || 0) + 1
+        })
+      }
+      
+      setUnreadCounts(unreadMap)
+    } catch (error) {
+      console.error('获取未读数失败:', error)
     }
   }
 
@@ -379,79 +417,25 @@ export default function MessagesPage() {
     }
   }, [selectedConversation])
 
-  // 定期检查新消息（每10秒）
+  // 定期更新未读消息数（每15秒）
   useEffect(() => {
-    if (!user || !selectedConversation) return
+    if (!user) return
 
-    const checkNewMessages = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) return
-
-        const response = await fetch(`/api/messages/history?conversationId=${selectedConversation.id}`, {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`
-          }
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          if (data.success) {
-            const newMessages = data.data || []
-            const currentCount = newMessages.length
-            
-            // 检测到新消息
-            if (currentCount > lastMessageCount && lastMessageCount > 0) {
-              const newCount = currentCount - lastMessageCount
-              const latestMessage = newMessages[newMessages.length - 1]
-              
-              // 只显示来自对方的消息提示
-              if (latestMessage.sender_id !== user.id) {
-                const senderName = latestMessage.sender?.nickname || latestMessage.sender?.username || '对方'
-                const messagePreview = latestMessage.content 
-                  ? (latestMessage.content.length > 30 ? latestMessage.content.substring(0, 30) + '...' : latestMessage.content)
-                  : '发送了一个文件'
-                
-                toast.success(
-                  <div>
-                    <div className="font-semibold text-sm">{senderName} 发来新消息</div>
-                    <div className="text-xs text-gray-600 mt-1">{messagePreview}</div>
-                  </div>,
-                  {
-                    duration: 4000,
-                    icon: '💬',
-                    position: 'top-right'
-                  }
-                )
-                
-                // 更新消息列表
-                setMessages(newMessages)
-              }
-            }
-            
-            setLastMessageCount(currentCount)
-          }
-        }
-      } catch (error) {
-        console.error('检查新消息失败:', error)
-      }
-    }
-
-    // 立即检查一次
-    checkNewMessages()
+    // 立即获取一次
+    fetchUnreadCounts()
     
-    // 每10秒检查一次
-    const interval = setInterval(checkNewMessages, 10000)
+    // 每15秒更新一次
+    const interval = setInterval(fetchUnreadCounts, 15000)
     
     return () => clearInterval(interval)
-  }, [user, selectedConversation, lastMessageCount])
+  }, [user])
 
-  // 当切换对话时，重置消息计数
+  // 当切换对话时，刷新未读数
   useEffect(() => {
-    if (selectedConversation) {
-      setLastMessageCount(0)
+    if (selectedConversation && user) {
+      fetchUnreadCounts()
     }
-  }, [selectedConversation?.id])
+  }, [selectedConversation?.id, user])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -551,39 +535,45 @@ export default function MessagesPage() {
                   </div>
                 ) : (
                   <div className="space-y-1 p-2">
-                    {filteredConversations.map((conversation) => (
-                      <div
-                        key={conversation.id}
-                        onClick={() => setSelectedConversation(conversation)}
-                        className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                          selectedConversation?.id === conversation.id
-                            ? 'bg-blue-100 border border-blue-200'
-                            : 'hover:bg-gray-100'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          {conversation.other_user?.avatar_url ? (
-                            <img 
-                              src={conversation.other_user.avatar_url} 
-                              alt={conversation.other_user?.nickname || conversation.other_user?.username || '未知用户'}
-                              className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                              {conversation.other_user?.nickname?.[0] || conversation.other_user?.username?.[0] || 'U'}
+                    {filteredConversations.map((conversation) => {
+                      const unreadCount = unreadCounts[conversation.id] || 0
+                      return (
+                        <div
+                          key={conversation.id}
+                          onClick={() => setSelectedConversation(conversation)}
+                          className={`p-3 rounded-lg cursor-pointer transition-colors relative ${
+                            selectedConversation?.id === conversation.id
+                              ? 'bg-blue-100 border border-blue-200'
+                              : 'hover:bg-gray-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              {conversation.other_user?.avatar_url ? (
+                                <img 
+                                  src={conversation.other_user.avatar_url} 
+                                  alt={conversation.other_user?.nickname || conversation.other_user?.username || '未知用户'}
+                                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                                  {conversation.other_user?.nickname?.[0] || conversation.other_user?.username?.[0] || 'U'}
+                                </div>
+                              )}
+                              <NotificationDot count={unreadCount} />
                             </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-gray-800 truncate">
-                              {conversation.other_user?.nickname || conversation.other_user?.username || '未知用户'}
-                            </h3>
-                            <p className="text-sm text-gray-500">
-                              {formatTime(conversation.last_message_at)}
-                            </p>
+                            <div className="flex-1 min-w-0">
+                              <h3 className={`font-medium truncate ${unreadCount > 0 ? 'text-gray-900 font-semibold' : 'text-gray-800'}`}>
+                                {conversation.other_user?.nickname || conversation.other_user?.username || '未知用户'}
+                              </h3>
+                              <p className="text-sm text-gray-500">
+                                {formatTime(conversation.last_message_at)}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>
