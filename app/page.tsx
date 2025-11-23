@@ -138,8 +138,8 @@ export default function HomePage() {
         
         {/* 主要内容 */}
         <div className="mb-12">
-          {/* 标题部分 - 左对齐，距离左边界200px */}
-          <div className="mb-[200px]" style={{ marginLeft: '200px', maxWidth: 'max-content' }}>
+          {/* 标题部分 - 左对齐，距离左边界75px */}
+          <div className="mb-[125px]" style={{ marginLeft: '75px', maxWidth: 'max-content' }}>
             <h1 className="text-5xl font-bold text-left" style={{
               fontFamily: "'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif",
               fontWeight: 600,
@@ -148,7 +148,7 @@ export default function HomePage() {
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              marginBottom: '10px'
+              marginBottom: '40px'
             }}>
               资源同频
             </h1>
