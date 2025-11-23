@@ -681,39 +681,41 @@ export default function AdminPage() {
                         {new Date(userItem.created_at).toLocaleDateString('zh-CN')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {userItem.id !== user.id && (
-                          <div className="flex space-x-2 flex-wrap gap-2">
-                            <button
-                              onClick={() => handleUserRoleChange(userItem.id, 'is_admin', !userItem.is_admin)}
-                              className={`px-3 py-1 rounded text-xs ${
-                                userItem.is_admin
-                                  ? 'bg-red-100 text-red-800 hover:bg-red-200'
-                                  : 'bg-green-100 text-green-800 hover:bg-green-200'
-                              }`}
-                            >
-                              {userItem.is_admin ? '取消管理员' : '设为管理员'}
-                            </button>
-                            <button
-                              onClick={() => handleUserRoleChange(userItem.id, 'is_moderator', !userItem.is_moderator)}
-                              className={`px-3 py-1 rounded text-xs ${
-                                userItem.is_moderator
-                                  ? 'bg-red-100 text-red-800 hover:bg-red-200'
-                                  : 'bg-green-100 text-green-800 hover:bg-green-200'
-                              }`}
-                            >
-                              {userItem.is_moderator ? '取消审核员' : '设为审核员'}
-                            </button>
-                            {user.username === '371920029173' && (
+                        <div className="flex space-x-2 flex-wrap gap-2">
+                          {userItem.id !== user.id && (
+                            <>
                               <button
-                                onClick={() => setGivingCoins({ userId: userItem.id, coins: 0 })}
-                                className="px-3 py-1 rounded text-xs bg-amber-100 text-amber-800 hover:bg-amber-200 flex items-center gap-1"
+                                onClick={() => handleUserRoleChange(userItem.id, 'is_admin', !userItem.is_admin)}
+                                className={`px-3 py-1 rounded text-xs ${
+                                  userItem.is_admin
+                                    ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                                    : 'bg-green-100 text-green-800 hover:bg-green-200'
+                                }`}
                               >
-                                <Coins className="w-3 h-3" />
-                                给沙币
+                                {userItem.is_admin ? '取消管理员' : '设为管理员'}
                               </button>
-                            )}
-                          </div>
-                        )}
+                              <button
+                                onClick={() => handleUserRoleChange(userItem.id, 'is_moderator', !userItem.is_moderator)}
+                                className={`px-3 py-1 rounded text-xs ${
+                                  userItem.is_moderator
+                                    ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                                    : 'bg-green-100 text-green-800 hover:bg-green-200'
+                                }`}
+                              >
+                                {userItem.is_moderator ? '取消审核员' : '设为审核员'}
+                              </button>
+                            </>
+                          )}
+                          {user.username === '371920029173' && (
+                            <button
+                              onClick={() => setGivingCoins({ userId: userItem.id, coins: 0 })}
+                              className="px-3 py-1 rounded text-xs bg-amber-100 text-amber-800 hover:bg-amber-200 flex items-center gap-1"
+                            >
+                              <Coins className="w-3 h-3" />
+                              给沙币
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

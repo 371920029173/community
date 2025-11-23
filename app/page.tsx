@@ -138,38 +138,18 @@ export default function HomePage() {
         
         {/* 主要内容 */}
         <div className="mb-12">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-6">
-              <FileText className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-5xl font-bold mb-6" style={{
-              fontFamily: "'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif",
-              fontWeight: 600,
-              letterSpacing: '-0.02em',
-              background: 'linear-gradient(135deg, #1e293b 0%, #475569 50%, #64748b 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
-            }}>
-              资源同频
-            </h1>
-            <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              资源与你同频，信息予你无限
-            </p>
-            
-            {/* 快速操作按钮 */}
-            <div className="flex flex-wrap justify-center gap-4 mt-8">
-              {quickActions.map((action, index) => (
-                <Link
-                  key={index}
-                  href={action.href}
-                  className="btn-elegant flex items-center gap-2"
-                >
-                  <action.icon className="w-5 h-5" />
-                  <span>{action.title}</span>
-                </Link>
-              ))}
-            </div>
+          {/* 快速操作按钮 */}
+          <div className="flex flex-wrap gap-4 mb-8">
+            {quickActions.map((action, index) => (
+              <Link
+                key={index}
+                href={action.href}
+                className="btn-elegant flex items-center gap-2"
+              >
+                <action.icon className="w-5 h-5" />
+                <span>{action.title}</span>
+              </Link>
+            ))}
           </div>
         </div>
 
