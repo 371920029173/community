@@ -138,8 +138,8 @@ export default function HomePage() {
         
         {/* 主要内容 */}
         <div className="mb-12">
-          {/* 标题部分 - 左对齐，距离左边界75px */}
-          <div className="mb-[125px]" style={{ marginLeft: '75px', maxWidth: 'max-content' }}>
+          {/* 标题部分 - 左对齐，距离左边界125px */}
+          <div className="mb-[45px]" style={{ marginLeft: '125px', marginTop: '30px', maxWidth: 'max-content' }}>
             <h1 className="text-5xl font-bold text-left" style={{
               fontFamily: "'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif",
               fontWeight: 600,
@@ -152,7 +152,7 @@ export default function HomePage() {
             }}>
               资源同频
             </h1>
-            <p className="text-xl text-gray-600 text-left leading-relaxed" style={{ fontWeight: 'normal' }}>
+            <p className="text-xl text-gray-600 text-left leading-relaxed" style={{ fontWeight: 'normal', letterSpacing: '5px' }}>
               资源与你同频，信息予你无限
             </p>
           </div>
