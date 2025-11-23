@@ -243,14 +243,15 @@ export default function RegisterPage() {
             </div>
 
             {/* 人机验证 */}
-            <div>
+            <div className="relative z-50">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 人机验证
               </label>
               {challenge && (
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 flex items-center gap-2 px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg">
-                    <span className="text-gray-700 font-medium">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-xl border border-white/50 shadow-lg -z-10"></div>
+                  <div className="relative flex items-center gap-3 px-4 py-3 bg-white/60 backdrop-blur-sm border border-gray-200/80 rounded-xl shadow-md">
+                    <span className="text-gray-800 font-semibold text-lg">
                       {challenge.a} + {challenge.b} =
                     </span>
                     <input
@@ -258,21 +259,21 @@ export default function RegisterPage() {
                       value={verificationResponse}
                       onChange={(e) => setVerificationResponse(e.target.value)}
                       placeholder="?"
-                      className="flex-1 ml-2 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 ml-2 px-3 py-2 bg-white/80 backdrop-blur-sm border border-gray-300/80 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 font-medium"
                       required
                     />
+                    <button
+                      type="button"
+                      onClick={generateChallenge}
+                      className="p-2 text-gray-600 hover:text-gray-800 hover:bg-white/60 rounded-lg transition-colors backdrop-blur-sm"
+                      title="刷新验证"
+                    >
+                      <RefreshCw className="w-5 h-5" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={generateChallenge}
-                    className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="刷新验证"
-                  >
-                    <RefreshCw className="w-5 h-5" />
-                  </button>
                 </div>
               )}
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-2">
                 请计算并输入结果以验证您是人类
               </p>
             </div>

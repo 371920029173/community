@@ -80,6 +80,7 @@ export default function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [lastMessageCount, setLastMessageCount] = useState(0) // 用于检测新消息
 
   // 获取会话列表
   const fetchConversations = async () => {
@@ -241,8 +242,10 @@ export default function MessagesPage() {
       if (response.ok) {
         const data = await response.json()
         if (data.success) {
-          setMessages(data.data || [])
-          console.log('获取到的消息:', data.data)
+          const messageList = data.data || []
+          setMessages(messageList)
+          setLastMessageCount(messageList.length) // 更新消息计数
+          console.log('获取到的消息:', messageList)
         }
       }
     } catch (error) {
@@ -375,6 +378,80 @@ export default function MessagesPage() {
       fetchMessages(selectedConversation.id)
     }
   }, [selectedConversation])
+
+  // 定期检查新消息（每10秒）
+  useEffect(() => {
+    if (!user || !selectedConversation) return
+
+    const checkNewMessages = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return
+
+        const response = await fetch(`/api/messages/history?conversationId=${selectedConversation.id}`, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success) {
+            const newMessages = data.data || []
+            const currentCount = newMessages.length
+            
+            // 检测到新消息
+            if (currentCount > lastMessageCount && lastMessageCount > 0) {
+              const newCount = currentCount - lastMessageCount
+              const latestMessage = newMessages[newMessages.length - 1]
+              
+              // 只显示来自对方的消息提示
+              if (latestMessage.sender_id !== user.id) {
+                const senderName = latestMessage.sender?.nickname || latestMessage.sender?.username || '对方'
+                const messagePreview = latestMessage.content 
+                  ? (latestMessage.content.length > 30 ? latestMessage.content.substring(0, 30) + '...' : latestMessage.content)
+                  : '发送了一个文件'
+                
+                toast.success(
+                  <div>
+                    <div className="font-semibold text-sm">{senderName} 发来新消息</div>
+                    <div className="text-xs text-gray-600 mt-1">{messagePreview}</div>
+                  </div>,
+                  {
+                    duration: 4000,
+                    icon: '💬',
+                    position: 'top-right'
+                  }
+                )
+                
+                // 更新消息列表
+                setMessages(newMessages)
+              }
+            }
+            
+            setLastMessageCount(currentCount)
+          }
+        }
+      } catch (error) {
+        console.error('检查新消息失败:', error)
+      }
+    }
+
+    // 立即检查一次
+    checkNewMessages()
+    
+    // 每10秒检查一次
+    const interval = setInterval(checkNewMessages, 10000)
+    
+    return () => clearInterval(interval)
+  }, [user, selectedConversation, lastMessageCount])
+
+  // 当切换对话时，重置消息计数
+  useEffect(() => {
+    if (selectedConversation) {
+      setLastMessageCount(0)
+    }
+  }, [selectedConversation?.id])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
