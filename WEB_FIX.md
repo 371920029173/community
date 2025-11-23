@@ -409,10 +409,39 @@ export async function getSupabaseAdmin() {
 
 ### 调试步骤
 
-1. **访问测试端点**：访问 `/api/test` 查看 Supabase 连接状态
-2. **检查错误响应**：查看 API 返回的 `details` 字段获取详细错误信息
-3. **检查控制台日志**：查看服务器端控制台日志（Cloudflare Pages 的实时日志）
-4. **验证环境变量**：确认环境变量在运行时是否正确加载
+1. **访问调试端点**：访问 `/api/debug-supabase` 查看详细的 Supabase 连接诊断信息
+2. **访问测试端点**：访问 `/api/test` 查看 Supabase 连接状态
+3. **检查错误响应**：查看 API 返回的 `details` 字段获取详细错误信息
+4. **检查控制台日志**：查看服务器端控制台日志（Cloudflare Pages 的实时日志）
+5. **验证环境变量**：确认环境变量在运行时是否正确加载
+
+### Cloudflare Pages 环境变量配置
+
+**重要**：Cloudflare Pages 可能不会自动从 `wrangler.toml` 读取所有环境变量，特别是生产环境。
+
+**解决方法：**
+
+1. **在 Cloudflare Pages Dashboard 中手动配置环境变量**：
+   - 登录 Cloudflare Dashboard
+   - 进入 Pages 项目设置
+   - 找到 "Environment Variables" 部分
+   - 添加以下环境变量：
+     - `NEXT_PUBLIC_SUPABASE_URL`
+     - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+     - `SUPABASE_SERVICE_ROLE_KEY`
+     - `NEXT_PUBLIC_SUPABASE_BUCKET`（如果需要）
+
+2. **确保环境变量在生产环境中可用**：
+   - 在 Cloudflare Pages Dashboard 中，确保环境变量设置为 "Production" 环境
+   - 或者设置为 "All environments"
+
+3. **重新部署**：
+   - 配置环境变量后，需要重新部署项目才能生效
+   - 可以在 Dashboard 中触发重新部署，或者推送新的代码
+
+4. **验证配置**：
+   - 部署后，访问 `/api/debug-supabase` 端点
+   - 检查返回的 `environment` 对象，确认所有环境变量都已正确加载
 
 ---
 
