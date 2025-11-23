@@ -237,7 +237,7 @@ export default function SearchPage() {
           
           {/* 侧边栏 */}
           <div className="lg:col-span-1">
-            <SidebarAd />
+            <SidebarAd hasContent={searchResults.length > 0 && searchQuery.trim() !== ''} />
           </div>
         </div>
       </main>

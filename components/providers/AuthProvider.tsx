@@ -12,7 +12,7 @@ interface AuthContextType {
   user: User | null
   loading: boolean
   signIn: (username: string, password: string) => Promise<void>
-  signUp: (username: string, password: string) => Promise<void>
+  signUp: (username: string, password: string, deviceFingerprint?: string) => Promise<void>
   signOut: () => Promise<void>
   refreshUser: () => Promise<void>
 }
@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // 简化的注册函数
-  const signUp = async (username: string, password: string) => {
+  const signUp = async (username: string, password: string, deviceFingerprint?: string) => {
     try {
       setLoading(true)
       console.log('开始注册流程,用户名:', username)
@@ -141,7 +141,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             userId: authData.user.id,
             username,
             email,
-            isInitialAdmin: username === INITIAL_ADMIN_USERNAME
+            isInitialAdmin: username === INITIAL_ADMIN_USERNAME,
+            deviceFingerprint: deviceFingerprint || null
           })
         })
 

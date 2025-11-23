@@ -524,7 +524,7 @@ export default function SharePage() {
           
           {/* 侧边栏 */}
           <div className="lg:col-span-1">
-            <SidebarAd />
+            <SidebarAd hasContent={files.length > 0} />
             
             {/* 分享提示 */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">

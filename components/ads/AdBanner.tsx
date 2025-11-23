@@ -4,9 +4,14 @@ import { useState, useEffect } from 'react'
 
 interface AdBannerProps {
   position: 'top' | 'sidebar' | 'bottom'
+  hasContent?: boolean // 页面是否有实际内容，默认 true（保持向后兼容）
 }
 
-export default function AdBanner({ position }: AdBannerProps) {
+export default function AdBanner({ position, hasContent = true }: AdBannerProps) {
+  // 如果没有内容，不显示广告（符合 AdSense 政策）
+  if (!hasContent) {
+    return null
+  }
   const [currentAdIndex, setCurrentAdIndex] = useState(0)
   const [ads, setAds] = useState<Array<{ id: string; content: string; type: string }>>([])
 
@@ -71,16 +76,16 @@ export default function AdBanner({ position }: AdBannerProps) {
 }
 
 // 顶部广告栏
-export function TopAdBanner() {
-  return <AdBanner position="top" />
+export function TopAdBanner({ hasContent = true }: { hasContent?: boolean }) {
+  return <AdBanner position="top" hasContent={hasContent} />
 }
 
 // 侧边栏广告
-export function SidebarAd() {
-  return <AdBanner position="sidebar" />
+export function SidebarAd({ hasContent = true }: { hasContent?: boolean }) {
+  return <AdBanner position="sidebar" hasContent={hasContent} />
 }
 
 // 底部广告栏
-export function BottomAdBanner() {
-  return <AdBanner position="bottom" />
+export function BottomAdBanner({ hasContent = true }: { hasContent?: boolean }) {
+  return <AdBanner position="bottom" hasContent={hasContent} />
 } 

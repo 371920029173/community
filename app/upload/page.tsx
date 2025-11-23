@@ -236,7 +236,7 @@ export default function UploadPage() {
           
           {/* 侧边栏 */}
           <div className="lg:col-span-1">
-            <SidebarAd />
+            <SidebarAd hasContent={files.length > 0} />
           </div>
         </div>
       </main>

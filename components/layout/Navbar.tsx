@@ -147,9 +147,6 @@ export default function Navbar() {
             <Link href="/files" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="云盘">
               <Cloud className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
-            <Link href="/upload" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="上传">
-              <Upload className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            </Link>
             <Link href="/search" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="搜索">
               <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
@@ -283,14 +280,6 @@ export default function Navbar() {
               >
                 <Cloud className="w-5 h-5" />
                 云盘
-              </Link>
-              <Link 
-                href="/upload" 
-                className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Upload className="w-5 h-5" />
-                上传
               </Link>
               <Link 
                 href="/search" 

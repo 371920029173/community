@@ -8,7 +8,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin'
 // - 若 username/email 与其他用户冲突：直接 409，不自动加后缀
 export async function POST(request: NextRequest) {
   try {
-    const { userId, username, email, isInitialAdmin } = await request.json()
+    const { userId, username, email, isInitialAdmin, deviceFingerprint } = await request.json()
 
     if (!userId || !username || !email) {
       return NextResponse.json({ success: false, error: '缺少必要参数' }, { status: 400 })
@@ -50,19 +50,26 @@ export async function POST(request: NextRequest) {
     }
 
     // 插入新资料
+    const insertData: any = {
+      id: userId,
+      username,
+      email,
+      nickname: username,
+      nickname_color: '#3B82F6',
+      is_admin: !!isInitialAdmin,
+      is_moderator: !!isInitialAdmin,
+      storage_used: 0,
+      storage_limit: isInitialAdmin ? 107374182400 : 21474836480
+    }
+    
+    // 如果有设备指纹，添加到插入数据中
+    if (deviceFingerprint) {
+      insertData.device_fingerprint = deviceFingerprint
+    }
+    
     const insertRes = await supabaseAdmin
       .from('users')
-      .insert({
-        id: userId,
-        username,
-        email,
-        nickname: username,
-        nickname_color: '#3B82F6',
-        is_admin: !!isInitialAdmin,
-        is_moderator: !!isInitialAdmin,
-        storage_used: 0,
-        storage_limit: isInitialAdmin ? 107374182400 : 21474836480
-      })
+      .insert(insertData)
       .select('*')
       .single()
 

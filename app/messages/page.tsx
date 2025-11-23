@@ -398,17 +398,20 @@ export default function MessagesPage() {
     )
   }
 
+  // 判断是否有内容：有对话且已选择对话，或有消息
+  const hasContent = selectedConversation !== null && messages.length > 0
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <TopAdBanner />
+      <TopAdBanner hasContent={hasContent} />
       <Navbar />
       
       <div className="container mx-auto px-4 py-8 relative z-10">
         <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-xl border border-white/30 overflow-hidden">
           <div className="flex h-[calc(100vh-200px)]">
             {/* 左侧会话列表 */}
-            <div className="w-1/3 border-r border-gray-200 bg-gray-50/50">
-              <div className="p-4 border-b border-gray-200">
+            <div className="w-1/3 border-r border-gray-200 bg-gray-50/50 flex flex-col">
+              <div className="p-4 border-b border-gray-200 flex-shrink-0">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-gray-800">私信</h2>
                   <button
@@ -433,7 +436,22 @@ export default function MessagesPage() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto">
+              <div 
+                className="flex-1 overflow-y-auto overscroll-contain"
+                style={{ 
+                  scrollBehavior: 'smooth',
+                  WebkitOverflowScrolling: 'touch',
+                  overscrollBehavior: 'contain'
+                }}
+                onWheel={(e) => {
+                  // 确保滚动事件优先处理，阻止冒泡
+                  e.stopPropagation()
+                }}
+                onTouchMove={(e) => {
+                  // 移动端触摸滚动
+                  e.stopPropagation()
+                }}
+              >
                 {filteredConversations.length === 0 ? (
                   <div className="p-8 text-center">
                     <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -858,7 +876,7 @@ export default function MessagesPage() {
         </div>
       )}
 
-      <BottomAdBanner />
+      <BottomAdBanner hasContent={hasContent} />
     </div>
   )
 }

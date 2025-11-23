@@ -567,7 +567,7 @@ export default function FilesPage() {
 
           {/* 侧边栏广告 */}
           <div className="w-80">
-            <SidebarAd />
+            <SidebarAd hasContent={files.length > 0} />
           </div>
         </div>
       </div>

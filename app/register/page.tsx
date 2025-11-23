@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { Eye, EyeOff, User, Lock, Palette } from 'lucide-react'
+import { Eye, EyeOff, User, Lock, Palette, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getFriendlyErrorMessage } from '@/lib/utils'
 
@@ -22,8 +22,73 @@ export default function RegisterPage() {
   const [selectedColor, setSelectedColor] = useState(nicknameColors[0])
   const [isLoading, setIsLoading] = useState(false)
   
+  // 人机验证相关
+  const [challenge, setChallenge] = useState<{ a: number; b: number } | null>(null)
+  const [verificationResponse, setVerificationResponse] = useState('')
+  const [verificationTimestamp, setVerificationTimestamp] = useState(0)
+  const [deviceFingerprint, setDeviceFingerprint] = useState<string | null>(null)
+  const [isVerifying, setIsVerifying] = useState(false)
+  
   const { signUp } = useAuth()
   const router = useRouter()
+
+  // 生成新的验证挑战
+  const generateChallenge = () => {
+    const a = Math.floor(Math.random() * 20) + 1
+    const b = Math.floor(Math.random() * 20) + 1
+    setChallenge({ a, b })
+    setVerificationResponse('')
+    setVerificationTimestamp(Date.now())
+  }
+
+  // 初始化验证挑战
+  useEffect(() => {
+    generateChallenge()
+  }, [])
+
+  // 执行人机验证和设备指纹检测
+  const performVerification = async (): Promise<string | null> => {
+    if (!challenge || !verificationResponse.trim()) {
+      toast.error('请完成人机验证')
+      return null
+    }
+
+    setIsVerifying(true)
+    try {
+      const userAgent = navigator.userAgent
+      const acceptLanguage = navigator.language || 'zh-CN'
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+      const response = await fetch('/api/register/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          challenge: `${challenge.a}+${challenge.b}`,
+          response: verificationResponse.trim(),
+          timestamp: verificationTimestamp,
+          userAgent,
+          acceptLanguage,
+          timezone
+        })
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        toast.error(data.error || '验证失败')
+        generateChallenge() // 重新生成挑战
+        return null
+      }
+
+      return data.fingerprint
+    } catch (error: any) {
+      toast.error('验证失败，请重试')
+      generateChallenge()
+      return null
+    } finally {
+      setIsVerifying(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,14 +108,22 @@ export default function RegisterPage() {
       return
     }
 
+    // 先执行验证
+    const fingerprint = await performVerification()
+    if (!fingerprint) {
+      return // 验证失败，已显示错误提示
+    }
+
     setIsLoading(true)
     
     try {
-      await signUp(username, password)
+      // 传递设备指纹给注册函数（需要修改 AuthProvider）
+      await signUp(username, password, fingerprint)
       toast.success('注册成功！请登录')
       router.push('/login')
     } catch (error: any) {
       toast.error(getFriendlyErrorMessage(error) || '注册失败，请重试')
+      generateChallenge() // 重新生成验证挑战
     } finally {
       setIsLoading(false)
     }
@@ -168,15 +241,50 @@ export default function RegisterPage() {
                 选择你喜欢的昵称显示颜色
               </p>
             </div>
+
+            {/* 人机验证 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                人机验证
+              </label>
+              {challenge && (
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 flex items-center gap-2 px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg">
+                    <span className="text-gray-700 font-medium">
+                      {challenge.a} + {challenge.b} =
+                    </span>
+                    <input
+                      type="number"
+                      value={verificationResponse}
+                      onChange={(e) => setVerificationResponse(e.target.value)}
+                      placeholder="?"
+                      className="flex-1 ml-2 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={generateChallenge}
+                    className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="刷新验证"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                请计算并输入结果以验证您是人类
+              </p>
+            </div>
           </div>
 
           <div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isVerifying || !verificationResponse.trim()}
               className="w-full btn-primary py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? '注册中...' : '注册'}
+              {isLoading ? '注册中...' : isVerifying ? '验证中...' : '注册'}
             </button>
           </div>
 
