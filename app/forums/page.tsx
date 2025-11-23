@@ -1,5 +1,7 @@
 'use client'
 
+export const runtime = 'edge'
+
 import { useState, useEffect, useCallback } from 'react'
 import Navbar from '@/components/layout/Navbar'
 import { TopAdBanner } from '@/components/ads/AdBanner'
