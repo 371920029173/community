@@ -163,17 +163,6 @@ export default function Navbar() {
     <nav className="nav-minimal sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo and Site Name */}
-          <Link href="/" className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">同</span>
-            </div>
-            <div className="flex flex-col items-start">
-              <span className="text-lg font-semibold text-gray-900 leading-tight">资源同频</span>
-              <span className="text-xs text-gray-500 leading-tight" style={{ fontWeight: 'normal' }}>资源与你同频，信息予你无限</span>
-            </div>
-          </Link>
-
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
             {/* 沙币显示（电脑版左侧） */}
