@@ -124,7 +124,7 @@ export default function FontPreviewPage() {
             <div style={{ fontFamily: currentScheme.fontFamily }}>
               <button className="btn-primary mb-4">主要按钮</button>
               <button className="btn-secondary mb-4">次要按钮</button>
-              <div className="input-field mb-4" placeholder="输入框示例">输入框示例</div>
+              <input type="text" className="input-field mb-4" placeholder="输入框示例" readOnly />
               <div className="card">
                 <h4 className="font-semibold text-gray-900 mb-2">卡片标题</h4>
                 <p className="text-gray-600 text-sm">这是卡片内容的示例文本，展示了字体在卡片中的显示效果。</p>
