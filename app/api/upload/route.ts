@@ -209,17 +209,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 获取文件URL
-    const { data: urlData } = supabaseAdmin.storage.from(bucketName).getPublicUrl(fileName)
-
-    // 计算文件哈希（优化：仅对大文件计算，小文件跳过以加速）
-    let fileHash = ''
-    if (file.size > 1024 * 1024) { // 大于1MB才计算哈希
-      const fileBuffer = await file.arrayBuffer()
-      const hashBuffer = await crypto.subtle.digest('SHA-256', fileBuffer)
-      const hashArray = Array.from(new Uint8Array(hashBuffer))
-      fileHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
-    }
+    // 优化：并行执行哈希计算和 URL 获取（仅对大文件计算哈希）
+    const hashPromise = file.size > 1024 * 1024 
+      ? file.arrayBuffer().then(buffer => 
+          crypto.subtle.digest('SHA-256', buffer).then(hashBuffer => {
+            const hashArray = Array.from(new Uint8Array(hashBuffer))
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+          })
+        )
+      : Promise.resolve('')
+    
+    const urlPromise = Promise.resolve(supabaseAdmin.storage.from(bucketName).getPublicUrl(fileName))
+    
+    const [fileHash, urlDataResult] = await Promise.all([hashPromise, urlPromise])
+    const urlData = urlDataResult.data
 
     // 保存文件信息到数据库
     const { data: fileData, error: dbError } = await supabaseAdmin

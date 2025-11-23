@@ -476,23 +476,26 @@ export default function MessagesPage() {
     }
   }, [selectedConversation])
 
-  // 定期更新未读消息数（每15秒）
+  // 定期更新未读消息数（每10秒，更频繁）
   useEffect(() => {
     if (!user) return
 
     // 立即获取一次
     fetchUnreadCounts()
     
-    // 每15秒更新一次
-    const interval = setInterval(fetchUnreadCounts, 15000)
+    // 每10秒更新一次（更频繁，确保及时显示）
+    const interval = setInterval(fetchUnreadCounts, 10000)
     
     return () => clearInterval(interval)
   }, [user])
 
-  // 当切换对话时，刷新未读数
+  // 当切换对话时，立即刷新未读数
   useEffect(() => {
     if (selectedConversation && user) {
-      fetchUnreadCounts()
+      // 延迟一下，确保消息已加载
+      setTimeout(() => {
+        fetchUnreadCounts()
+      }, 500)
     }
   }, [selectedConversation?.id, user])
 
