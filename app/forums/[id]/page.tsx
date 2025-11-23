@@ -56,7 +56,7 @@ interface ForumMessage {
   }
 }
 
-export default function ForumDetailPage({ params }: { params: { id: string } }) {
+export default function ForumDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAuth()
   const router = useRouter()
   const [forum, setForum] = useState<Forum | null>(null)
@@ -67,13 +67,20 @@ export default function ForumDetailPage({ params }: { params: { id: string } }) 
   const [messageContent, setMessageContent] = useState('')
   const [sending, setSending] = useState(false)
   const [sandCoins, setSandCoins] = useState(0)
+  const [forumId, setForumId] = useState<string>('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // 解析 params
+  useEffect(() => {
+    params.then(({ id }) => setForumId(id))
+  }, [params])
 
   // 获取论坛详情
   const fetchForum = useCallback(async () => {
+    if (!forumId) return
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      const response = await fetch(`/api/forums/${params.id}`, {
+      const response = await fetch(`/api/forums/${forumId}`, {
         headers: session ? {
           'Authorization': `Bearer ${session.access_token}`
         } : {}
@@ -95,17 +102,17 @@ export default function ForumDetailPage({ params }: { params: { id: string } }) 
     } finally {
       setLoading(false)
     }
-  }, [params.id, router])
+  }, [forumId, router])
 
   // 获取消息列表
   const fetchMessages = useCallback(async () => {
-    if (!isMember && !isOwner) return
+    if (!isMember && !isOwner || !forumId) return
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
 
-      const response = await fetch(`/api/forums/${params.id}/messages`, {
+      const response = await fetch(`/api/forums/${forumId}/messages`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
@@ -118,7 +125,7 @@ export default function ForumDetailPage({ params }: { params: { id: string } }) 
     } catch (error: any) {
       console.error('获取消息失败:', error)
     }
-  }, [params.id, isMember, isOwner])
+  }, [forumId, isMember, isOwner])
 
   // 加入论坛
   const handleJoinForum = async () => {
@@ -134,7 +141,7 @@ export default function ForumDetailPage({ params }: { params: { id: string } }) 
         return
       }
 
-      const response = await fetch(`/api/forums/${params.id}/join`, {
+      const response = await fetch(`/api/forums/${forumId}/join`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`
@@ -171,7 +178,7 @@ export default function ForumDetailPage({ params }: { params: { id: string } }) 
         return
       }
 
-      const response = await fetch(`/api/forums/${params.id}/messages`, {
+      const response = await fetch(`/api/forums/${forumId}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -304,9 +311,9 @@ export default function ForumDetailPage({ params }: { params: { id: string } }) 
                 </div>
               )}
             </div>
-            {isOwner && (
+            {isOwner && forumId && (
               <Link
-                href={`/forums/${params.id}/manage`}
+                href={`/forums/${forumId}/manage`}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
               >
                 <Settings className="w-5 h-5" />
