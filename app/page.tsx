@@ -125,10 +125,13 @@ export default function HomePage() {
     }
   }
 
+  // 首页有实际内容（标题、按钮、功能卡片、论坛预览、文件网格），始终显示广告
+  const hasContent = true
+
   return (
     <div className="min-h-screen">
       <Navbar />
-      <TopAdBanner />
+      <TopAdBanner hasContent={hasContent} />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* 配置警告 */}
@@ -255,7 +258,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <BottomAdBanner />
+      <BottomAdBanner hasContent={hasContent} />
     </div>
   )
 } 

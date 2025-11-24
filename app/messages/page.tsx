@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import Navbar from '@/components/layout/Navbar'
-import { TopAdBanner, BottomAdBanner } from '@/components/ads/AdBanner'
 import { 
   MessageSquare, 
   Send, 
@@ -521,12 +520,8 @@ export default function MessagesPage() {
     )
   }
 
-  // 判断是否有内容：有对话且已选择对话，或有消息
-  const hasContent = selectedConversation !== null && messages.length > 0
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <TopAdBanner hasContent={hasContent} />
       <Navbar />
       
       <div className="container mx-auto px-4 py-8 relative z-10">
@@ -1004,8 +999,6 @@ export default function MessagesPage() {
           </div>
         </div>
       )}
-
-      <BottomAdBanner hasContent={hasContent} />
     </div>
   )
 }

@@ -4,8 +4,6 @@ export const runtime = 'edge'
 
 import { useState, useEffect, useCallback } from 'react'
 import Navbar from '@/components/layout/Navbar'
-import { TopAdBanner } from '@/components/ads/AdBanner'
-import { BottomAdBanner } from '@/components/ads/AdBanner'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -182,7 +180,6 @@ export default function ForumsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <Navbar />
-      <TopAdBanner />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <div className="mb-8">
@@ -277,8 +274,6 @@ export default function ForumsPage() {
           </div>
         )}
       </main>
-
-      <BottomAdBanner />
 
       {/* 创建论坛模态框 */}
       {showCreateModal && (

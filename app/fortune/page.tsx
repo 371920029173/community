@@ -219,7 +219,7 @@ export default function FortunePage() {
           
           {/* 侧边栏 */}
           <div className="lg:col-span-1">
-            <SidebarAd />
+            <SidebarAd hasContent={true} />
           </div>
         </div>
       </main>

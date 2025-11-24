@@ -112,7 +112,7 @@ export default function NewsPage() {
               </div>
             </div>
             <div className="lg:col-span-1">
-              <SidebarAd />
+              <SidebarAd hasContent={!loading && newsItems.length > 0} />
             </div>
           </div>
         </main>
@@ -197,7 +197,7 @@ export default function NewsPage() {
           
           {/* 侧边栏 */}
           <div className="lg:col-span-1">
-            <SidebarAd />
+            <SidebarAd hasContent={!loading && newsItems.length > 0} />
             
             {/* 分类导航 */}
             <div className="mt-8 bg-white rounded-lg border border-gray-200 p-6">

@@ -4,6 +4,35 @@
 
 ---
 
+## ⚠️ 待解决问题
+
+### History 项目 Supabase 连接问题（未完全解决）
+
+**问题描述：**
+- History 项目在 Cloudflare Pages 部署后，`POST /api/entries` 返回 500 错误
+- 环境变量从 `wrangler.toml` 读取
+- 已尝试多种修复方案，但仍未完全解决
+
+**已尝试的解决方案：**
+1. ✅ 使用统一的 `getSupabaseAdmin()` 函数（与 web 项目一致）
+2. ✅ 直接导入 `createClient`（不使用动态导入）
+3. ✅ 改进错误处理和日志记录
+4. ✅ 添加调试端点 `/api/debug-supabase`
+5. ✅ 更新所有 API 路由使用统一函数
+
+**可能的原因：**
+- Cloudflare Pages 环境变量读取问题
+- Edge Runtime 中的环境变量访问限制
+- Supabase 客户端初始化时机问题
+
+**建议的后续调试步骤：**
+1. 访问 `/api/debug-supabase` 查看详细诊断信息
+2. 检查 Cloudflare Pages 实时日志
+3. 验证环境变量在运行时是否正确加载
+4. 考虑在 Cloudflare Pages Dashboard 中手动配置环境变量
+
+---
+
 ## Supabase 连接问题修复指南
 
 ### 问题描述

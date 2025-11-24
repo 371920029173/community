@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import Navbar from '@/components/layout/Navbar'
-import { SidebarAd } from '@/components/ads/AdBanner'
 import { 
   Upload, 
   FileText,
@@ -356,7 +355,6 @@ export default function ShareUploadPage() {
           
           {/* 侧边栏 */}
           <div className="lg:col-span-1">
-            <SidebarAd />
           </div>
         </div>
       </div>

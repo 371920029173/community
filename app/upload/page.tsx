@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import Navbar from '@/components/layout/Navbar'
-import { SidebarAd } from '@/components/ads/AdBanner'
 import { 
   Upload, 
   FileText,
@@ -236,7 +235,6 @@ export default function UploadPage() {
           
           {/* 侧边栏 */}
           <div className="lg:col-span-1">
-            <SidebarAd hasContent={files.length > 0} />
           </div>
         </div>
       </main>

@@ -4,8 +4,6 @@ export const runtime = 'edge'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Navbar from '@/components/layout/Navbar'
-import { TopAdBanner } from '@/components/ads/AdBanner'
-import { BottomAdBanner } from '@/components/ads/AdBanner'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -284,7 +282,6 @@ export default function ForumDetailPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <Navbar />
-      <TopAdBanner />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         <Link 
@@ -465,8 +462,6 @@ export default function ForumDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         )}
       </main>
-
-      <BottomAdBanner />
     </div>
   )
 }
