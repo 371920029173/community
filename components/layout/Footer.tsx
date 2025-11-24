@@ -25,6 +25,15 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link 
+                  href="/about" 
+                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors text-sm"
+                >
+                  <Heart className="w-4 h-4" />
+                  关于我们
+                </Link>
+              </li>
+              <li>
+                <Link 
                   href="/privacy" 
                   className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors text-sm"
                 >
@@ -41,18 +50,46 @@ export default function Footer() {
                   服务条款
                 </Link>
               </li>
+              <li>
+                <Link 
+                  href="/contact" 
+                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors text-sm"
+                >
+                  <Heart className="w-4 h-4" />
+                  联系我们
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/help" 
+                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors text-sm"
+                >
+                  <FileText className="w-4 h-4" />
+                  使用帮助
+                </Link>
+              </li>
             </ul>
           </div>
 
           {/* 联系方式 */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">联系我们</h3>
-            <p className="text-gray-300 text-sm mb-2">
-              如有疑问或建议，请通过以下方式联系我们：
-            </p>
-            <ul className="space-y-1 text-gray-300 text-sm">
-              <li>• 个人资料页面联系管理员</li>
-              <li>• 管理后台提交反馈</li>
+            <h3 className="text-lg font-semibold mb-4">快速链接</h3>
+            <ul className="space-y-2 text-gray-300 text-sm">
+              <li>
+                <Link href="/contact" className="hover:text-white transition-colors">
+                  联系我们
+                </Link>
+              </li>
+              <li>
+                <Link href="/help" className="hover:text-white transition-colors">
+                  使用帮助
+                </Link>
+              </li>
+              <li>
+                <Link href="/about" className="hover:text-white transition-colors">
+                  关于我们
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

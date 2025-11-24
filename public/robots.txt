@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://community-e7i.pages.dev/sitemap.xml
+

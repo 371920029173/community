@@ -16,8 +16,7 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
     return null
   }
   const { user } = useAuth()
-  const [currentAdIndex, setCurrentAdIndex] = useState(0)
-  const [ads, setAds] = useState<Array<{ id: string; content: string; type: string }>>([])
+  const adRef = useRef<HTMLDivElement>(null)
   const clickTimestampRef = useRef<number>(0)
   const isProcessingRef = useRef<boolean>(false)
 
@@ -75,24 +74,14 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
   }
 
   useEffect(() => {
-    // 模拟广告数据，实际使用时替换为真实的Google AdSense代码
-    const mockAds = [
-      { id: '1', content: '广告位 1', type: 'banner' },
-      { id: '2', content: '广告位 2', type: 'banner' },
-      { id: '3', content: '广告位 3', type: 'banner' },
-      { id: '4', content: '广告位 4', type: 'banner' },
-      { id: '5', content: '广告位 5', type: 'banner' },
-      { id: '6', content: '广告位 6', type: 'banner' },
-      { id: '7', content: '广告位 7', type: 'banner' },
-    ]
-    setAds(mockAds)
-
-    // 每30秒切换一次广告
-    const interval = setInterval(() => {
-      setCurrentAdIndex((prev) => (prev + 1) % mockAds.length)
-    }, 30000)
-
-    return () => clearInterval(interval)
+    // 初始化 Google AdSense 广告
+    try {
+      if (typeof window !== 'undefined' && (window as any).adsbygoogle) {
+        ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({})
+      }
+    } catch (error) {
+      console.error('AdSense 初始化失败:', error)
+    }
   }, [])
 
   const getAdStyles = () => {
@@ -109,27 +98,35 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
   }
 
   const getAdContent = () => {
-    if (ads.length === 0) return null
-
-    const currentAd = ads[currentAdIndex]
+    // Google AdSense 广告单元
+    // 注意：需要在 AdSense 后台创建对应的广告单元，并替换 data-ad-slot 值
+    // 顶部横幅广告：建议创建 728x90 或响应式横幅广告单元
+    // 侧边栏广告：建议创建 300x250 或响应式广告单元
+    // 底部横幅广告：建议创建 728x90 或响应式横幅广告单元
     
-    // 这里可以插入实际的Google AdSense代码
+    // 临时使用占位符 ID，实际部署前需要在 AdSense 后台创建广告单元
+    const adSlotId = position === 'top' 
+      ? '1234567890'  // 顶部广告单元 ID（需要在 AdSense 后台创建并替换）
+      : position === 'sidebar' 
+      ? '0987654321'  // 侧边栏广告单元 ID（需要在 AdSense 后台创建并替换）
+      : '1122334455'  // 底部广告单元 ID（需要在 AdSense 后台创建并替换）
+    
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="text-sm text-gray-500 mb-1">Google AdSense</div>
-          <div className="text-lg font-medium text-gray-700">{currentAd.content}</div>
-          <div className="text-xs text-gray-400 mt-1">
-            广告位 {currentAdIndex + 1} / {ads.length}
-          </div>
-        </div>
-      </div>
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block' }}
+        data-ad-client="ca-pub-4701068000566326"
+        data-ad-slot={adSlotId}
+        data-ad-format={position === 'sidebar' ? 'auto' : 'horizontal'}
+        data-full-width-responsive="true"
+      />
     )
   }
 
   return (
     <div 
-      className={`${getAdStyles()} transition-all duration-500 ease-in-out ${user ? 'cursor-pointer hover:opacity-90' : ''}`}
+      ref={adRef}
+      className={`${getAdStyles()} transition-all duration-500 ease-in-out`}
       onClick={user ? handleAdClick : undefined}
       title={user ? '点击广告可获得5个沙币（每天每个位置限1次）' : undefined}
     >

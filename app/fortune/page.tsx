@@ -209,10 +209,16 @@ export default function FortunePage() {
                 <p>• <strong>创意灵感</strong>：激发创意灵感，提升创造力</p>
               </div>
               <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-yellow-800 text-sm">
-                  💡 <strong>温馨提示</strong>：占卜结果仅供娱乐参考，请理性对待，不要过度依赖。
-                  真正的成功来自于自己的努力和坚持！
+                <p className="text-yellow-800 text-sm mb-2">
+                  💡 <strong>免责声明</strong>：
                 </p>
+                <ul className="text-yellow-800 text-sm space-y-1 list-disc list-inside">
+                  <li>本占卜功能仅供娱乐参考，不构成任何形式的建议或指导</li>
+                  <li>占卜结果基于随机算法生成，不具有任何科学依据或预测能力</li>
+                  <li>请理性对待占卜结果，不要过度依赖或影响正常生活决策</li>
+                  <li>真正的成功来自于自己的努力、坚持和正确的行动</li>
+                  <li>本功能不涉及任何形式的迷信、超自然或神秘主义内容</li>
+                </ul>
               </div>
             </div>
           </div>
