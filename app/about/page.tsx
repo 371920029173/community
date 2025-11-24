@@ -2,7 +2,7 @@
 
 import Navbar from '@/components/layout/Navbar'
 import Link from 'next/link'
-import { FileText, Users, Shield, Heart, Sparkles, MessageSquare } from 'lucide-react'
+import { FileText, Users, Shield, Heart, Sparkles, MessageSquare, Cloud, Share2 } from 'lucide-react'
 
 export default function AboutPage() {
   return (
