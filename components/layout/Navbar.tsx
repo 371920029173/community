@@ -79,8 +79,13 @@ export default function Navbar() {
       const data = await response.json()
       
       if (data.success) {
-        console.log('[Navbar] 通知数据:', data.data, 'messages:', data.data?.messages) // 调试日志
+        const messagesCount = data.data?.messages || 0
+        console.log('[Navbar] 通知数据:', data.data, '未读私信数:', messagesCount) // 调试日志
         setNotifications(data.data)
+        // 如果未读消息数 > 0，输出提示
+        if (messagesCount > 0) {
+          console.log(`[Navbar] ⚠️ 有 ${messagesCount} 条未读私信，应该显示红点！`)
+        }
       } else {
         console.warn('获取通知失败:', data.error)
       }
@@ -137,6 +142,11 @@ export default function Navbar() {
 
   // 通知红点组件（确保图层正确，在最上层显示）
   const NotificationDot = ({ count, className = "" }: { count: number, className?: string }) => {
+    // 调试：输出未读消息数
+    if (count > 0) {
+      console.log('[NotificationDot] 显示红点，未读消息数:', count)
+    }
+    
     if (count === 0) return null
     
     // 根据数量调整大小
@@ -151,7 +161,9 @@ export default function Navbar() {
           pointerEvents: 'none',
           animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
           zIndex: 10000,
-          position: 'absolute'
+          position: 'absolute',
+          top: '-4px',
+          right: '-4px'
         }}
       >
         {count > 99 ? '99+' : count}
@@ -210,8 +222,10 @@ export default function Navbar() {
                   className="relative flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" 
                   title={notifications.messages > 0 ? `私信 (${notifications.messages}条未读)` : '私信'}
                 >
-                  <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                  <NotificationDot count={notifications.messages} />
+                  <div className="relative">
+                    <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    <NotificationDot count={notifications.messages} />
+                  </div>
                 </Link>
                 {(user.is_admin || user.is_moderator) && (
                   <Link href="/admin" className="relative flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="管理后台">
