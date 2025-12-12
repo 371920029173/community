@@ -10,15 +10,38 @@ interface AdBannerProps {
   hasContent?: boolean // 页面是否有实际内容，默认 true（保持向后兼容）
 }
 
+// 广告轮播配置
+const AD_ROTATION_INTERVAL = 7000 // 7秒切换一次
+const MAX_AD_SLOTS = 15 // 最多15个广告位
+
 export default function AdBanner({ position, hasContent = true }: AdBannerProps) {
   // 如果没有内容，不显示广告（符合 AdSense 政策）
   if (!hasContent) {
     return null
   }
   const { user } = useAuth()
-  const adRef = useRef<HTMLDivElement>(null)
   const clickTimestampRef = useRef<number>(0)
   const isProcessingRef = useRef<boolean>(false)
+  const [currentAdIndex, setCurrentAdIndex] = useState(0)
+  const adRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  // 获取当前广告位的所有广告单元ID（需要在AdSense后台创建15个广告单元）
+  const getAdSlotIds = (): string[] => {
+    // 根据位置返回对应的15个广告单元ID数组
+    // 注意：您需要在AdSense后台创建15个广告单元，然后替换这些占位符ID
+    const topAdSlots = [
+      '1234567890', '1234567891', '1234567892', '1234567893', '1234567894',
+      '1234567895', '1234567896', '1234567897', '1234567898', '1234567899',
+      '1234567900', '1234567901', '1234567902', '1234567903', '1234567904'
+    ]
+    const bottomAdSlots = [
+      '1122334455', '1122334456', '1122334457', '1122334458', '1122334459',
+      '1122334460', '1122334461', '1122334462', '1122334463', '1122334464',
+      '1122334465', '1122334466', '1122334467', '1122334468', '1122334469'
+    ]
+    
+    return position === 'top' ? topAdSlots : bottomAdSlots
+  }
 
   // 处理广告点击
   const handleAdClick = async (e: React.MouseEvent) => {
@@ -73,16 +96,49 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
     }
   }
 
+  // 初始化AdSense广告
   useEffect(() => {
-    // 初始化 Google AdSense 广告
-    try {
-      if (typeof window !== 'undefined' && (window as any).adsbygoogle) {
-        ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({})
+    const adSlotIds = getAdSlotIds()
+    const actualAdCount = Math.min(adSlotIds.length, MAX_AD_SLOTS)
+    
+    // 初始化所有广告单元
+    if (typeof window !== 'undefined' && (window as any).adsbygoogle) {
+      try {
+        // 延迟初始化，确保DOM已渲染
+        setTimeout(() => {
+          for (let i = 0; i < actualAdCount; i++) {
+            if (adRefs.current[i]) {
+              try {
+                ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({})
+              } catch (error) {
+                console.error(`AdSense 广告 ${i} 初始化失败:`, error)
+              }
+            }
+          }
+        }, 500)
+      } catch (error) {
+        console.error('AdSense 初始化失败:', error)
       }
-    } catch (error) {
-      console.error('AdSense 初始化失败:', error)
     }
-  }, [])
+  }, [position])
+
+  // 广告轮播效果
+  useEffect(() => {
+    const adSlotIds = getAdSlotIds()
+    const actualAdCount = Math.min(adSlotIds.length, MAX_AD_SLOTS)
+    
+    // 设置轮播定时器
+    const rotationTimer = setInterval(() => {
+      setCurrentAdIndex((prevIndex) => {
+        return (prevIndex + 1) % actualAdCount
+      })
+    }, AD_ROTATION_INTERVAL)
+    
+    // 清理定时器
+    return () => {
+      clearInterval(rotationTimer)
+    }
+  }, [position])
 
   const getAdStyles = () => {
     switch (position) {
@@ -97,40 +153,43 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
     }
   }
 
-  const getAdContent = () => {
-    // Google AdSense 广告单元
-    // 注意：需要在 AdSense 后台创建对应的广告单元，并替换 data-ad-slot 值
-    // 顶部横幅广告：建议创建 728x90 或响应式横幅广告单元
-    // 侧边栏广告：建议创建 300x250 或响应式广告单元
-    // 底部横幅广告：建议创建 728x90 或响应式横幅广告单元
-    
-    // 临时使用占位符 ID，实际部署前需要在 AdSense 后台创建广告单元
-    const adSlotId = position === 'top' 
-      ? '1234567890'  // 顶部广告单元 ID（需要在 AdSense 后台创建并替换）
-      : position === 'sidebar' 
-      ? '0987654321'  // 侧边栏广告单元 ID（需要在 AdSense 后台创建并替换）
-      : '1122334455'  // 底部广告单元 ID（需要在 AdSense 后台创建并替换）
-    
-    return (
-      <ins
-        className="adsbygoogle"
-        style={{ display: 'block' }}
-        data-ad-client="ca-pub-4701068000566326"
-        data-ad-slot={adSlotId}
-        data-ad-format={position === 'sidebar' ? 'auto' : 'horizontal'}
-        data-full-width-responsive="true"
-      />
-    )
-  }
+  const adSlotIds = getAdSlotIds()
+  const actualAdCount = Math.min(adSlotIds.length, MAX_AD_SLOTS)
 
   return (
     <div 
-      ref={adRef}
       className={`${getAdStyles()} transition-all duration-500 ease-in-out`}
       onClick={user ? handleAdClick : undefined}
       title={user ? '点击广告可获得5个沙币（每天每个位置限1次）' : undefined}
     >
-      {getAdContent()}
+      {/* 创建15个广告容器，通过显示/隐藏实现轮播 */}
+      {Array.from({ length: actualAdCount }).map((_, index) => {
+        const adSlotId = adSlotIds[index]
+        const isVisible = index === currentAdIndex
+        
+        return (
+          <div
+            key={`ad-${position}-${index}`}
+            ref={(el) => {
+              adRefs.current[index] = el
+            }}
+            style={{
+              display: isVisible ? 'block' : 'none',
+              width: '100%',
+              height: '100%'
+            }}
+          >
+            <ins
+              className="adsbygoogle"
+              style={{ display: 'block' }}
+              data-ad-client="ca-pub-4701068000566326"
+              data-ad-slot={adSlotId}
+              data-ad-format={position === 'sidebar' ? 'auto' : 'horizontal'}
+              data-full-width-responsive="true"
+            />
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -148,4 +207,4 @@ export function SidebarAd({ hasContent = true }: { hasContent?: boolean }) {
 // 底部广告栏
 export function BottomAdBanner({ hasContent = true }: { hasContent?: boolean }) {
   return <AdBanner position="bottom" hasContent={hasContent} />
-} 
+}

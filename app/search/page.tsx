@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Navbar from '@/components/layout/Navbar'
-import { SidebarAd } from '@/components/ads/AdBanner'
+// import { SidebarAd } from '@/components/ads/AdBanner' // 已移除，仅保留主页广告
 import { useAuth } from '@/components/providers/AuthProvider'
 import { 
   Search, 
@@ -237,7 +237,7 @@ export default function SearchPage() {
           
           {/* 侧边栏 */}
           <div className="lg:col-span-1">
-            <SidebarAd hasContent={searchResults.length > 0 && searchQuery.trim() !== ''} />
+            {/* 广告已移除，仅保留主页广告 */}
           </div>
         </div>
       </main>

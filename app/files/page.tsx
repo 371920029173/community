@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Navbar from '@/components/layout/Navbar'
-import { SidebarAd } from '@/components/ads/AdBanner'
+// import { SidebarAd } from '@/components/ads/AdBanner' // 已移除，仅保留主页广告
 import { useAuth } from '@/components/providers/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import { 
@@ -567,7 +567,7 @@ export default function FilesPage() {
 
           {/* 侧边栏广告 */}
           <div className="w-80">
-            <SidebarAd hasContent={files.length > 0} />
+            {/* 广告已移除，仅保留主页广告 */}
           </div>
         </div>
       </div>

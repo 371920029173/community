@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import Navbar from '@/components/layout/Navbar'
-import { SidebarAd } from '@/components/ads/AdBanner'
+// import { SidebarAd } from '@/components/ads/AdBanner' // 已移除，仅保留主页广告
 import { 
   FileText, 
   Image, 
@@ -524,7 +524,7 @@ export default function SharePage() {
           
           {/* 侧边栏 */}
           <div className="lg:col-span-1">
-            <SidebarAd hasContent={files.length > 0} />
+            {/* 广告已移除，仅保留主页广告 */}
             
             {/* 分享提示 */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mt-6">

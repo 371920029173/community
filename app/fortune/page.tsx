@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Navbar from '@/components/layout/Navbar'
-import { SidebarAd } from '@/components/ads/AdBanner'
+// import { SidebarAd } from '@/components/ads/AdBanner' // 已移除，仅保留主页广告
 import { 
   Sparkles, 
   Star, 
@@ -225,7 +225,7 @@ export default function FortunePage() {
           
           {/* 侧边栏 */}
           <div className="lg:col-span-1">
-            <SidebarAd hasContent={true} />
+            {/* 广告已移除，仅保留主页广告 */}
           </div>
         </div>
       </main>
