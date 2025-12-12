@@ -131,8 +131,15 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
     const adSlotIds = getAdSlotIds()
     const actualAdCount = Math.min(adSlotIds.length, MAX_AD_SLOTS)
     
-    // 初始化所有广告单元
-    if (typeof window !== 'undefined' && (window as any).adsbygoogle) {
+    // 初始化AdSense（无论脚本是否已加载，都尝试初始化）
+    const initAds = () => {
+      if (typeof window === 'undefined') return
+      
+      // 确保adsbygoogle数组存在
+      if (!(window as any).adsbygoogle) {
+        (window as any).adsbygoogle = []
+      }
+      
       try {
         // 延迟初始化，确保DOM已渲染
         setTimeout(() => {
@@ -145,10 +152,26 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
               }
             }
           }
-        }, 500)
+        }, 1000) // 增加延迟，确保AdSense脚本已加载
       } catch (error) {
         console.error('AdSense 初始化失败:', error)
       }
+    }
+    
+    // 立即尝试初始化
+    initAds()
+    
+    // 如果AdSense脚本还没加载，等待加载完成后再初始化
+    if (typeof window !== 'undefined' && !(window as any).adsbygoogle) {
+      const checkInterval = setInterval(() => {
+        if ((window as any).adsbygoogle) {
+          clearInterval(checkInterval)
+          initAds()
+        }
+      }, 500)
+      
+      // 10秒后停止检查
+      setTimeout(() => clearInterval(checkInterval), 10000)
     }
   }, [position])
 
@@ -209,9 +232,10 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
 
   return (
     <div 
-      className={`${getAdStyles()} transition-all duration-500 ease-in-out relative`}
+      className={`${getAdStyles()} transition-all duration-500 ease-in-out relative overflow-hidden`}
       onClick={user ? handleAdClick : undefined}
       title={user ? '点击广告可获得5个沙币（每天每个广告限1次，需真实有效点击）' : undefined}
+      style={{ minHeight: position === 'top' ? '80px' : position === 'bottom' ? '96px' : '256px' }}
     >
       {/* 广告轮播标签 - 显示当前广告序号和倒计时 */}
       <div className="absolute top-1 right-1 bg-black/70 text-white text-xs px-2 py-1 rounded z-20 flex items-center gap-1">
@@ -234,12 +258,18 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
             style={{
               display: isVisible ? 'block' : 'none',
               width: '100%',
-              height: '100%'
+              height: '100%',
+              minHeight: 'inherit'
             }}
           >
             <ins
               className="adsbygoogle"
-              style={{ display: 'block' }}
+              style={{ 
+                display: 'block',
+                width: '100%',
+                height: '100%',
+                minHeight: position === 'top' ? '80px' : position === 'bottom' ? '96px' : '256px'
+              }}
               data-ad-client="ca-pub-4701068000566326"
               data-ad-slot={adSlotId}
               data-ad-format={position === 'sidebar' ? 'auto' : 'horizontal'}
