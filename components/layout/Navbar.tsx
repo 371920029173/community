@@ -56,6 +56,7 @@ export default function Navbar() {
     storageRequests: 0
   })
   const [sandCoins, setSandCoins] = useState<number>(0)
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(0) // 实时未读消息计数器
 
   const handleSignOut = async () => {
     try {
@@ -65,7 +66,45 @@ export default function Navbar() {
     }
   }
 
-  // 获取通知数量
+  // 获取实时未读消息数（专门的API，更可靠）
+  const fetchUnreadMessages = useCallback(async () => {
+    if (!user?.id) {
+      setUnreadMessagesCount(0)
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/messages/unread-total?userId=${user.id}`, {
+        cache: 'no-store', // 禁用缓存，确保实时数据
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        const count = data.count ?? 0
+        setUnreadMessagesCount(count)
+        // 同时更新 notifications 中的 messages
+        setNotifications(prev => ({
+          ...prev,
+          messages: count
+        }))
+      } else {
+        console.warn('[Navbar] 获取未读消息数失败:', data.error)
+      }
+    } catch (error) {
+      console.error('[Navbar] 获取未读消息数失败:', error)
+      // 出错时不重置，保持上次的值
+    }
+  }, [user?.id])
+
+  // 获取其他通知数量（文件审核、存储请求等）
   const fetchNotifications = useCallback(async () => {
     if (!user?.id) return
 
@@ -79,24 +118,17 @@ export default function Navbar() {
       const data = await response.json()
       
       if (data.success) {
-        const messagesCount = data.data?.messages || 0
-        console.log('[Navbar] 通知数据:', data.data, '未读私信数:', messagesCount) // 调试日志
-        setNotifications(data.data)
-        // 如果未读消息数 > 0，输出提示
-        if (messagesCount > 0) {
-          console.log(`[Navbar] ⚠️ 有 ${messagesCount} 条未读私信，应该显示红点！`)
-        }
+        // 只更新非消息相关的通知（文件审核、存储请求）
+        setNotifications(prev => ({
+          messages: prev.messages, // 保持未读消息数不变（由 fetchUnreadMessages 管理）
+          fileReview: data.data?.fileReview || 0,
+          storageRequests: data.data?.storageRequests || 0
+        }))
       } else {
         console.warn('获取通知失败:', data.error)
       }
     } catch (error) {
       console.error('获取通知失败:', error)
-      // 设置默认值，避免显示错误
-      setNotifications({
-        messages: 0,
-        fileReview: 0,
-        storageRequests: 0
-      })
     }
   }, [user?.id])
 
@@ -117,7 +149,23 @@ export default function Navbar() {
     }
   }, [user?.id])
 
-  // 定期获取通知和沙币
+  // 定期获取实时未读消息数（更频繁，确保实时性）
+  useEffect(() => {
+    if (user?.id) {
+      // 立即获取一次
+      fetchUnreadMessages()
+      // 每10秒更新一次未读消息数（比通知更频繁）
+      const messagesInterval = setInterval(() => {
+        fetchUnreadMessages()
+      }, 10000)
+      
+      return () => clearInterval(messagesInterval)
+    } else {
+      setUnreadMessagesCount(0)
+    }
+  }, [user?.id, fetchUnreadMessages])
+
+  // 定期获取其他通知和沙币
   useEffect(() => {
     if (user?.id) {
       // 立即获取一次
@@ -142,11 +190,6 @@ export default function Navbar() {
 
   // 通知红点组件（确保图层正确，在最上层显示）
   const NotificationDot = ({ count, className = "" }: { count: number, className?: string }) => {
-    // 调试：输出未读消息数
-    if (count > 0) {
-      console.log('[NotificationDot] 显示红点，未读消息数:', count)
-    }
-    
     if (count === 0) return null
     
     // 根据数量调整大小
@@ -220,11 +263,11 @@ export default function Navbar() {
                 <Link 
                   href="/messages" 
                   className="relative flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" 
-                  title={notifications.messages > 0 ? `私信 (${notifications.messages}条未读)` : '私信'}
+                  title={unreadMessagesCount > 0 ? `私信 (${unreadMessagesCount}条未读)` : '私信'}
                 >
                   <div className="relative">
                     <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    <NotificationDot count={notifications.messages} />
+                    <NotificationDot count={unreadMessagesCount} />
                   </div>
                 </Link>
                 {(user.is_admin || user.is_moderator) && (
@@ -376,12 +419,12 @@ export default function Navbar() {
                   >
                     <div className="relative">
                       <MessageSquare className="w-5 h-5" />
-                      <NotificationDot count={notifications.messages} />
+                      <NotificationDot count={unreadMessagesCount} />
                     </div>
                     <span>私信</span>
-                    {notifications.messages > 0 && (
+                    {unreadMessagesCount > 0 && (
                       <span className="ml-auto text-sm text-red-600 font-semibold">
-                        {notifications.messages}条未读
+                        {unreadMessagesCount}条未读
                       </span>
                     )}
                   </Link>
