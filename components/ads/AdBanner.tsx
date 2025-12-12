@@ -43,7 +43,7 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
     return position === 'top' ? topAdSlots : bottomAdSlots
   }
 
-  // 处理广告点击
+  // 处理广告点击（按照Google AdSense要求严格验证）
   const handleAdClick = async (e: React.MouseEvent) => {
     if (!user) return // 未登录用户不奖励
 
@@ -51,8 +51,33 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
     if (isProcessingRef.current) return
 
     const now = Date.now()
-    // 防止快速连续点击（至少间隔1秒）
-    if (now - clickTimestampRef.current < 1000) return
+    
+    // 严格验证1：防止快速连续点击（至少间隔30秒，符合Google要求）
+    if (now - clickTimestampRef.current < 30 * 1000) {
+      toast.error('点击间隔太短，请稍后再试')
+      return
+    }
+
+    // 严格验证2：确保点击的是实际广告内容，而不是容器
+    const target = e.target as HTMLElement
+    const clickedAd = target.closest('.adsbygoogle')
+    if (!clickedAd) {
+      // 如果点击的不是广告本身，可能是点击了容器，不奖励
+      return
+    }
+
+    // 严格验证3：检查广告是否真正加载（通过检查广告容器是否有内容）
+    const adContainer = adRefs.current[currentAdIndex]
+    if (!adContainer) {
+      return
+    }
+    
+    const adElement = adContainer.querySelector('.adsbygoogle')
+    if (!adElement || !adElement.hasAttribute('data-adsbygoogle-status')) {
+      // 广告可能还未加载完成
+      toast.error('广告尚未加载完成，请稍后再试')
+      return
+    }
 
     clickTimestampRef.current = now
     isProcessingRef.current = true
@@ -156,12 +181,40 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
   const adSlotIds = getAdSlotIds()
   const actualAdCount = Math.min(adSlotIds.length, MAX_AD_SLOTS)
 
+  // 计算剩余时间（用于显示倒计时）
+  const [timeRemaining, setTimeRemaining] = useState(AD_ROTATION_INTERVAL / 1000)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          return AD_ROTATION_INTERVAL / 1000
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [currentAdIndex])
+
+  // 当广告切换时重置倒计时
+  useEffect(() => {
+    setTimeRemaining(AD_ROTATION_INTERVAL / 1000)
+  }, [currentAdIndex])
+
   return (
     <div 
-      className={`${getAdStyles()} transition-all duration-500 ease-in-out`}
+      className={`${getAdStyles()} transition-all duration-500 ease-in-out relative`}
       onClick={user ? handleAdClick : undefined}
-      title={user ? '点击广告可获得5个沙币（每天每个位置限1次）' : undefined}
+      title={user ? '点击广告可获得5个沙币（每天每个位置限1次，需真实有效点击）' : undefined}
     >
+      {/* 广告轮播标签 - 显示当前广告序号和倒计时 */}
+      <div className="absolute top-1 right-1 bg-black/70 text-white text-xs px-2 py-1 rounded z-20 flex items-center gap-1">
+        <span className="font-semibold">广告 {currentAdIndex + 1}/{actualAdCount}</span>
+        <span className="text-gray-300">|</span>
+        <span className="text-yellow-300">{timeRemaining}秒</span>
+      </div>
+
       {/* 创建15个广告容器，通过显示/隐藏实现轮播 */}
       {Array.from({ length: actualAdCount }).map((_, index) => {
         const adSlotId = adSlotIds[index]

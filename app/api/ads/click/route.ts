@@ -47,14 +47,45 @@ export async function POST(request: NextRequest) {
       }, { status: 429 })
     }
 
-    // 验证点击有效性（简单验证：检查时间戳是否在合理范围内）
+    // 验证点击有效性（按照Google AdSense要求严格验证）
     const clickTime = timestamp ? new Date(timestamp) : new Date()
     const now = new Date()
     const timeDiff = Math.abs(now.getTime() - clickTime.getTime())
 
-    // 如果时间差超过5分钟，认为可能是无效点击
-    if (timeDiff > 5 * 60 * 1000) {
-      return NextResponse.json({ success: false, error: '点击时间无效' }, { status: 400 })
+    // 严格验证1：时间戳必须在30秒内（确保是实时点击，不是延迟或伪造）
+    if (timeDiff > 30 * 1000) {
+      return NextResponse.json({ success: false, error: '点击时间无效，请重新点击' }, { status: 400 })
+    }
+
+    // 严格验证2：检查用户最近是否有异常点击模式
+    // 获取用户最近1小时内的点击记录
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+    const { data: recentClicks } = await supabaseAdmin
+      .from('ad_clicks')
+      .select('click_timestamp')
+      .eq('user_id', authUser.id)
+      .gte('click_timestamp', oneHourAgo.toISOString())
+      .order('click_timestamp', { ascending: false })
+
+    // 如果1小时内点击超过3次，可能是异常行为
+    if (recentClicks && recentClicks.length >= 3) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '点击过于频繁，请稍后再试' 
+      }, { status: 429 })
+    }
+
+    // 严格验证3：检查点击间隔（防止机器人快速点击）
+    if (recentClicks && recentClicks.length > 0) {
+      const lastClickTime = new Date(recentClicks[0].click_timestamp)
+      const timeSinceLastClick = now.getTime() - lastClickTime.getTime()
+      // 至少间隔30秒才能再次点击
+      if (timeSinceLastClick < 30 * 1000) {
+        return NextResponse.json({ 
+          success: false, 
+          error: '点击间隔太短，请稍后再试' 
+        }, { status: 429 })
+      }
     }
 
     // 获取用户当前沙币
