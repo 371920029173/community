@@ -210,10 +210,8 @@ export default function Navbar() {
                   className="relative flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" 
                   title={notifications.messages > 0 ? `私信 (${notifications.messages}条未读)` : '私信'}
                 >
-                  <div className="relative">
-                    <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    <NotificationDot count={notifications.messages} />
-                  </div>
+                  <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <NotificationDot count={notifications.messages} />
                 </Link>
                 {(user.is_admin || user.is_moderator) && (
                   <Link href="/admin" className="relative flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="管理后台">
