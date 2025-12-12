@@ -10,7 +10,7 @@ const DAILY_LIMIT_PER_POSITION = 1
 
 export async function POST(request: NextRequest) {
   try {
-    const { position, userAgent, timestamp } = await request.json()
+    const { position, adSlotId, userAgent, timestamp } = await request.json()
     const authHeader = request.headers.get('authorization')
 
     if (!authHeader) {
@@ -21,6 +21,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '无效的广告位置' }, { status: 400 })
     }
 
+    // 验证广告单元ID（必须提供）
+    if (!adSlotId || typeof adSlotId !== 'string') {
+      return NextResponse.json({ success: false, error: '缺少广告单元ID' }, { status: 400 })
+    }
+
     const supabaseAdmin = await getSupabaseAdmin()
     const token = authHeader.replace('Bearer ', '')
     const { data: { user: authUser }, error: authError } = await supabaseAdmin.auth.getUser(token)
@@ -29,20 +34,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '身份验证失败' }, { status: 401 })
     }
 
-    // 检查今天是否已经点击过这个位置的广告
+    // 检查今天是否已经点击过这个具体的广告单元
     const today = new Date().toISOString().split('T')[0]
     const { data: existingClick } = await supabaseAdmin
       .from('ad_clicks')
       .select('id')
       .eq('user_id', authUser.id)
-      .eq('ad_position', position)
+      .eq('ad_slot_id', adSlotId)
       .eq('click_date', today)
       .single()
 
     if (existingClick) {
       return NextResponse.json({ 
         success: false, 
-        error: '今天已经点击过此位置的广告',
+        error: '今天已经点击过此广告，请等待其他广告轮播',
         alreadyClicked: true
       }, { status: 429 })
     }
@@ -105,6 +110,7 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: authUser.id,
         ad_position: position,
+        ad_slot_id: adSlotId, // 记录具体的广告单元ID
         click_timestamp: clickTime.toISOString(),
         click_date: new Date().toISOString().split('T')[0], // 设置日期为今天（YYYY-MM-DD格式）
         is_valid: true,
@@ -125,7 +131,7 @@ export async function POST(request: NextRequest) {
     if (coinsError) {
       console.error('更新沙币失败:', coinsError)
       // 回滚：删除点击记录
-      await supabaseAdmin.from('ad_clicks').delete().eq('user_id', authUser.id).eq('ad_position', position).gte('click_timestamp', `${today}T00:00:00.000Z`)
+      await supabaseAdmin.from('ad_clicks').delete().eq('user_id', authUser.id).eq('ad_slot_id', adSlotId).gte('click_timestamp', `${today}T00:00:00.000Z`)
       return NextResponse.json({ success: false, error: '更新沙币失败' }, { status: 500 })
     }
 

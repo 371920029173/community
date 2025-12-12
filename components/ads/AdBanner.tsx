@@ -89,6 +89,10 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
         return
       }
 
+      // 获取当前显示的广告单元ID
+      const adSlotIds = getAdSlotIds()
+      const currentAdSlotId = adSlotIds[currentAdIndex]
+
       const response = await fetch('/api/ads/click', {
         method: 'POST',
         headers: {
@@ -97,6 +101,7 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
         },
         body: JSON.stringify({
           position,
+          adSlotId: currentAdSlotId, // 传递当前广告单元ID
           userAgent: navigator.userAgent,
           timestamp: now
         })
@@ -206,7 +211,7 @@ export default function AdBanner({ position, hasContent = true }: AdBannerProps)
     <div 
       className={`${getAdStyles()} transition-all duration-500 ease-in-out relative`}
       onClick={user ? handleAdClick : undefined}
-      title={user ? '点击广告可获得5个沙币（每天每个位置限1次，需真实有效点击）' : undefined}
+      title={user ? '点击广告可获得5个沙币（每天每个广告限1次，需真实有效点击）' : undefined}
     >
       {/* 广告轮播标签 - 显示当前广告序号和倒计时 */}
       <div className="absolute top-1 right-1 bg-black/70 text-white text-xs px-2 py-1 rounded z-20 flex items-center gap-1">
