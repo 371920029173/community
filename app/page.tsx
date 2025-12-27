@@ -136,6 +136,39 @@ export default function HomePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* 配置警告 */}
         
+        {/* 价值主张横幅 */}
+        <div className="mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-xl shadow-lg p-6 text-white">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex-1 text-center md:text-left">
+              <h2 className="text-2xl md:text-3xl font-bold mb-2 flex items-center justify-center md:justify-start gap-2">
+                <Zap className="w-6 h-6 md:w-7 md:h-7" />
+                <span>专为垂直行业打造的高效文件分享平台</span>
+              </h2>
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 md:gap-4 text-sm md:text-base">
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+                  <FolderOpen className="w-4 h-4" />
+                  <span>上线即获 20GB 免费云盘</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+                  <FileText className="w-4 h-4" />
+                  <span>垂直行业资源库（编程/金融/咨询）</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+                  <Shield className="w-4 h-4" />
+                  <span>无广告干扰，高速分享</span>
+                </div>
+              </div>
+            </div>
+            <Link
+              href="/upload"
+              className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors shadow-md flex items-center gap-2 whitespace-nowrap"
+            >
+              <Upload className="w-5 h-5" />
+              <span>立即开始</span>
+            </Link>
+          </div>
+        </div>
+        
         {/* 公告栏 */}
         <AnnouncementBanner />
         

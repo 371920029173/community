@@ -24,3 +24,5 @@ ON ad_clicks(user_id, ad_slot_id, click_date);
 -- 添加注释
 COMMENT ON COLUMN ad_clicks.ad_slot_id IS '广告单元ID（AdSense广告单元ID），用于标识具体的广告';
 
+
+
