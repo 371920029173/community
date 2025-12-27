@@ -137,14 +137,14 @@ export default function HomePage() {
         {/* 配置警告 */}
         
         {/* 价值主张横幅 */}
-        <div className="mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-xl shadow-lg p-6 text-white">
+        <div className="mb-6 bg-gradient-to-r from-blue-600/60 via-purple-600/60 to-pink-600/60 backdrop-blur-sm rounded-xl shadow-lg p-6 text-white border border-white/20">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex-1 text-center md:text-left">
               <h2 className="text-2xl md:text-3xl font-bold mb-2 flex items-center justify-center md:justify-start gap-2">
                 <Zap className="w-6 h-6 md:w-7 md:h-7" />
                 <span>专为垂直行业打造的高效文件分享平台</span>
               </h2>
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 md:gap-4 text-sm md:text-base">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 md:gap-4 text-sm md:text-base mb-2">
                 <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
                   <FolderOpen className="w-4 h-4" />
                   <span>上线即获 20GB 免费云盘</span>
@@ -158,6 +158,9 @@ export default function HomePage() {
                   <span>无广告干扰，高速分享</span>
                 </div>
               </div>
+              <p className="text-xs md:text-sm text-white/80 mt-2 text-center md:text-left">
+                为了不影响您在使用时的心情，我们将广告放在了主页，若引起您的不满，敬请见谅
+              </p>
             </div>
             <Link
               href="/upload"
