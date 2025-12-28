@@ -160,6 +160,8 @@ export default function HomePage() {
               </div>
               <p className="text-xs md:text-sm text-white/80 mt-2 text-center md:text-left">
                 为避免影响您在使用时的心情，我们将广告放在了主页，若引起您的不满，敬请见谅
+                您不必为钓鱼链接而担心，我们后台有严格的审核机制，确保您上传的文件安全可靠
+                为了完全确保您的隐私安全，我们不会存储您的任何隐私信息
               </p>
             </div>
             <Link
