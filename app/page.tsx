@@ -142,16 +142,16 @@ export default function HomePage() {
             <div className="flex-1 text-center md:text-left">
               <h2 className="text-2xl md:text-3xl font-bold mb-2 flex items-center justify-center md:justify-start gap-2">
                 <Zap className="w-6 h-6 md:w-7 md:h-7" />
-                <span>专为垂直行业打造的高效文件分享平台</span>
+                <span>专为信息分享打造的安全高效的文件分享平台</span>
               </h2>
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 md:gap-4 text-sm md:text-base mb-2">
                 <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
                   <FolderOpen className="w-4 h-4" />
-                  <span>上线即获 20GB 免费云盘</span>
+                  <span>上线可领取 20GB 高速云盘</span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
                   <FileText className="w-4 h-4" />
-                  <span>垂直行业资源库（编程/金融/咨询）</span>
+                  <span>专业后台服务，保证隐私安全</span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
                   <Shield className="w-4 h-4" />
@@ -159,7 +159,7 @@ export default function HomePage() {
                 </div>
               </div>
               <p className="text-xs md:text-sm text-white/80 mt-2 text-center md:text-left">
-                为了不影响您在使用时的心情，我们将广告放在了主页，若引起您的不满，敬请见谅
+                为避免影响您在使用时的心情，我们将广告放在了主页，若引起您的不满，敬请见谅
               </p>
             </div>
             <Link
