@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/providers/AuthProvider'
@@ -13,7 +13,7 @@ const nicknameColors = [
   '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
 ]
 
-export default function RegisterPage() {
+function RegisterForm() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -300,4 +300,12 @@ export default function RegisterPage() {
       </div>
     </div>
   )
-} 
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">加载中...</div>}>
+      <RegisterForm />
+    </Suspense>
+  )
+}
