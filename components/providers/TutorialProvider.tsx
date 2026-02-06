@@ -1,7 +1,8 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
-import { TutorialModal, getTutorialCompleted, getTutorialPlayOnLogin } from '@/components/tutorial/TutorialModal'
+import { TutorialSpotlight } from '@/components/tutorial/TutorialSpotlight'
+import { getTutorialCompleted, getTutorialPlayOnLogin, setTutorialCompleted, setTutorialPlayOnLogin } from '@/components/tutorial/TutorialModal'
 import { useAuth } from '@/components/providers/AuthProvider'
 
 interface TutorialContextType {
@@ -33,10 +34,20 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     setOpen(false)
   }, [])
 
+  const handlePlayChoice = useCallback((playOnLogin: boolean) => {
+    setTutorialPlayOnLogin(playOnLogin)
+  }, [])
+
   return (
     <TutorialContext.Provider value={{ openTutorial }}>
       {children}
-      <TutorialModal open={open} onClose={handleClose} showPlayChoice={!getTutorialCompleted()} />
+      <TutorialSpotlight
+        open={open}
+        onClose={handleClose}
+        showPlayChoice={!getTutorialCompleted()}
+        onComplete={() => setTutorialCompleted(true)}
+        onPlayChoice={handlePlayChoice}
+      />
     </TutorialContext.Provider>
   )
 }

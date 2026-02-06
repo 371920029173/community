@@ -29,6 +29,7 @@ import {
   BookOpen
 } from 'lucide-react'
 import { useTutorial } from '@/components/providers/TutorialProvider'
+import { getTutorialPlayOnLogin, setTutorialPlayOnLogin } from '@/components/tutorial/TutorialModal'
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -62,6 +63,11 @@ export default function ProfilePage() {
   const [forums, setForums] = useState<any[]>([])
   const [noteContent, setNoteContent] = useState('')
   const [noteSaving, setNoteSaving] = useState(false)
+  const [tutorialPlayOnLogin, setTutorialPlayOnLoginState] = useState(false)
+
+  useEffect(() => {
+    setTutorialPlayOnLoginState(getTutorialPlayOnLogin())
+  }, [])
 
   const storageUsed = (user as any)?.storage_used ?? 0
   const storageLimit = (user as any)?.storage_limit ?? 20 * 1024 * 1024 * 1024
@@ -399,18 +405,19 @@ export default function ProfilePage() {
             </motion.div>
 
             {/* 邀请好友 */}
-            <motion.div variants={fadeInUp} whileHover={{ y: -2 }} className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/40 shadow-xl shadow-slate-200/30">
+            <motion.div data-tutorial="invite" variants={fadeInUp} whileHover={{ y: -2 }} className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/40 shadow-xl shadow-slate-200/30">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2"><UserPlus className="w-5 h-5 text-emerald-500" /> 邀请好友</h2>
               {inviteCode ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <code className="flex-1 px-3 py-2 bg-slate-100 rounded-lg text-sm font-mono text-gray-800">{inviteCode}</code>
-                    <button onClick={() => { navigator.clipboard?.writeText(inviteCode); toast.success('已复制') }} className="p-2 rounded-lg hover:bg-slate-100 transition-colors"><Copy className="w-4 h-4" /></button>
+                    <button onClick={async () => { if (navigator.clipboard) { await navigator.clipboard.writeText(inviteCode); toast.success('已复制'); try { const { data: { session } } = await supabase.auth.getSession(); if (session) { const r = await fetch('/api/user/invite-code', { method: 'POST', headers: { 'Authorization': `Bearer ${session.access_token}` } }); const j = await r.json(); if (j.success && j.data) { setInviteCode(j.data.inviteCode); setInviteUrl(j.data.inviteUrl); } } } catch (_) {} } }} className="p-2 rounded-lg hover:bg-slate-100 transition-colors"><Copy className="w-4 h-4" /></button>
                   </div>
                   <div className="flex items-center gap-2">
                     <input readOnly value={inviteUrl} className="flex-1 px-3 py-2 bg-slate-100 rounded-lg text-xs text-gray-600 truncate" />
-                    <button onClick={() => { navigator.clipboard?.writeText(inviteUrl); toast.success('链接已复制') }} className="p-2 rounded-lg hover:bg-slate-100 transition-colors"><Copy className="w-4 h-4" /></button>
+                    <button onClick={async () => { if (navigator.clipboard) { await navigator.clipboard.writeText(inviteUrl); toast.success('链接已复制'); try { const { data: { session } } = await supabase.auth.getSession(); if (session) { const r = await fetch('/api/user/invite-code', { method: 'POST', headers: { 'Authorization': `Bearer ${session.access_token}` } }); const j = await r.json(); if (j.success && j.data) { setInviteCode(j.data.inviteCode); setInviteUrl(j.data.inviteUrl); } } } catch (_) {} } }} className="p-2 rounded-lg hover:bg-slate-100 transition-colors"><Copy className="w-4 h-4" /></button>
                   </div>
+                  <p className="text-xs text-amber-600 font-medium">每次使用后邀请码将自动刷新，请使用最新链接</p>
                   <p className="text-xs text-gray-500">好友注册并完成激活（上传/发消息/创建论坛），满24小时后双方各得20沙币</p>
                 </div>
               ) : (
@@ -441,6 +448,7 @@ export default function ProfilePage() {
               <div className="space-y-3 text-sm text-gray-700">
                 <div className="flex justify-between py-2 border-b border-gray-100"><span>管理员</span><span className="font-medium">{user.is_admin ? '是' : '否'}</span></div>
                 <div className="flex justify-between py-2 border-b border-gray-100"><span>审核员</span><span className="font-medium">{user.is_moderator ? '是' : '否'}</span></div>
+                <div className="flex justify-between py-2 border-b border-gray-100 items-center"><span>下次登录播放教程</span><label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked={tutorialPlayOnLogin} onChange={e => { const v = e.target.checked; setTutorialPlayOnLogin(v); setTutorialPlayOnLoginState(v); toast.success(v ? '已开启' : '已关闭') }} className="sr-only peer" /><div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600" /></label></div>
                 <div className="flex justify-between py-2"><span>注册时间</span><span className="font-medium">{new Date(user.created_at).toLocaleDateString('zh-CN')}</span></div>
               </div>
             </motion.div>

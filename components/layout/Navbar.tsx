@@ -136,7 +136,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-6">
             {/* 沙币显示（电脑版左侧） */}
             {user && (
-              <div className="flex items-center space-x-1 px-3 py-1 bg-amber-50 border border-amber-200 rounded-lg">
+              <div data-tutorial="sand-coins" className="flex items-center space-x-1 px-3 py-1 bg-amber-50 border border-amber-200 rounded-lg">
                 <div className="relative">
                   <div className="w-4 h-4 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center">
                     <div className="w-2 h-2 bg-amber-700 rounded-full"></div>
@@ -154,13 +154,13 @@ export default function Navbar() {
             >
               {uiMode === 'desktop' ? '电脑版' : '手机版'}
             </button>
-            <Link href="/" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="首页">
+            <Link href="/" data-tutorial="nav-home" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="首页">
               <Home className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
             <Link href="/share" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="文件分享">
               <Share2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
-            <Link href="/files" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="云盘">
+            <Link href="/files" data-tutorial="nav-files" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="云盘">
               <Cloud className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
             <Link href="/search" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="搜索">
@@ -169,13 +169,14 @@ export default function Navbar() {
             <Link href="/fortune" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="占卜">
               <Sparkles className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
-            <Link href="/forums" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="论坛大厅">
+            <Link href="/forums" data-tutorial="nav-forums" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="论坛大厅">
               <Users className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
             {user && (
               <>
                 <Link 
                   href="/messages" 
+                  data-tutorial="nav-messages"
                   className="relative flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" 
                   title={unreadMessagesCount > 0 ? `私信 (${unreadMessagesCount}条未读)` : '私信'}
                 >
@@ -218,7 +219,7 @@ export default function Navbar() {
                     <Shield className="w-4 h-4 text-blue-500" aria-label="审核员" />
                   )}
                 </div>
-                <Link href="/profile" className="text-gray-700 hover:text-primary-600 transition-colors">
+                <Link href="/profile" data-tutorial="nav-profile" className="text-gray-700 hover:text-primary-600 transition-colors">
                   {user.avatar_url ? (
                     <img 
                       src={user.avatar_url} 
