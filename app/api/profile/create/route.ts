@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       if (inviter) invitedBy = inviter.id
     }
 
-    function genInviteCode(): string {
+    const genInviteCode = (): string => {
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
       let c = ''
       for (let i = 0; i < 8; i++) c += chars[Math.floor(Math.random() * chars.length)]
