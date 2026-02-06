@@ -5,6 +5,7 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/components/providers/AuthProvider'
 import { UiProvider } from '@/components/providers/UiProvider'
+import { TutorialProvider } from '@/components/providers/TutorialProvider'
 import MouseTrail from '@/components/effects/MouseTrail'
 import ParticlePhysics from '@/components/effects/ParticlePhysics'
 import StayTracking from '@/components/effects/StayTracking'
@@ -60,6 +61,7 @@ export default function RootLayout({
         <MouseTrail />
         
         <AuthProvider>
+          <TutorialProvider>
           <StayTracking />
           <UiProvider>
             <div className="flex flex-col min-h-screen">
@@ -69,6 +71,7 @@ export default function RootLayout({
             <CookieConsent />
             <Toaster position="top-right" />
           </UiProvider>
+          </TutorialProvider>
         </AuthProvider>
       </body>
     </html>

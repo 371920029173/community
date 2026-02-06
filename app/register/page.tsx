@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { Eye, EyeOff, User, Lock, Palette, RefreshCw } from 'lucide-react'
+import { Eye, EyeOff, User, Lock, Palette, RefreshCw, Gift } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getFriendlyErrorMessage } from '@/lib/utils'
 
@@ -32,7 +32,9 @@ function RegisterForm() {
   const { signUp } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const inviteCode = searchParams.get('ref') || undefined
+  const [manualInviteCode, setManualInviteCode] = useState('')
+  const inviteCodeFromUrl = searchParams.get('ref') || ''
+  const inviteCode = (manualInviteCode || inviteCodeFromUrl || '').trim() || undefined
 
   // 生成新的验证挑战
   const generateChallenge = () => {
@@ -220,6 +222,25 @@ function RegisterForm() {
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700">
+                邀请码（可选）
+              </label>
+              <div className="mt-1 relative">
+                <Gift className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  id="inviteCode"
+                  name="inviteCode"
+                  type="text"
+                  value={manualInviteCode || inviteCodeFromUrl}
+                  onChange={(e) => setManualInviteCode(e.target.value)}
+                  className="input-field pl-10"
+                  placeholder="如有好友邀请码请在此输入"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">通过邀请链接注册会自动填充</p>
             </div>
 
             <div>

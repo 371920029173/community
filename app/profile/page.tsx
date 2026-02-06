@@ -25,8 +25,10 @@ import {
   ChevronRight,
   FolderOpen,
   UserPlus,
-  Copy
+  Copy,
+  BookOpen
 } from 'lucide-react'
+import { useTutorial } from '@/components/providers/TutorialProvider'
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -48,6 +50,7 @@ const formatBytes = (bytes: number) => {
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth()
+  const { openTutorial } = useTutorial()
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editedUser, setEditedUser] = useState<any>(null)
@@ -245,7 +248,12 @@ export default function ProfilePage() {
 
             {/* 快捷入口 */}
             <motion.div variants={fadeInUp} className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 border border-white/40 shadow-xl shadow-slate-200/30">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2"><Zap className="w-5 h-5 text-amber-500" /> 快捷入口</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2"><Zap className="w-5 h-5 text-amber-500" /> 快捷入口</h2>
+                <button onClick={openTutorial} className="flex items-center gap-2 px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-xl transition-colors">
+                  <BookOpen className="w-4 h-4" /> 使用教程
+                </button>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {quickLinks.map((link, i) => (
                   <motion.div key={link.href} variants={fadeInUp} whileHover={{ y: -4, transition: { duration: 0.2 } }} whileTap={{ scale: 0.98 }}>
@@ -387,7 +395,7 @@ export default function ProfilePage() {
                 我的沙币
               </h2>
               <p className="text-3xl font-bold text-amber-800">{sandCoins}</p>
-              <p className="text-sm text-amber-700/80 mt-1">每日登录、停留、邀请获得</p>
+              <p className="text-sm text-amber-700/80 mt-1">点击广告、每日登录、停留、邀请获得</p>
             </motion.div>
 
             {/* 邀请好友 */}
