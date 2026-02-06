@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'edge'
 import { supabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 export async function PUT(request: NextRequest) {
   try {
@@ -57,7 +58,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // 更新用户信息
+    // 更新 users 表
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
       .update({
@@ -75,6 +76,28 @@ export async function PUT(request: NextRequest) {
         { success: false, error: '更新失败' },
         { status: 500 }
       )
+    }
+
+    // 同步更新 Auth 的 email，使改名后仍能用新用户名登录
+    const newEmail = `${username.trim()}@fileshare.local`
+    if (user.email !== newEmail) {
+      try {
+        const supabaseAdmin = await getSupabaseAdmin()
+        const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, { email: newEmail })
+        if (authUpdateError) {
+          console.error('同步 Auth 邮箱失败:', authUpdateError)
+          return NextResponse.json(
+            { success: false, error: '用户名已更新，但登录邮箱同步失败，请稍后重试或联系管理员' },
+            { status: 500 }
+          )
+        }
+      } catch (authErr: any) {
+        console.error('同步 Auth 邮箱异常:', authErr)
+        return NextResponse.json(
+          { success: false, error: '登录信息同步失败，请稍后重试' },
+          { status: 500 }
+        )
+      }
     }
 
     return NextResponse.json({

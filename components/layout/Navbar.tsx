@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useUi } from '@/components/providers/UiProvider'
 import { getFriendlyErrorMessage } from '@/lib/utils'
+import NotificationDot from '@/components/ui/NotificationDot'
 import { 
   Home, 
   User, 
@@ -66,153 +67,66 @@ export default function Navbar() {
     }
   }
 
-  // 获取实时未读消息数（专门的API，更可靠）
-  const fetchUnreadMessages = useCallback(async () => {
+  // 统一获取通知（含未读消息、文件审核、存储请求）和沙币，减少请求次数
+  const fetchAllNotifications = useCallback(async () => {
     if (!user?.id) {
       setUnreadMessagesCount(0)
+      setNotifications({ messages: 0, fileReview: 0, storageRequests: 0 })
       return
     }
 
     try {
-      const response = await fetch(`/api/messages/unread-total?userId=${user.id}`, {
-        cache: 'no-store', // 禁用缓存，确保实时数据
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      })
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        const count = data.count ?? 0
-        setUnreadMessagesCount(count)
-        // 同时更新 notifications 中的 messages
-        setNotifications(prev => ({
-          ...prev,
-          messages: count
-        }))
-      } else {
-        console.warn('[Navbar] 获取未读消息数失败:', data.error)
-      }
-    } catch (error) {
-      console.error('[Navbar] 获取未读消息数失败:', error)
-      // 出错时不重置，保持上次的值
-    }
-  }, [user?.id])
+      const [notifRes, coinsRes] = await Promise.all([
+        fetch(`/api/notifications?userId=${user.id}`),
+        fetch(`/api/user/coins?userId=${user.id}`)
+      ])
 
-  // 获取其他通知数量（文件审核、存储请求等）
-  const fetchNotifications = useCallback(async () => {
-    if (!user?.id) return
-
-    try {
-      const response = await fetch(`/api/notifications?userId=${user.id}`)
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: 网络请求失败`)
-      }
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        // 只更新非消息相关的通知（文件审核、存储请求）
-        setNotifications(prev => ({
-          messages: prev.messages, // 保持未读消息数不变（由 fetchUnreadMessages 管理）
-          fileReview: data.data?.fileReview || 0,
-          storageRequests: data.data?.storageRequests || 0
-        }))
-      } else {
-        console.warn('获取通知失败:', data.error)
-      }
-    } catch (error) {
-      console.error('获取通知失败:', error)
-    }
-  }, [user?.id])
-
-  // 获取沙币数量
-  const fetchSandCoins = useCallback(async () => {
-    if (!user?.id) return
-
-    try {
-      const response = await fetch(`/api/user/coins?userId=${user.id}`)
-      if (response.ok) {
-        const data = await response.json()
+      if (notifRes.ok) {
+        const data = await notifRes.json()
         if (data.success) {
-          setSandCoins(data.coins || 0)
+          const msgs = data.data?.messages ?? 0
+          setUnreadMessagesCount(msgs)
+          setNotifications(prev => ({
+            messages: msgs,
+            fileReview: data.data?.fileReview ?? 0,
+            storageRequests: data.data?.storageRequests ?? 0
+          }))
         }
       }
+      if (coinsRes.ok) {
+        const coinsData = await coinsRes.json()
+        if (coinsData.success) setSandCoins(coinsData.coins ?? 0)
+      }
     } catch (error) {
-      console.error('获取沙币失败:', error)
+      console.error('[Navbar] 获取通知失败:', error)
     }
   }, [user?.id])
 
-  // 定期获取实时未读消息数（更频繁，确保实时性）
+  // 统一轮询通知和沙币，切换回页面或标记已读时立即刷新
   useEffect(() => {
-    if (user?.id) {
-      // 立即获取一次
-      fetchUnreadMessages()
-      // 每10秒更新一次未读消息数（比通知更频繁）
-      const messagesInterval = setInterval(() => {
-        fetchUnreadMessages()
-      }, 10000)
-      
-      return () => clearInterval(messagesInterval)
-    } else {
+    if (!user?.id) {
       setUnreadMessagesCount(0)
-    }
-  }, [user?.id, fetchUnreadMessages])
-
-  // 定期获取其他通知和沙币
-  useEffect(() => {
-    if (user?.id) {
-      // 立即获取一次
-      fetchNotifications()
-      fetchSandCoins()
-      // 每15秒更新一次通知和沙币
-      const interval = setInterval(() => {
-        fetchNotifications()
-        fetchSandCoins()
-      }, 15000)
-      return () => clearInterval(interval)
-    } else {
-      // 用户未登录时重置通知和沙币
-      setNotifications({
-        messages: 0,
-        fileReview: 0,
-        storageRequests: 0
-      })
+      setNotifications({ messages: 0, fileReview: 0, storageRequests: 0 })
       setSandCoins(0)
+      return
     }
-  }, [user?.id, fetchNotifications, fetchSandCoins])
 
-  // 通知红点组件（确保图层正确，在最上层显示）
-  const NotificationDot = ({ count, className = "" }: { count: number, className?: string }) => {
-    if (count === 0) return null
-    
-    // 根据数量调整大小
-    const isSmallCount = count < 10
-    const size = isSmallCount ? 'h-5 w-5' : 'h-6 min-w-6 px-1'
-    const textSize = isSmallCount ? 'text-xs' : 'text-[10px]'
-    
-    return (
-      <span 
-        className={`absolute -top-1 -right-1 bg-red-500 text-white ${textSize} rounded-full ${size} flex items-center justify-center font-bold shadow-lg border-2 border-white ${className}`}
-        style={{ 
-          pointerEvents: 'none',
-          animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-          zIndex: 10000,
-          position: 'absolute',
-          top: '-4px',
-          right: '-4px'
-        }}
-      >
-        {count > 99 ? '99+' : count}
-      </span>
-    )
-  }
+    fetchAllNotifications()
+    const interval = setInterval(fetchAllNotifications, 30000)
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') fetchAllNotifications()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    const onMessagesRead = () => fetchAllNotifications()
+    window.addEventListener('messages-read', onMessagesRead)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('messages-read', onMessagesRead)
+    }
+  }, [user?.id, fetchAllNotifications])
 
   return (
     <nav className="nav-minimal sticky top-0 z-50">

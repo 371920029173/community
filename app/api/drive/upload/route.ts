@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { supabaseAdmin, getSupabaseAdmin } from '@/lib/supabaseAdmin'
+import { tryGrantInviteReward } from '@/lib/inviteReward'
 
 export const runtime = 'edge'
 
@@ -156,6 +157,11 @@ export async function POST(request: NextRequest) {
     if (typeof userProfile.storage_used === 'number') {
       await supabaseAdmin.from('users').update({ storage_used: userProfile.storage_used + file.size }).eq('id', userId)
     }
+
+    try {
+      const sb = await getSupabaseAdmin()
+      await tryGrantInviteReward(sb, userId)
+    } catch (_) {}
 
     return NextResponse.json({ success: true, data: { file: inserted } })
   } catch (e: any) {

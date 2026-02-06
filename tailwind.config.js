@@ -36,6 +36,17 @@ module.exports = {
         'slide-up': 'slideUp 0.3s ease-out',
         'bounce-gentle': 'bounceGentle 2s infinite',
       },
+      borderRadius: {
+        none: '0',
+        sm: '0.375rem',
+        DEFAULT: '0.5rem',
+        md: '0.625rem',
+        lg: '0.875rem',
+        xl: '1rem',
+        '2xl': '1.25rem',
+        '3xl': '1.5rem',
+        full: '9999px',
+      },
       keyframes: {
         fadeIn: {
           '0%': { opacity: '0' },

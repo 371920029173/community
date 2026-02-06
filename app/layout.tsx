@@ -7,6 +7,7 @@ import { AuthProvider } from '@/components/providers/AuthProvider'
 import { UiProvider } from '@/components/providers/UiProvider'
 import MouseTrail from '@/components/effects/MouseTrail'
 import ParticlePhysics from '@/components/effects/ParticlePhysics'
+import StayTracking from '@/components/effects/StayTracking'
 import Footer from '@/components/layout/Footer'
 import CookieConsent from '@/components/layout/CookieConsent'
 
@@ -27,11 +28,12 @@ export const metadata: Metadata = {
   description: '资源与你同频，信息予你无限。在这里分享文件、交流想法、创建论坛。',
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-rounded.svg', type: 'image/svg+xml' },
+      { url: '/favicon.png', type: 'image/png', sizes: 'any' },
       { url: '/favicon.ico', sizes: 'any' }
     ],
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    shortcut: '/favicon-rounded.svg',
+    apple: '/favicon.png',
   },
 }
 
@@ -58,6 +60,7 @@ export default function RootLayout({
         <MouseTrail />
         
         <AuthProvider>
+          <StayTracking />
           <UiProvider>
             <div className="flex flex-col min-h-screen">
               {children}

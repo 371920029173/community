@@ -12,7 +12,7 @@ interface AuthContextType {
   user: User | null
   loading: boolean
   signIn: (username: string, password: string) => Promise<void>
-  signUp: (username: string, password: string, deviceFingerprint?: string) => Promise<void>
+  signUp: (username: string, password: string, deviceFingerprint?: string, inviteCode?: string) => Promise<void>
   signOut: () => Promise<void>
   refreshUser: () => Promise<void>
 }
@@ -71,6 +71,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(meJson.data)
       setLoading(false)
 
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.access_token) {
+          fetch('/api/user/daily-rewards', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+            body: JSON.stringify({ staySeconds: 0 })
+          }).catch(() => {})
+        }
+      } catch (_) {}
+
     } catch (error: any) {
       console.error('登录过程中的完整错误:', error)
       setLoading(false)
@@ -79,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   // 简化的注册函数
-  const signUp = async (username: string, password: string, deviceFingerprint?: string) => {
+  const signUp = async (username: string, password: string, deviceFingerprint?: string, inviteCode?: string) => {
     try {
       setLoading(true)
       console.log('开始注册流程,用户名:', username)
@@ -142,7 +153,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             username,
             email,
             isInitialAdmin: username === INITIAL_ADMIN_USERNAME,
-            deviceFingerprint: deviceFingerprint || null
+            deviceFingerprint: deviceFingerprint || null,
+            inviteCode: inviteCode || null
           })
         })
 
@@ -261,6 +273,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('恢复用户状态:', userProfile.username)
             setUser(userProfile)
           }
+          if (session?.access_token) {
+            fetch('/api/user/daily-rewards', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+              body: JSON.stringify({ staySeconds: 0 })
+            }).catch(() => {})
+          }
         } else {
           console.log('没有找到现有会话')
           setUser(null)
@@ -287,11 +306,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('认证状态变化:', event, session?.user?.id)
         
         if (event === 'SIGNED_IN' && session?.user) {
-          // 用户登录后，从服务端拿资料
           const meRes = await fetch('/api/profile/me', { headers: { 'x-user-id': session.user.id } })
           if (meRes.ok) {
             const meJson = await meRes.json().catch(() => ({ success: false }))
             if (meJson.success) setUser(meJson.data)
+          }
+          if (session.access_token) {
+            fetch('/api/user/daily-rewards', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+              body: JSON.stringify({ staySeconds: 0 })
+            }).catch(() => {})
           }
         } else if (event === 'SIGNED_OUT') {
           // 用户登出

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Eye, EyeOff, User, Lock, Palette, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -31,6 +31,8 @@ export default function RegisterPage() {
   
   const { signUp } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const inviteCode = searchParams.get('ref') || undefined
 
   // 生成新的验证挑战
   const generateChallenge = () => {
@@ -118,7 +120,7 @@ export default function RegisterPage() {
     
     try {
       // 传递设备指纹给注册函数（需要修改 AuthProvider）
-      await signUp(username, password, fingerprint)
+      await signUp(username, password, fingerprint, inviteCode)
       toast.success('注册成功！请登录')
       router.push('/login')
     } catch (error: any) {

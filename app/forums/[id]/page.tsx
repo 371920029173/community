@@ -231,7 +231,7 @@ export default function ForumDetailPage({ params }: { params: Promise<{ id: stri
     if (isMember || isOwner) {
       fetchMessages()
       // 每5秒刷新一次消息
-      const interval = setInterval(fetchMessages, 5000)
+      const interval = setInterval(fetchMessages, 15000)
       return () => clearInterval(interval)
     }
   }, [isMember, isOwner, fetchMessages])

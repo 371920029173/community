@@ -62,10 +62,11 @@ export default function FileGrid() {
 
       const { data, error } = await supabase
         .from('files')
-        .select('*')
+        .select('id, original_name, filename, file_path, user_id, file_size, mime_type, is_public, is_approved, created_at, updated_at')
         .eq('is_public', true)
         .eq('is_approved', true)
         .order('created_at', { ascending: false })
+        .limit(40)
 
       if (error) {
         console.error('Error fetching files:', error)

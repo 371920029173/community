@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
+import { tryGrantInviteReward } from '@/lib/inviteReward'
 import { createClient } from '@supabase/supabase-js'
 
 export const runtime = 'edge'
@@ -113,6 +114,10 @@ export async function POST(request: NextRequest) {
       forum_id: forum.id,
       user_id: authUser.id
     })
+
+    try {
+      await tryGrantInviteReward(supabaseAdmin, authUser.id)
+    } catch (_) {}
 
     return NextResponse.json({ 
       success: true, 

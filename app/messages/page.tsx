@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
+import NotificationDot from '@/components/ui/NotificationDot'
 import { getFriendlyErrorMessage } from '@/lib/utils'
 
 // 获取文件类型
@@ -262,8 +263,9 @@ export default function MessagesPage() {
                   userId: user.id
                 })
               })
-              // 清除未读数
               setUnreadCounts(prev => ({ ...prev, [conversationId]: 0 }))
+              // 通知 Navbar 立即刷新未读数
+              window.dispatchEvent(new CustomEvent('messages-read'))
             } catch (error) {
               console.error('标记已读失败:', error)
             }
@@ -439,30 +441,6 @@ export default function MessagesPage() {
     return username.includes(query) || nickname.includes(query)
   })
 
-  // 通知红点组件（和后台一样的样式）
-  const NotificationDot = ({ count, className = "" }: { count: number, className?: string }) => {
-    if (count === 0) return null
-    
-    // 根据数量调整大小
-    const isSmallCount = count < 10
-    const size = isSmallCount ? 'h-5 w-5' : 'h-6 min-w-6 px-1'
-    const textSize = isSmallCount ? 'text-xs' : 'text-[10px]'
-    
-    return (
-      <span 
-        className={`absolute -top-1 -right-1 bg-red-500 text-white ${textSize} rounded-full ${size} flex items-center justify-center font-bold shadow-lg border-2 border-white ${className}`}
-        style={{ 
-          pointerEvents: 'none',
-          animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-          zIndex: 10000,
-          position: 'absolute'
-        }}
-      >
-        {count > 99 ? '99+' : count}
-      </span>
-    )
-  }
-
   useEffect(() => {
     if (user) {
       fetchConversations()
@@ -483,7 +461,7 @@ export default function MessagesPage() {
     fetchUnreadCounts()
     
     // 每10秒更新一次（更频繁，确保及时显示）
-    const interval = setInterval(fetchUnreadCounts, 10000)
+    const interval = setInterval(fetchUnreadCounts, 25000)
     
     return () => clearInterval(interval)
   }, [user])

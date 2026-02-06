@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { TopAdBanner } from '@/components/ads/AdBanner'
 import { BottomAdBanner } from '@/components/ads/AdBanner'
 import Navbar from '@/components/layout/Navbar'
@@ -11,10 +12,8 @@ import {
   Upload, 
   Search, 
   Users, 
-  FileText, 
   Star, 
   TrendingUp, 
-  Zap,
   Shield,
   Globe,
   Heart,
@@ -136,44 +135,6 @@ export default function HomePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* 配置警告 */}
         
-        {/* 价值主张横幅 */}
-        <div className="mb-6 bg-gradient-to-r from-blue-600/60 via-purple-600/60 to-pink-600/60 backdrop-blur-sm rounded-xl shadow-lg p-6 text-white border border-white/20">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex-1 text-center md:text-left">
-              <h2 className="text-2xl md:text-3xl font-bold mb-2 flex items-center justify-center md:justify-start gap-2">
-                <Zap className="w-6 h-6 md:w-7 md:h-7" />
-                <span>专为信息分享打造的安全高效的文件分享平台</span>
-              </h2>
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 md:gap-4 text-sm md:text-base mb-2">
-                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
-                  <FolderOpen className="w-4 h-4" />
-                  <span>上线可领取 20GB 高速云盘</span>
-                </div>
-                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
-                  <FileText className="w-4 h-4" />
-                  <span>专业后台服务，保证隐私安全</span>
-                </div>
-                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
-                  <Shield className="w-4 h-4" />
-                  <span>无广告干扰，高速分享</span>
-                </div>
-              </div>
-              <p className="text-xs md:text-sm text-white/80 mt-2 text-center md:text-left">
-                为避免影响您在使用时的心情，我们将广告放在了主页，若引起您的不满，敬请见谅
-                您不必为钓鱼链接而担心，我们后台有严格的审核机制，确保您上传的文件安全可靠
-                为了完全确保您的隐私安全，我们不会存储您的任何隐私信息
-              </p>
-            </div>
-            <Link
-              href="/upload"
-              className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors shadow-md flex items-center gap-2 whitespace-nowrap"
-            >
-              <Upload className="w-5 h-5" />
-              <span>立即开始</span>
-            </Link>
-          </div>
-        </div>
-        
         {/* 公告栏 */}
         <AnnouncementBanner />
         
@@ -199,39 +160,41 @@ export default function HomePage() {
           </div>
           
           {/* 快速操作按钮 - 居中 */}
-          <div className="flex flex-wrap justify-center gap-4 mb-8">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="flex flex-wrap justify-center gap-4 mb-8">
             {quickActions.map((action, index) => (
-              <Link
-                key={index}
-                href={action.href}
-                className="btn-elegant flex items-center gap-2"
-              >
-                <action.icon className="w-5 h-5" />
-                <span>{action.title}</span>
-              </Link>
+              <motion.div key={index} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                <Link href={action.href} className="btn-elegant flex items-center gap-2">
+                  <action.icon className="w-5 h-5" />
+                  <span>{action.title}</span>
+                </Link>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
 
         {/* 特色功能 */}
-        <div className="mb-12">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} className="mb-12">
           <h2 className="text-3xl font-bold text-slate-800 text-center mb-8">平台特色功能</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
-              <Link
+              <motion.div
                 key={index}
-                href={feature.href}
-                className="group card-minimal p-6 hover-lift"
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-slate-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <feature.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-lg font-semibold text-slate-800 mb-2">{feature.title}</h3>
-                <p className="text-slate-600 text-sm leading-relaxed">{feature.description}</p>
-              </Link>
+                <Link href={feature.href} className="group block card-minimal p-6 hover-lift h-full">
+                  <div className="w-12 h-12 bg-gradient-to-br from-slate-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <feature.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-800 mb-2">{feature.title}</h3>
+                  <p className="text-slate-600 text-sm leading-relaxed">{feature.description}</p>
+                </Link>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* 论坛大厅映射窗口 */}
         <div className="mb-12">
@@ -255,12 +218,12 @@ export default function HomePage() {
                   暂无论坛
                 </div>
               ) : (
-                forumPreview.map((forum) => (
-                  <Link
-                    key={forum.id}
-                    href={`/forums/${forum.id}`}
-                    className="p-4 bg-slate-50/50 backdrop-blur-sm rounded-xl border border-slate-200/50 hover:border-blue-300 hover:shadow-md transition-all"
-                  >
+                forumPreview.map((forum, i) => (
+                  <motion.div key={forum.id} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: i * 0.1 }}>
+                    <Link
+                      href={`/forums/${forum.id}`}
+                      className="block p-4 bg-slate-50/50 backdrop-blur-sm rounded-xl border border-slate-200/50 hover:border-blue-300 hover:shadow-md transition-all duration-300"
+                    >
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="font-medium text-slate-800 flex-1 truncate">{forum.title}</h3>
                       {forum.owner_id === user?.id && (
@@ -278,6 +241,7 @@ export default function HomePage() {
                       </div>
                     </div>
                   </Link>
+                  </motion.div>
                 ))
               )}
             </div>

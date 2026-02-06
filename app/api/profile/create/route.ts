@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'edge'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 // 幂等创建/补建用户资料（强唯一策略）：
 // - 若 id 已存在：更新基础字段返回
 // - 若 username/email 与其他用户冲突：直接 409，不自动加后缀
 export async function POST(request: NextRequest) {
   try {
-    const { userId, username, email, isInitialAdmin, deviceFingerprint } = await request.json()
+    const { userId, username, email, isInitialAdmin, deviceFingerprint, inviteCode } = await request.json()
 
     if (!userId || !username || !email) {
       return NextResponse.json({ success: false, error: '缺少必要参数' }, { status: 400 })
     }
+
+    const supabaseAdmin = await getSupabaseAdmin()
 
     // 先看是否已存在同 id 的资料，存在则更新并返回
     const existingById = await supabaseAdmin.from('users').select('*').eq('id', userId).single()
@@ -49,8 +51,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '用户名或邮箱已存在' }, { status: 409 })
     }
 
-    // 插入新资料
-    const insertData: any = {
+    let invitedBy: string | null = null
+    if (inviteCode && typeof inviteCode === 'string') {
+      const { data: inviter } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('invite_code', inviteCode.trim().toUpperCase())
+        .neq('id', userId)
+        .maybeSingle()
+      if (inviter) invitedBy = inviter.id
+    }
+
+    function genInviteCode(): string {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+      let c = ''
+      for (let i = 0; i < 8; i++) c += chars[Math.floor(Math.random() * chars.length)]
+      return c
+    }
+
+    let insertData: any = {
       id: userId,
       username,
       email,
@@ -59,20 +78,25 @@ export async function POST(request: NextRequest) {
       is_admin: !!isInitialAdmin,
       is_moderator: !!isInitialAdmin,
       storage_used: 0,
-      storage_limit: isInitialAdmin ? 107374182400 : 21474836480
+      storage_limit: isInitialAdmin ? 107374182400 : 21474836480,
+      ...(invitedBy ? { invited_by: invitedBy } : {})
     }
     
-    // 如果有设备指纹，添加到插入数据中
     if (deviceFingerprint) {
       insertData.device_fingerprint = deviceFingerprint
     }
     
-    const insertRes = await supabaseAdmin
-      .from('users')
-      .insert(insertData)
-      .select('*')
-      .single()
-
+    let insertRes: any = null
+    for (let retry = 0; retry < 5; retry++) {
+      insertData = { ...insertData, invite_code: genInviteCode() }
+      insertRes = await supabaseAdmin.from('users').insert(insertData).select('*').single()
+      if (!insertRes.error) break
+      if (insertRes.error.code === '23505' && insertRes.error.message?.includes('invite_code')) continue
+      break
+    }
+    if (!insertRes) {
+      return NextResponse.json({ success: false, error: '创建失败' }, { status: 500 })
+    }
     if (insertRes.error) {
       const err = insertRes.error
       if (err.code === '23505') {

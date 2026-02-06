@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'edge'
 import { supabase } from '@/lib/supabase'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { supabaseAdmin, getSupabaseAdmin } from '@/lib/supabaseAdmin'
+import { tryGrantInviteReward } from '@/lib/inviteReward'
 
 export async function POST(request: NextRequest) {
   try {
@@ -195,6 +196,11 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString()
       })
       .eq('id', currentConversationId)
+
+    try {
+      const sb = await getSupabaseAdmin()
+      await tryGrantInviteReward(sb, senderId)
+    } catch (_) {}
 
     // 确保返回完整的消息对象
     const fullMessage = {
