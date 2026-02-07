@@ -226,6 +226,13 @@ export default function SearchPage() {
                         <p className="text-sm text-gray-500 mt-1">
                           {file.description || '无描述'}
                         </p>
+                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                          <span>{formatFileSize(file.file_size)}</span>
+                          <span>•</span>
+                          <span>{file.author_name || '未知用户'}</span>
+                          <span>•</span>
+                          <span>{formatDate(file.created_at)}</span>
+                        </div>
                         <div className="flex items-center space-x-2 mt-4">
                           <Link
                             href={`/file/${file.id}`}

@@ -1,9 +1,10 @@
 'use client'
 
 import { FileItem } from '@/lib/supabase'
-import { FileText, Image, Video, Music, File, Heart } from 'lucide-react'
+import { FileText, Image, Video, Music, File, Heart, User, Calendar, Eye, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
-import { displayNameWithoutExt } from '@/lib/utils'
+import { formatDistanceToNow } from 'date-fns'
+import { zhCN } from 'date-fns/locale'
 
 interface FileCardProps {
   file: FileItem
@@ -72,10 +73,43 @@ export default function FileCard({ file }: FileCardProps) {
       {/* 文件信息 */}
       <div className="mb-4">
         <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
-          {displayNameWithoutExt(file.original_name)}
+          {file.original_name}
         </h3>
+      </div>
+
+      {/* 文件元数据（参考 web-副本） */}
+      <div className="space-y-2 mb-4">
+        <div className="flex items-center text-sm text-gray-500">
+          <User className="w-4 h-4 mr-2" />
+          <span className="truncate">{file.author_name || '未知用户'}</span>
+        </div>
+        <div className="flex items-center text-sm text-gray-500">
+          <Calendar className="w-4 h-4 mr-2" />
+          <span>{file.created_at ? formatDistanceToNow(new Date(file.created_at), { addSuffix: true, locale: zhCN }) : ''}</span>
+        </div>
         <div className="text-sm text-gray-500">
           大小：{formatFileSize(file.file_size)}
+        </div>
+        {file.description && (
+          <p className="text-sm text-gray-500 line-clamp-2">{file.description}</p>
+        )}
+      </div>
+
+      {/* 统计信息 */}
+      <div className="flex items-center justify-between mb-4 text-sm text-gray-500">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center">
+            <Eye className="w-4 h-4 mr-1" />
+            <span>{file.download_count ?? 0}</span>
+          </div>
+          <div className="flex items-center">
+            <Heart className="w-4 h-4 mr-1" />
+            <span>{file.likes_count ?? 0}</span>
+          </div>
+          <div className="flex items-center">
+            <MessageCircle className="w-4 h-4 mr-1" />
+            <span>{file.comments_count ?? 0}</span>
+          </div>
         </div>
       </div>
 

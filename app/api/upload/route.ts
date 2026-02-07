@@ -252,8 +252,9 @@ export async function POST(request: NextRequest) {
         is_public: isPublic,
         // 分享上传默认待审核，只有在"文件分享上传页"才传 isPublic=true
         is_approved: isPublic ? false : true,
-        // 直接存储作者名称
-        author_name: userData?.username || '未知用户'
+        // 直接存储作者名称和描述
+        author_name: userData?.username || '未知用户',
+        ...(description?.trim() && { description: description.trim() })
       })
       .select()
       .single()

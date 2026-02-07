@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
 import { FileItem } from '@/lib/supabase'
 import { Search, Filter, FileText, Image, Video, Music, File } from 'lucide-react'
 import FileCard from './FileCard'
@@ -24,89 +23,16 @@ export default function FileGrid() {
   const fetchFiles = async () => {
     try {
       setLoading(true)
-      
-      // 检查Supabase连接
-      if (!supabase || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
-        console.log('Supabase not configured, using mock data')
-        setFiles([
-          {
-            id: '1',
-            original_name: '示例文档.pdf',
-            filename: '示例文档.pdf',
-            file_path: 'demo/示例文档.pdf',
-            user_id: 'demo',
-            file_size: 1024000,
-            mime_type: 'application/pdf',
-            is_public: true,
-            is_approved: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          },
-          {
-            id: '2',
-            original_name: '示例图片.jpg',
-            filename: '示例图片.jpg',
-            file_path: 'demo/示例图片.jpg',
-            user_id: 'demo',
-            file_size: 2048000,
-            mime_type: 'image/jpeg',
-            is_public: true,
-            is_approved: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ])
-        setLoading(false)
-        return
-      }
-
-      const { data, error } = await supabase
-        .from('files')
-        .select('id, original_name, filename, file_path, user_id, file_size, mime_type, is_public, is_approved, created_at, updated_at')
-        .eq('is_public', true)
-        .eq('is_approved', true)
-        .order('created_at', { ascending: false })
-        .limit(40)
-
-      if (error) {
-        console.error('Error fetching files:', error)
-        // 使用示例文件
-        setFiles([
-          {
-            id: '1',
-            original_name: '示例文档.pdf',
-            filename: '示例文档.pdf',
-            file_path: 'demo/示例文档.pdf',
-            user_id: 'demo',
-            file_size: 1024000,
-            mime_type: 'application/pdf',
-            is_public: true,
-            is_approved: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ])
+      const res = await fetch('/api/files/public?limit=40')
+      const result = await res.json()
+      if (result.success && result.files) {
+        setFiles(result.files)
       } else {
-        setFiles(data || [])
+        setFiles([])
       }
     } catch (error) {
       console.error('Error fetching files:', error)
-      // 使用示例文件
-      setFiles([
-        {
-          id: '1',
-          original_name: '示例文档.pdf',
-          filename: '示例文档.pdf',
-          file_path: 'demo/示例文档.pdf',
-          user_id: 'demo',
-          file_size: 1024000,
-          mime_type: 'application/pdf',
-          is_public: true,
-          is_approved: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ])
+      setFiles([])
     } finally {
       setLoading(false)
     }

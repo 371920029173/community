@@ -467,9 +467,15 @@ export default function SharePage() {
 
                     {/* 文件信息 */}
                     <div className={`${viewMode === 'list' ? 'flex-1' : 'mb-4'}`}>
-                      {file.description && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{file.description}</p>
-                      )}
+                      <p className="text-sm text-gray-600 mb-1 line-clamp-2">
+                        {file.description || '无描述'}
+                      </p>
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                        {file.author_name && <span>{file.author_name}</span>}
+                        {file.created_at && (
+                          <span>{new Date(file.created_at).toLocaleDateString('zh-CN')}</span>
+                        )}
+                      </div>
                     </div>
                     
                     {/* 操作按钮 */}
