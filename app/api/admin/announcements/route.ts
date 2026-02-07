@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { supabaseAdmin, getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 export const runtime = 'edge'
 
@@ -128,6 +128,20 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ success: false, error: '未授权' }, { status: 401 })
+    }
+    const sb = await getSupabaseAdmin()
+    const { data: { user: authUser }, error: authError } = await sb.auth.getUser(authHeader.replace('Bearer ', ''))
+    if (authError || !authUser) {
+      return NextResponse.json({ success: false, error: '认证失败' }, { status: 401 })
+    }
+    const { data: userRow } = await sb.from('users').select('is_admin, is_moderator').eq('id', authUser.id).single()
+    if (!userRow?.is_admin && !userRow?.is_moderator) {
+      return NextResponse.json({ success: false, error: '权限不足' }, { status: 403 })
+    }
+
     const { id, title, content, type, isActive, expiresAt } = await request.json()
 
     if (!id) {
@@ -138,7 +152,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // 更新公告
-    const { data: announcement, error: updateError } = await supabaseAdmin
+    const { data: announcement, error: updateError } = await sb
       .from('announcements')
       .update({
         title,

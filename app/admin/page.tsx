@@ -51,6 +51,7 @@ export default function AdminPage() {
   const [adminChangeRequests, setAdminChangeRequests] = useState<any[]>([])
   const [fileAuthors, setFileAuthors] = useState<{[key: string]: string}>({})
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false)
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null)
   const [newAnnouncement, setNewAnnouncement] = useState({
     title: '',
     content: '',
@@ -377,6 +378,53 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Error publishing announcement:', error)
       toast.error('发布失败，请重试')
+    }
+  }
+
+  const handleEditAnnouncement = (announcement: Announcement) => {
+    setEditingAnnouncement(announcement)
+    setNewAnnouncement({
+      title: announcement.title,
+      content: announcement.content,
+      type: (announcement.type as 'info' | 'warning' | 'success' | 'error') || 'info',
+      isActive: !!announcement.is_active
+    })
+  }
+
+  const handleUpdateAnnouncement = async () => {
+    if (!editingAnnouncement || !user) return
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch('/api/admin/announcements', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
+        body: JSON.stringify({
+          id: editingAnnouncement.id,
+          title: newAnnouncement.title,
+          content: newAnnouncement.content,
+          type: newAnnouncement.type,
+          isActive: newAnnouncement.isActive
+        })
+      })
+
+      const result = await response.json()
+      
+      if (result.success) {
+        toast.success('公告更新成功！')
+        setEditingAnnouncement(null)
+        setShowAnnouncementForm(false)
+        setNewAnnouncement({ title: '', content: '', type: 'info', isActive: true })
+        fetchData()
+      } else {
+        toast.error(result.error || '更新失败')
+      }
+    } catch (error) {
+      console.error('Error updating announcement:', error)
+      toast.error('更新失败，请重试')
     }
   }
 
@@ -918,10 +966,10 @@ export default function AdminPage() {
               </button>
             </div>
             
-            {/* 发布公告表单 */}
-            {showAnnouncementForm && (
+            {/* 发布/编辑公告表单 */}
+            {(showAnnouncementForm || editingAnnouncement) && (
               <div className="border border-gray-200 rounded-lg p-6 mb-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">发布新公告</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{editingAnnouncement ? '编辑公告' : '发布新公告'}</h3>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">公告标题</label>
@@ -969,22 +1017,46 @@ export default function AdminPage() {
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <button
-                      onClick={handlePublishAnnouncement}
-                      disabled={!newAnnouncement.title || !newAnnouncement.content}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      发布公告
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowAnnouncementForm(false)
-                        setNewAnnouncement({ title: '', content: '', type: 'info', isActive: true })
-                      }}
-                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-                    >
-                      取消
-                    </button>
+                    {editingAnnouncement ? (
+                      <>
+                        <button
+                          onClick={handleUpdateAnnouncement}
+                          disabled={!newAnnouncement.title || !newAnnouncement.content}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          保存修改
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingAnnouncement(null)
+                            setShowAnnouncementForm(false)
+                            setNewAnnouncement({ title: '', content: '', type: 'info', isActive: true })
+                          }}
+                          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                        >
+                          取消
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={handlePublishAnnouncement}
+                          disabled={!newAnnouncement.title || !newAnnouncement.content}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          发布公告
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowAnnouncementForm(false)
+                            setNewAnnouncement({ title: '', content: '', type: 'info', isActive: true })
+                          }}
+                          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                        >
+                          取消
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1008,7 +1080,10 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div className="flex space-x-2">
-                      <button className="btn-secondary flex items-center">
+                      <button
+                        onClick={() => handleEditAnnouncement(announcement)}
+                        className="btn-secondary flex items-center"
+                      >
                         <Edit className="w-4 h-4 mr-1" />
                         编辑
                       </button>

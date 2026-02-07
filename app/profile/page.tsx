@@ -394,7 +394,7 @@ export default function ProfilePage() {
                 我的沙币
               </h2>
               <p className="text-3xl font-bold text-amber-800">{sandCoins}</p>
-              <p className="text-sm text-amber-700/80 mt-1">点击广告、每日登录、停留、邀请获得</p>
+              <p className="text-sm text-amber-700/80 mt-1">有效点击广告3、登录5、停留10分钟5、邀请20</p>
             </motion.div>
 
             {/* 邀请好友 */}

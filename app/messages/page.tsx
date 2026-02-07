@@ -20,7 +20,8 @@ import {
   X,
   Eye,
   Paperclip,
-  File
+  File,
+  Loader2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
@@ -81,6 +82,7 @@ export default function MessagesPage() {
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({}) // 每个对话的未读消息数
+  const [isSending, setIsSending] = useState(false)
 
   // 获取会话列表
   const fetchConversations = async () => {
@@ -117,16 +119,10 @@ export default function MessagesPage() {
 
   // 发送消息
   const sendMessage = async () => {
-    if ((!inputMessage.trim() && !selectedFile) || !selectedConversation || !user) {
-      console.log('发送消息条件检查失败:', {
-        hasMessage: !!inputMessage.trim(),
-        hasFile: !!selectedFile,
-        hasConversation: !!selectedConversation,
-        hasUser: !!user
-      })
-      return
-    }
+    if ((!inputMessage.trim() && !selectedFile) || !selectedConversation || !user) return
+    if (isSending) return
     
+    setIsSending(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
       console.log('当前会话状态:', { session: !!session, userId: session?.user?.id })
@@ -136,7 +132,7 @@ export default function MessagesPage() {
         return
       }
 
-      let messageData: any = {
+      const messageData: any = {
         conversationId: selectedConversation.id,
         content: inputMessage.trim() || '',
         messageType: selectedFile ? 'file' : 'text',
@@ -222,7 +218,7 @@ export default function MessagesPage() {
       console.error('发送消息失败:', error)
       toast.error(getFriendlyErrorMessage(error) || '发送消息失败')
     } finally {
-      // 确保在finally中也清空状态
+      setIsSending(false)
       if (inputMessage.trim() || selectedFile) {
         setInputMessage('')
         setSelectedFile(null)
@@ -862,10 +858,10 @@ export default function MessagesPage() {
                         />
                         <button
                           onClick={sendMessage}
-                          disabled={!inputMessage.trim() && !selectedFile}
-                          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                          disabled={(!inputMessage.trim() && !selectedFile) || isSending}
+                          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                         >
-                          <Send className="w-5 h-5" />
+                          {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                         </button>
                       </div>
                     </div>

@@ -112,7 +112,7 @@ export default function Navbar() {
     }
 
     fetchAllNotifications()
-    const interval = setInterval(fetchAllNotifications, 30000)
+    const interval = setInterval(fetchAllNotifications, 15000)
 
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') fetchAllNotifications()

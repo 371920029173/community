@@ -3,9 +3,9 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 export const runtime = 'edge'
 
-const LOGIN_COINS = 10
+const LOGIN_COINS = 5
 const STAY_MINUTES = 10
-const STAY_COINS = 10
+const STAY_COINS = 5
 
 function todayUTC(): string {
   const d = new Date()

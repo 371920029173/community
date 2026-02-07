@@ -3,8 +3,8 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 export const runtime = 'edge'
 
-// 每次有效点击奖励5个沙币
-const COINS_PER_CLICK = 5
+// 每次有效点击奖励3个沙币
+const COINS_PER_CLICK = 3
 // 每天每个位置只能奖励一次
 const DAILY_LIMIT_PER_POSITION = 1
 

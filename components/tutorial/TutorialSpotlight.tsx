@@ -113,9 +113,9 @@ const SPOTLIGHT_STEPS: SpotlightStep[] = [
       <div className="space-y-2">
         <p><strong>沙币</strong>是平台通用积分，用于创建和管理论坛。</p>
         <ul className="text-sm text-gray-600 list-disc list-inside space-y-0.5">
-          <li>点击广告：每天每个广告限 1 次，每次 5 沙币</li>
-          <li>每日登录：首次登录 10 沙币</li>
-          <li>停留 10 分钟：单日累计 10 分钟再得 10 沙币</li>
+          <li>有效点击广告：每天每个广告限 1 次，每次 3 沙币</li>
+          <li>每日登录：首次登录 5 沙币</li>
+          <li>停留 10 分钟：单日累计 10 分钟再得 5 沙币</li>
           <li>邀请好友：好友激活后双方各得 20 沙币</li>
         </ul>
       </div>

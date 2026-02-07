@@ -435,8 +435,17 @@ export default function ForumDetailPage({ params }: { params: Promise<{ id: stri
                   disabled={sending || !messageContent.trim()}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  <Send className="w-5 h-5" />
-                  发送
+                  {sending ? (
+                    <>
+                      <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                      发送中...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      发送
+                    </>
+                  )}
                 </button>
               </div>
             </div>

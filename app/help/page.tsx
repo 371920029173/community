@@ -112,9 +112,10 @@ export default function HelpPage() {
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <h3 className="font-semibold text-gray-800 mb-2">如何获得沙币？</h3>
                   <ul className="list-disc list-inside space-y-1 text-gray-700 text-sm">
-                    <li>点击网站上的广告（每天每个位置限1次，每次5个沙币）</li>
-                    <li>进行高质量浏览（根据 AdSense 要求）</li>
-                    <li>有效点击广告可获得5个沙币</li>
+                    <li>有效点击广告：每天每个广告限1次，每次3个沙币</li>
+                    <li>每日登录：5个沙币</li>
+                    <li>停留10分钟：5个沙币</li>
+                    <li>邀请好友：好友激活后双方各20个沙币</li>
                   </ul>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
