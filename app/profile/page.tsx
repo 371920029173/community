@@ -29,7 +29,6 @@ import {
   BookOpen
 } from 'lucide-react'
 import { useTutorial } from '@/components/providers/TutorialProvider'
-import { getTutorialPlayOnLogin, setTutorialPlayOnLogin } from '@/components/tutorial/TutorialModal'
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -51,7 +50,7 @@ const formatBytes = (bytes: number) => {
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth()
-  const { openTutorial } = useTutorial()
+  const { openTutorial, tutorialPlayOnLogin, setTutorialPlayOnLogin } = useTutorial()
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editedUser, setEditedUser] = useState<any>(null)
@@ -63,12 +62,6 @@ export default function ProfilePage() {
   const [forums, setForums] = useState<any[]>([])
   const [noteContent, setNoteContent] = useState('')
   const [noteSaving, setNoteSaving] = useState(false)
-  const [tutorialPlayOnLogin, setTutorialPlayOnLoginState] = useState(false)
-
-  useEffect(() => {
-    setTutorialPlayOnLoginState(getTutorialPlayOnLogin())
-  }, [])
-
   const storageUsed = (user as any)?.storage_used ?? 0
   const storageLimit = (user as any)?.storage_limit ?? 20 * 1024 * 1024 * 1024
   const storagePercent = storageLimit > 0 ? Math.min(100, (storageUsed / storageLimit) * 100) : 0
@@ -448,7 +441,7 @@ export default function ProfilePage() {
               <div className="space-y-3 text-sm text-gray-700">
                 <div className="flex justify-between py-2 border-b border-gray-100"><span>管理员</span><span className="font-medium">{user.is_admin ? '是' : '否'}</span></div>
                 <div className="flex justify-between py-2 border-b border-gray-100"><span>审核员</span><span className="font-medium">{user.is_moderator ? '是' : '否'}</span></div>
-                <div className="flex justify-between py-2 border-b border-gray-100 items-center"><span>下次登录播放教程</span><label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked={tutorialPlayOnLogin} onChange={e => { const v = e.target.checked; setTutorialPlayOnLogin(v); setTutorialPlayOnLoginState(v); toast.success(v ? '已开启' : '已关闭') }} className="sr-only peer" /><div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600" /></label></div>
+                <div className="flex justify-between py-2 border-b border-gray-100 items-center"><span>下次登录播放教程</span><label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked={tutorialPlayOnLogin} onChange={e => { const v = e.target.checked; setTutorialPlayOnLogin(v); toast.success(v ? '已开启' : '已关闭') }} className="sr-only peer" /><div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600" /></label></div>
                 <div className="flex justify-between py-2"><span>注册时间</span><span className="font-medium">{new Date(user.created_at).toLocaleDateString('zh-CN')}</span></div>
               </div>
             </motion.div>

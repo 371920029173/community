@@ -15,6 +15,17 @@ export default function HelpPage() {
             <HelpCircle className="w-10 h-10 text-blue-600" />
             使用帮助
           </h1>
+
+          <div className="mb-8 p-4 rounded-lg bg-amber-50 border border-amber-200">
+            <p className="text-amber-800 font-medium">隐私提示</p>
+            <p className="text-amber-700 text-sm mt-1">
+              我们不会主动收集您的隐私，请注意个人隐私安全。建议您浏览
+              <Link href="/privacy" className="text-blue-600 hover:text-blue-700 underline mx-1">隐私政策</Link>
+              与
+              <Link href="/terms" className="text-blue-600 hover:text-blue-700 underline ml-1">服务条款</Link>
+              等相关条文。
+            </p>
+          </div>
           
           <div className="prose prose-lg max-w-none">
             <section className="mb-8">
@@ -178,7 +189,7 @@ export default function HelpPage() {
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <h3 className="font-semibold text-gray-800 mb-2">如何举报不当内容？</h3>
                   <p className="text-gray-700 text-sm">
-                    如发现不当内容，请通过私信联系管理员或发送邮件至 support@example.com。
+                    如发现不当内容，请通过私信联系管理员或发送邮件至 371920029173abcd@gmail.com。
                   </p>
                 </div>
               </div>
@@ -192,8 +203,8 @@ export default function HelpPage() {
               <div className="space-y-2">
                 <p className="text-gray-700">
                   <strong>邮箱：</strong>
-                  <a href="mailto:support@example.com" className="text-blue-600 hover:text-blue-700 underline ml-2">
-                    support@example.com
+                  <a href="mailto:371920029173abcd@gmail.com" className="text-blue-600 hover:text-blue-700 underline ml-2">
+                    371920029173abcd@gmail.com
                   </a>
                 </p>
                 <p className="text-gray-700">

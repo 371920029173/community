@@ -31,29 +31,12 @@ export default function ContactPage() {
               <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
                 <div className="space-y-3">
                   <div>
-                    <p className="font-semibold text-gray-800 mb-1">一般咨询：</p>
-                    <a href="mailto:support@example.com" className="text-blue-600 hover:text-blue-700 underline">
-                      support@example.com
+                    <p className="font-semibold text-gray-800 mb-1">联系我们：</p>
+                    <a href="mailto:371920029173abcd@gmail.com" className="text-blue-600 hover:text-blue-700 underline">
+                      371920029173abcd@gmail.com
                     </a>
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-800 mb-1">隐私相关问题：</p>
-                    <a href="mailto:privacy@example.com" className="text-blue-600 hover:text-blue-700 underline">
-                      privacy@example.com
-                    </a>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-800 mb-1">法律相关问题：</p>
-                    <a href="mailto:legal@example.com" className="text-blue-600 hover:text-blue-700 underline">
-                      legal@example.com
-                    </a>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-800 mb-1">技术支持：</p>
-                    <a href="mailto:tech@example.com" className="text-blue-600 hover:text-blue-700 underline">
-                      tech@example.com
-                    </a>
-                  </div>
+                  <p className="text-gray-600 text-sm mt-2">一般咨询、隐私、法律、技术支持等均可通过上述邮箱联系。</p>
                 </div>
               </div>
             </section>

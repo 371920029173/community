@@ -36,6 +36,7 @@ const SPOTLIGHT_STEPS: SpotlightStep[] = [
       <div className="space-y-2">
         <p>这是集文件分享、私信交流、论坛讨论于一体的社区平台。</p>
         <p className="text-sm text-gray-600">接下来将逐一高亮各功能入口并详细说明用法，您可随时点击「跳过此段」。</p>
+        <p className="text-sm text-amber-700 font-medium mt-2">隐私提示：我们不会主动收集您的隐私，请注意个人隐私安全。建议您浏览<a href="/privacy" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">隐私政策</a>与<a href="/terms" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">服务条款</a>。</p>
       </div>
     ),
   },

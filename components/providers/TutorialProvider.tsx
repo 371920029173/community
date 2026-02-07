@@ -7,6 +7,8 @@ import { useAuth } from '@/components/providers/AuthProvider'
 
 interface TutorialContextType {
   openTutorial: () => void
+  tutorialPlayOnLogin: boolean
+  setTutorialPlayOnLogin: (v: boolean) => void
 }
 
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined)
@@ -14,17 +16,27 @@ const TutorialContext = createContext<TutorialContextType | undefined>(undefined
 export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
+  const [playOnLogin, setPlayOnLogin] = useState(false)
   const showedThisSession = useRef(false)
+
+  useEffect(() => {
+    setPlayOnLogin(getTutorialPlayOnLogin())
+  }, [])
 
   const openTutorial = useCallback(() => {
     setOpen(true)
   }, [])
 
+  const setTutorialPlayOnLoginFromContext = useCallback((v: boolean) => {
+    setTutorialPlayOnLogin(v)
+    setPlayOnLogin(v)
+  }, [])
+
   useEffect(() => {
     if (!user?.id || showedThisSession.current) return
     const completed = getTutorialCompleted()
-    const playOnLogin = getTutorialPlayOnLogin()
-    if (!completed || playOnLogin) {
+    const stored = getTutorialPlayOnLogin()
+    if (!completed || stored) {
       showedThisSession.current = true
       setOpen(true)
     }
@@ -34,12 +46,13 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     setOpen(false)
   }, [])
 
-  const handlePlayChoice = useCallback((playOnLogin: boolean) => {
-    setTutorialPlayOnLogin(playOnLogin)
+  const handlePlayChoice = useCallback((v: boolean) => {
+    setTutorialPlayOnLogin(v)
+    setPlayOnLogin(v)
   }, [])
 
   return (
-    <TutorialContext.Provider value={{ openTutorial }}>
+    <TutorialContext.Provider value={{ openTutorial, tutorialPlayOnLogin: playOnLogin, setTutorialPlayOnLogin: setTutorialPlayOnLoginFromContext }}>
       {children}
       <TutorialSpotlight
         open={open}
@@ -55,7 +68,11 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
 export function useTutorial() {
   const ctx = useContext(TutorialContext)
   if (ctx === undefined) {
-    return { openTutorial: () => {} }
+    return {
+      openTutorial: () => {},
+      tutorialPlayOnLogin: false,
+      setTutorialPlayOnLogin: (_v: boolean) => {},
+    }
   }
   return ctx
 }

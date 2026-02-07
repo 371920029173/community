@@ -142,7 +142,7 @@ export default function PrivacyPage() {
               </p>
               <div className="space-y-2">
                 <p className="text-gray-700">
-                  <strong>邮箱：</strong>privacy@example.com
+                  <strong>邮箱：</strong><a href="mailto:371920029173abcd@gmail.com" className="text-blue-600 hover:text-blue-700 underline">371920029173abcd@gmail.com</a>
                 </p>
                 <p className="text-gray-700">
                   <Link href="/contact" className="text-blue-600 hover:text-blue-700 underline">

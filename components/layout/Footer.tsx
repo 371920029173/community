@@ -13,9 +13,12 @@ export default function Footer() {
           {/* 关于 */}
           <div>
             <h3 className="text-lg font-semibold mb-4">关于我们</h3>
-            <p className="text-gray-300 text-sm leading-relaxed">
+            <p className="text-gray-300 text-sm leading-relaxed mb-3">
               文件分享平台致力于为用户提供安全、快速、智能的文件存储和分享服务。
               我们重视用户隐私和数据安全。
+            </p>
+            <p className="text-gray-300 text-sm">
+              联系我们：<a href="mailto:371920029173abcd@gmail.com" className="text-blue-300 hover:text-white transition-colors">371920029173abcd@gmail.com</a>
             </p>
           </div>
 
