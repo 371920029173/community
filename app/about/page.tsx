@@ -110,7 +110,10 @@ export default function AboutPage() {
                   <strong>邮箱：</strong><a href="mailto:371920029173abcd@gmail.com" className="text-blue-600 hover:text-blue-700 underline">371920029173abcd@gmail.com</a>
                 </p>
                 <p className="text-gray-700">
-                  <strong>网站：</strong>community-e7i.pages.dev
+                  <strong>网站：</strong>
+                <a href={process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://community.pages.dev'} className="text-blue-600 hover:text-blue-700 underline" target="_blank" rel="noopener noreferrer">
+                  {(process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://community.pages.dev').replace(/^https?:\/\//, '')}
+                </a>
                 </p>
               </div>
             </section>

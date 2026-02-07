@@ -7,9 +7,10 @@ export async function POST(request: NextRequest) {
   try {
     const { query, fileType, tagId } = await request.json()
 
-    if ((!query || query.trim().length === 0) && !tagId) {
+    const hasFilter = tagId || (fileType && fileType !== 'all')
+    if ((!query || query.trim().length === 0) && !hasFilter) {
       return NextResponse.json(
-        { success: false, error: '请输入搜索关键词或选择类别' },
+        { success: false, error: '请输入搜索关键词或选择类别/类型过滤' },
         { status: 400 }
       )
     }

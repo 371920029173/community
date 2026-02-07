@@ -6,6 +6,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/** 隐藏文件扩展名用于展示（如 download.webp -> download） */
+export function displayNameWithoutExt(name: string): string {
+  if (!name || typeof name !== 'string') return name
+  const lastDot = name.lastIndexOf('.')
+  if (lastDot <= 0) return name
+  return name.slice(0, lastDot)
+}
+
 // 格式化文件大小
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B'

@@ -14,7 +14,6 @@ import {
   Code,
   Download,
   Share2,
-  Eye,
   Heart,
   MessageSquare,
   Search,
@@ -28,6 +27,7 @@ import {
   Tag
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { displayNameWithoutExt } from '@/lib/utils'
 
 interface FileItem {
   id: string
@@ -458,9 +458,9 @@ export default function SharePage() {
                     <div className={`flex items-center ${viewMode === 'list' ? 'mr-4' : 'mb-4'}`}>
                         {getFileIcon(file.file_type)}
                       <div className={`${viewMode === 'list' ? 'ml-3' : 'ml-2'}`}>
-                          <h3 className="font-medium text-gray-900 truncate">{file.original_name}</h3>
+                          <h3 className="font-medium text-gray-900 truncate">{displayNameWithoutExt(file.original_name)}</h3>
                           <p className="text-sm text-gray-500">
-                          {formatFileSize(file.file_size)} • {file.file_type}
+                          {formatFileSize(file.file_size)}
                           </p>
                       </div>
                     </div>
@@ -470,27 +470,6 @@ export default function SharePage() {
                       {file.description && (
                         <p className="text-sm text-gray-600 mb-3 line-clamp-2">{file.description}</p>
                       )}
-                      
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                        <span>分享者: {file.author_name || '未知用户'}</span>
-                        <span>{formatDate(file.created_at)}</span>
-                    </div>
-                    
-                    {/* 统计信息 */}
-                      <div className="flex items-center space-x-4 text-xs text-gray-500 mb-4">
-                        <span className="flex items-center">
-                          <Eye className="w-3 h-3 mr-1" />
-                          {file.download_count ?? 0}
-                        </span>
-                        <span className="flex items-center">
-                          <Heart className="w-3 h-3 mr-1" />
-                          {file.likes_count || 0}
-                        </span>
-                        <span className="flex items-center">
-                          <MessageSquare className="w-3 h-3 mr-1" />
-                          {file.comments_count || 0}
-                        </span>
-                      </div>
                     </div>
                     
                     {/* 操作按钮 */}

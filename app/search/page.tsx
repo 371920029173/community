@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 // import { SidebarAd } from '@/components/ads/AdBanner' // 已移除，仅保留主页广告
 import { useAuth } from '@/components/providers/AuthProvider'
@@ -10,7 +11,6 @@ import {
   Grid,
   List,
   Download,
-  Share2,
   Eye,
   File,
   Image,
@@ -20,6 +20,7 @@ import {
   Tag
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { displayNameWithoutExt } from '@/lib/utils'
 
 interface TagItem {
   id: string
@@ -57,7 +58,7 @@ export default function SearchPage() {
   }, [])
 
   const handleSearch = async () => {
-    if (!searchQuery.trim() && !categoryFilter) return
+    if (!searchQuery.trim() && !categoryFilter && fileTypeFilter === 'all') return
     
     setIsSearching(true)
     
@@ -133,7 +134,7 @@ export default function SearchPage() {
                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="输入文件名、描述或标签..."
+                      placeholder="输入关键词（可选）或选择过滤后搜索..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -220,32 +221,28 @@ export default function SearchPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-lg font-medium text-gray-900 truncate">
-                          {file.original_name}
+                          {displayNameWithoutExt(file.original_name)}
                         </h3>
                         <p className="text-sm text-gray-500 mt-1">
                           {file.description || '无描述'}
                         </p>
-                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                          <span>{formatFileSize(file.file_size)}</span>
-                          <span>•</span>
-                          <span>{file.author_name}</span>
-                          <span>•</span>
-                          <span>{formatDate(file.created_at)}</span>
-                        </div>
                         <div className="flex items-center space-x-2 mt-4">
+                          <Link
+                            href={`/file/${file.id}`}
+                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            打开
+                          </Link>
                           <a
                             href={file.file_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                           >
                             <Download className="w-4 h-4 mr-1" />
                             下载
                           </a>
-                          <button className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                            <Share2 className="w-4 h-4 mr-1" />
-                            分享
-                          </button>
                         </div>
                       </div>
                     </div>

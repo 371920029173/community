@@ -50,65 +50,47 @@ export async function GET(request: NextRequest) {
       throw error
     }
 
-    // 获取对话中的用户信息和最后消息
-    const processedConversations = []
-    
-    for (const conv of conversations || []) {
-      try {
-        // 获取其他用户信息（不是当前用户）
-        const otherUserId = conv.user1_id === userId ? conv.user2_id : conv.user1_id
-        const { data: otherUser, error: userError } = await supabaseAdmin
-          .from('users')
-          .select('id, username, nickname, nickname_color, avatar_url')
-          .eq('id', otherUserId)
-          .single()
+    // 批量获取其他用户信息
+    const convList = conversations || []
+    const otherUserIds = Array.from(new Set(convList.map((c: { user1_id: string; user2_id: string }) =>
+      c.user1_id === userId ? c.user2_id : c.user1_id
+    )))
+    const { data: usersData } = await supabaseAdmin
+      .from('users')
+      .select('id, username, nickname, nickname_color, avatar_url')
+      .in('id', otherUserIds)
+    const userMap = Object.fromEntries((usersData || []).map((u: { id: string }) => [u.id, u]))
 
-        if (userError) {
-          console.error(`获取用户 ${otherUserId} 信息失败:`, userError)
-          continue
-        }
+    // 并行获取每个对话的最后一条消息
+    const convsWithDetails = await Promise.all(convList.map(async (conv: { id: string; user1_id: string; user2_id: string; last_message_at: string; title?: string }) => {
+      const otherUserId = conv.user1_id === userId ? conv.user2_id : conv.user1_id
+      const otherUser = userMap[otherUserId]
+      if (!otherUser) return null
 
-        // 获取最后一条消息
-        const { data: lastMessage, error: msgError } = await supabaseAdmin
-          .from('messages')
-          .select('content, sent_at')
-          .eq('conversation_id', conv.id)
-          .order('sent_at', { ascending: false })
-          .limit(1)
-          .single()
+      const { data: lastMessage } = await supabaseAdmin
+        .from('messages')
+        .select('content, sent_at')
+        .eq('conversation_id', conv.id)
+        .order('sent_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
-        if (msgError && msgError.code !== 'PGRST116') { // PGRST116 = no rows returned
-          console.error(`获取对话 ${conv.id} 最后消息失败:`, msgError)
-        }
-
-        // 确保显示的是其他用户的用户名，而不是当前用户
-        const displayUsername = otherUser.nickname || otherUser.username || 'Unknown'
-        
-        console.log(`对话 ${conv.id} 的用户信息:`, {
-          currentUserId: userId,
-          otherUserId: otherUserId,
-          otherUserData: otherUser,
-          displayUsername: displayUsername
-        })
-        
-        processedConversations.push({
-          id: conv.id,
-          other_user: {
-            id: otherUser.id,
-            username: otherUser.username,
-            nickname: otherUser.nickname,
-            nickname_color: otherUser.nickname_color,
-            avatar_url: otherUser.avatar_url
-          },
-          last_message: lastMessage || null,
-          last_message_at: conv.last_message_at,
-          title: conv.title
-        })
-      } catch (error) {
-        console.error(`处理对话 ${conv.id} 失败:`, error)
-        continue
+      return {
+        id: conv.id,
+        other_user: {
+          id: otherUser.id,
+          username: otherUser.username,
+          nickname: otherUser.nickname,
+          nickname_color: otherUser.nickname_color,
+          avatar_url: otherUser.avatar_url
+        },
+        last_message: lastMessage || null,
+        last_message_at: conv.last_message_at,
+        title: conv.title
       }
-    }
+    }))
+
+    const processedConversations = convsWithDetails.filter(Boolean)
 
     return NextResponse.json({
       success: true,

@@ -440,6 +440,7 @@ export default function MessagesPage() {
   useEffect(() => {
     if (user) {
       fetchConversations()
+      fetchUnreadCounts()
     }
   }, [user])
 
