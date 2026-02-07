@@ -1,36 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'edge'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin, getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, fileType } = await request.json()
+    const { query, fileType, tagId } = await request.json()
 
-    if (!query || query.trim().length === 0) {
+    if ((!query || query.trim().length === 0) && !tagId) {
       return NextResponse.json(
-        { success: false, error: '搜索关键词不能为空' },
+        { success: false, error: '请输入搜索关键词或选择类别' },
         { status: 400 }
       )
     }
 
-    // 构建搜索查询
-    let searchQuery = supabase
+    const sb = await getSupabaseAdmin()
+
+    // 若指定类别，先获取该类别的文件ID
+    let fileIdsByTag: string[] | null = null
+    if (tagId) {
+      const { data: links } = await sb
+        .from('file_tag_links')
+        .select('file_id')
+        .eq('tag_id', tagId)
+      fileIdsByTag = (links || []).map((r: { file_id: string }) => r.file_id)
+      if (fileIdsByTag.length === 0) {
+        return NextResponse.json({ success: true, data: [] })
+      }
+    }
+
+    let searchQuery = sb
       .from('files')
       .select('*')
-      .eq('is_public', true) // 只搜索公开文件
-      .or(`original_name.ilike.%${query}%,description.ilike.%${query}%,author_name.ilike.%${query}%`)
+      .eq('is_public', true)
+      .eq('is_approved', true)
 
-    // 如果指定了文件类型，添加类型过滤
+    if (query && query.trim()) {
+      searchQuery = searchQuery.or(
+        `original_name.ilike.%${query.trim()}%,description.ilike.%${query.trim()}%,author_name.ilike.%${query.trim()}%`
+      )
+    }
+
+    if (fileIdsByTag) {
+      searchQuery = searchQuery.in('id', fileIdsByTag)
+    }
+
     if (fileType && fileType !== 'all') {
       searchQuery = searchQuery.eq('file_type', fileType)
     }
 
-    // 按创建时间倒序排列
-    searchQuery = searchQuery.order('created_at', { ascending: false })
-
-    // 限制结果数量
-    searchQuery = searchQuery.limit(50)
+    searchQuery = searchQuery.order('created_at', { ascending: false }).limit(50)
 
     const { data: files, error } = await searchQuery
 

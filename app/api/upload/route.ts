@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { supabaseAdmin, getSupabaseAdmin } from '@/lib/supabaseAdmin'
 // import { createHash } from 'crypto' // Edge Runtime 不支持 Node.js crypto
 
 export const runtime = 'edge'
@@ -143,6 +142,21 @@ export async function POST(request: NextRequest) {
     const userId = formData.get('userId') as string
     const description = formData.get('description') as string
     const isPublic = formData.get('isPublic') === 'true'
+    let tagsRaw = formData.get('tags') as string | null
+    const tagsInput: string[] = (() => {
+      if (!tagsRaw) return []
+      try {
+        const arr = JSON.parse(tagsRaw) as unknown
+        if (Array.isArray(arr)) return arr.filter((x): x is string => typeof x === 'string').map(s => s.trim()).filter(Boolean)
+        return []
+      } catch { return [] }
+    })()
+    if (isPublic && (tagsInput.length < 1 || tagsInput.length > 10)) {
+      return NextResponse.json(
+        { success: false, error: '文件分享需选择或填写 1～10 个类别' },
+        { status: 400 }
+      )
+    }
 
     if (!file || !userId) {
       return NextResponse.json(
@@ -260,6 +274,27 @@ export async function POST(request: NextRequest) {
         .from('users')
         .update({ storage_used: userData.storage_used + file.size })
         .eq('id', userId)
+    }
+
+    // 保存标签（公开分享时）
+    if (isPublic && tagsInput.length > 0 && fileData?.id) {
+      const sb = await getSupabaseAdmin()
+      const tagIds: string[] = []
+      for (const name of [...new Set(tagsInput)].slice(0, 10)) {
+        const { data: existing } = await sb.from('file_tags').select('id').eq('name', name).maybeSingle()
+        let tagId: string
+        if (existing) {
+          tagId = existing.id
+        } else {
+          const { data: inserted, error: insErr } = await sb.from('file_tags').insert({ name }).select('id').single()
+          if (insErr || !inserted) continue
+          tagId = inserted.id
+        }
+        tagIds.push(tagId)
+      }
+      if (tagIds.length) {
+        await sb.from('file_tag_links').insert(tagIds.map(tag_id => ({ file_id: fileData.id, tag_id })))
+      }
     }
 
     const uploadDuration = Date.now() - startTime

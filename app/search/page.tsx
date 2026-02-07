@@ -16,9 +16,15 @@ import {
   Image,
   Video,
   Music,
-  FileText
+  FileText,
+  Tag
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+
+interface TagItem {
+  id: string
+  name: string
+}
 
 interface SearchResult {
   id: string
@@ -40,9 +46,18 @@ export default function SearchPage() {
   const [isSearching, setIsSearching] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [fileTypeFilter, setFileTypeFilter] = useState<string>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('')
+  const [tags, setTags] = useState<TagItem[]>([])
+
+  useEffect(() => {
+    fetch('/api/files/tags')
+      .then(r => r.json())
+      .then(d => { if (d.success && d.data) setTags(d.data) })
+      .catch(() => {})
+  }, [])
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return
+    if (!searchQuery.trim() && !categoryFilter) return
     
     setIsSearching(true)
     
@@ -53,8 +68,9 @@ export default function SearchPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query: searchQuery,
-          fileType: fileTypeFilter !== 'all' ? fileTypeFilter : undefined
+          query: searchQuery.trim(),
+          fileType: fileTypeFilter !== 'all' ? fileTypeFilter : undefined,
+          tagId: categoryFilter || undefined
         })
       })
 
@@ -135,22 +151,42 @@ export default function SearchPage() {
               </div>
             </div>
 
-            {/* 搜索过滤器和视图控制 */}
-            {searchResults.length > 0 && (
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-4">
+            {/* 类别与类型过滤（搜索前可选） */}
+            {tags.length > 0 && (
+              <div className="mb-6 flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm text-gray-600">类别：</span>
                   <select
-                    value={fileTypeFilter}
-                    onChange={(e) => setFileTypeFilter(e.target.value)}
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="all">所有类型</option>
-                    <option value="image">图片</option>
-                    <option value="video">视频</option>
-                    <option value="audio">音频</option>
-                    <option value="document">文档</option>
-                    <option value="archive">压缩包</option>
+                    <option value="">全部</option>
+                    {tags.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
                   </select>
+                </div>
+                <select
+                  value={fileTypeFilter}
+                  onChange={(e) => setFileTypeFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">所有类型</option>
+                  <option value="image">图片</option>
+                  <option value="video">视频</option>
+                  <option value="audio">音频</option>
+                  <option value="document">文档</option>
+                  <option value="archive">压缩包</option>
+                </select>
+              </div>
+            )}
+
+            {/* 搜索过滤器和视图控制 */}
+            {searchResults.length > 0 && (
+              <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+                <div className="flex items-center flex-wrap gap-4">
                   <span className="text-sm text-gray-500">
                     找到 {searchResults.length} 个文件
                   </span>

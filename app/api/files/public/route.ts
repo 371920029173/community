@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
     const type = searchParams.get('type') || 'all'
+    const tagId = searchParams.get('tagId') || ''
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = (page - 1) * limit
@@ -25,12 +26,25 @@ export async function GET(request: NextRequest) {
 
     // 添加搜索条件
     if (search) {
-      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
+      query = query.or(`original_name.ilike.%${search}%,description.ilike.%${search}%,author_name.ilike.%${search}%`)
     }
 
     // 添加类型筛选
     if (type && type !== 'all') {
       query = query.eq('file_type', type)
+    }
+
+    // 类别（标签）筛选
+    if (tagId) {
+      const { data: links } = await supabaseAdmin
+        .from('file_tag_links')
+        .select('file_id')
+        .eq('tag_id', tagId)
+      const ids = (links || []).map((r: { file_id: string }) => r.file_id)
+      if (ids.length === 0) {
+        return NextResponse.json({ success: true, files: [], pagination: { page, limit, total: 0, pages: 0 } })
+      }
+      query = query.in('id', ids)
     }
 
     // 添加分页

@@ -24,7 +24,8 @@ import {
   AlertCircle,
   Edit3,
   Trash2,
-  User
+  User,
+  Tag
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -51,6 +52,8 @@ export default function SharePage() {
   const [onlyMine, setOnlyMine] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState<string>('all')
+  const [filterTagId, setFilterTagId] = useState<string>('')
+  const [tags, setTags] = useState<{ id: string; name: string }[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [editingFile, setEditingFile] = useState<FileItem | null>(null)
   const [editForm, setEditForm] = useState({
@@ -58,19 +61,28 @@ export default function SharePage() {
     description: ''
   })
 
+  // 获取标签列表
+  useEffect(() => {
+    fetch('/api/files/tags')
+      .then(r => r.json())
+      .then(d => { if (d.success && d.data) setTags(d.data) })
+      .catch(() => {})
+  }, [])
+
   // 获取公开文件列表
   useEffect(() => {
     fetchPublicFiles()
-  }, [])
+  }, [filterType, filterTagId])
 
   const fetchPublicFiles = async () => {
     try {
       console.log('开始获取公开文件列表...')
       setIsLoading(true)
-      const response = await fetch('/api/files/public', {
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      const params = new URLSearchParams()
+      if (filterType && filterType !== 'all') params.set('type', filterType)
+      if (filterTagId) params.set('tagId', filterTagId)
+      const response = await fetch(`/api/files/public?${params}`, {
+        headers: { 'Content-Type': 'application/json' }
       })
       if (response.ok) {
         const data = await response.json()
@@ -348,6 +360,23 @@ export default function SharePage() {
                   </div>
                 </div>
 
+                {/* 类别筛选 */}
+                {tags.length > 0 && (
+                  <div className="flex-shrink-0 flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-gray-500" />
+                    <select
+                      value={filterTagId}
+                      onChange={(e) => setFilterTagId(e.target.value)}
+                      className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">全部类别</option>
+                      {tags.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 {/* 文件类型筛选 */}
                 <div className="flex-shrink-0">
                   <select
@@ -397,15 +426,15 @@ export default function SharePage() {
                 <div className="flex flex-col items-center">
                   <FileText className="w-16 h-16 text-gray-400 mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    {searchQuery || filterType !== 'all' ? '没有找到匹配的文件' : '暂无分享文件'}
+                    {searchQuery || filterType !== 'all' || filterTagId ? '没有找到匹配的文件' : '暂无分享文件'}
                   </h3>
                   <p className="text-gray-500 mb-6">
-                    {searchQuery || filterType !== 'all' 
+                    {searchQuery || filterType !== 'all' || filterTagId
                       ? '尝试调整搜索条件或筛选器'
                       : '成为第一个分享文件的人吧！'
                     }
                   </p>
-                  {!searchQuery && filterType === 'all' && (
+                  {!searchQuery && filterType === 'all' && !filterTagId && (
                     <a
                       href="/share/upload"
                       className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
