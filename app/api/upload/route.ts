@@ -280,7 +280,7 @@ export async function POST(request: NextRequest) {
     if (isPublic && tagsInput.length > 0 && fileData?.id) {
       const sb = await getSupabaseAdmin()
       const tagIds: string[] = []
-      for (const name of [...new Set(tagsInput)].slice(0, 10)) {
+      for (const name of Array.from(new Set(tagsInput)).slice(0, 10)) {
         const { data: existing } = await sb.from('file_tags').select('id').eq('name', name).maybeSingle()
         let tagId: string
         if (existing) {
