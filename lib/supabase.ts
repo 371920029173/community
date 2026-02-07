@@ -105,9 +105,10 @@ export interface Announcement {
   title: string
   content: string
   type: 'info' | 'warning' | 'success' | 'error'
-  author_id: string
-  author_name: string
-  created_by: string
+  author_id?: string
+  author_name?: string
+  created_by?: string
+  user_id?: string  // 数据库实际使用 user_id
   is_active: boolean
   expires_at?: string
   created_at: string
