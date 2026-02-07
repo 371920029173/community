@@ -50,8 +50,22 @@ export async function GET(request: NextRequest) {
       throw error
     }
 
-    // 批量获取其他用户信息
     const convList = conversations || []
+    const url = new URL(request.url)
+    if (url.searchParams.get('minimal') === '1') {
+      const minimalList = convList.map((c: { id: string; user1_id: string; user2_id: string; last_message_at: string; title?: string }) => ({
+        id: c.id,
+        user1_id: c.user1_id,
+        user2_id: c.user2_id,
+        last_message_at: c.last_message_at,
+        title: c.title,
+        other_user: null,
+        last_message: null
+      }))
+      return NextResponse.json({ success: true, conversations: minimalList })
+    }
+
+    // 批量获取其他用户信息
     const otherUserIds = Array.from(new Set(convList.map((c: { user1_id: string; user2_id: string }) =>
       c.user1_id === userId ? c.user2_id : c.user1_id
     )))

@@ -95,22 +95,38 @@ export default function MessagesPage() {
         return
       }
 
-      const response = await fetch('/api/messages/conversations', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
+      const minimalRes = await fetch('/api/messages/conversations?minimal=1', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
       })
-
-      if (response.ok) {
-        const data = await response.json()
-        console.log('会话列表API响应:', data)
-        if (data.success) {
-          console.log('设置会话列表:', data.conversations)
-          setConversations(data.conversations || [])
-        }
-      } else {
+      const minimalData = await minimalRes.json()
+      if (!minimalRes.ok || !minimalData.success) {
         toast.error('获取会话列表失败')
+        return
       }
+
+      const list = minimalData.conversations || []
+      setConversations(list)
+
+      if (list.length === 0) return
+
+      list.forEach((conv: { id: string }) => {
+        fetch(`/api/messages/conversation-details?conversationId=${conv.id}`, {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        })
+          .then(r => r.json())
+          .then(res => {
+            if (res.success && res.data) {
+              const merged = { ...res.data }
+              setConversations(prev =>
+                prev.map(c => c.id === conv.id ? { ...c, ...merged } : c)
+              )
+              setSelectedConversation(prev =>
+                prev?.id === conv.id ? { ...prev, ...merged } : prev
+              )
+            }
+          })
+          .catch(() => {})
+      })
     } catch (error) {
       console.error('获取会话列表失败:', error)
       toast.error('获取会话列表失败')
@@ -581,7 +597,9 @@ export default function MessagesPage() {
                         >
                           <div className="flex items-center gap-3">
                             <div className="relative">
-                              {conversation.other_user?.avatar_url ? (
+                              {!conversation.other_user ? (
+                                <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
+                              ) : conversation.other_user.avatar_url ? (
                                 <img 
                                   src={conversation.other_user.avatar_url} 
                                   alt={conversation.other_user?.nickname || conversation.other_user?.username || '未知用户'}
@@ -595,12 +613,21 @@ export default function MessagesPage() {
                               <NotificationDot count={unreadCount} />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className={`font-medium truncate ${unreadCount > 0 ? 'text-gray-900 font-semibold' : 'text-gray-800'}`}>
-                                {conversation.other_user?.nickname || conversation.other_user?.username || '未知用户'}
-                              </h3>
-                              <p className="text-sm text-gray-500">
-                                {formatTime(conversation.last_message_at)}
-                              </p>
+                              {!conversation.other_user ? (
+                                <>
+                                  <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mb-1" />
+                                  <p className="text-sm text-gray-500">{formatTime(conversation.last_message_at)}</p>
+                                </>
+                              ) : (
+                                <>
+                                  <h3 className={`font-medium truncate ${unreadCount > 0 ? 'text-gray-900 font-semibold' : 'text-gray-800'}`}>
+                                    {conversation.other_user?.nickname || conversation.other_user?.username || '未知用户'}
+                                  </h3>
+                                  <p className="text-sm text-gray-500">
+                                    {formatTime(conversation.last_message_at)}
+                                  </p>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
