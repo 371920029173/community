@@ -971,6 +971,11 @@ export default function AdminPage() {
               <div className="border border-gray-200 rounded-lg p-6 mb-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">{editingAnnouncement ? '编辑公告' : '发布新公告'}</h3>
                 <div className="space-y-4">
+                  {editingAnnouncement && (
+                    <div className="text-sm text-gray-500">
+                      发布者：{editingAnnouncement.author_name || editingAnnouncement.user_id || '未知'}
+                    </div>
+                  )}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">公告标题</label>
                     <input
@@ -1070,7 +1075,7 @@ export default function AdminPage() {
                       <h3 className="font-medium text-gray-900">{announcement.title}</h3>
                       <p className="text-sm text-gray-600 mt-1">{announcement.content}</p>
                       <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                        <span>发布者：{announcement.created_by}</span>
+                        <span>发布者：{announcement.author_name || announcement.user_id || '未知'}</span>
                         <span>发布时间：{new Date(announcement.created_at).toLocaleDateString('zh-CN')}</span>
                         <span className={`px-2 py-1 rounded-full ${
                           announcement.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
