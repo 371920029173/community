@@ -5,6 +5,7 @@ import { FileText, Image, Video, Music, File, Heart, User, Calendar, Eye, Messag
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
+import { displayNameWithoutExt } from '@/lib/utils'
 
 interface FileCardProps {
   file: FileItem
@@ -72,8 +73,8 @@ export default function FileCard({ file }: FileCardProps) {
 
       {/* 文件信息 */}
       <div className="mb-4">
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
-          {file.original_name}
+        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 break-words group-hover:text-primary-600 transition-colors" title={displayNameWithoutExt(file.original_name)}>
+          {displayNameWithoutExt(file.original_name)}
         </h3>
       </div>
 

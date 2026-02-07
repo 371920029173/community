@@ -458,7 +458,7 @@ export default function SharePage() {
                     <div className={`flex items-center ${viewMode === 'list' ? 'mr-4' : 'mb-4'}`}>
                         {getFileIcon(file.file_type)}
                       <div className={`${viewMode === 'list' ? 'ml-3' : 'ml-2'}`}>
-                          <h3 className="font-medium text-gray-900 truncate">{displayNameWithoutExt(file.original_name)}</h3>
+                          <h3 className="font-medium text-gray-900 line-clamp-2 break-words" title={displayNameWithoutExt(file.original_name)}>{displayNameWithoutExt(file.original_name)}</h3>
                           <p className="text-sm text-gray-500">
                           {formatFileSize(file.file_size)}
                           </p>
