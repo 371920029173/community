@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
     // 为每条评论获取用户头像信息
     const allComments = comments || []
     const commentsWithAvatars = await Promise.all(
-      allComments.map(async (comment: { user_id: string; [k: string]: unknown }) => {
+      allComments.map(async (comment: { id: string; user_id: string; [k: string]: unknown }) => {
         try {
           const { data: userData } = await supabaseAdmin
             .from('users')
@@ -194,7 +194,8 @@ export async function GET(request: NextRequest) {
     )
 
     // 构建带头像的层级结构
-    const avatarMap = Object.fromEntries(commentsWithAvatars.map((c: { id: string; [k: string]: unknown }) => [c.id, c]))
+    type CommentWithAvatar = { id: string; [k: string]: unknown }
+    const avatarMap = Object.fromEntries((commentsWithAvatars as CommentWithAvatar[]).map(c => [c.id, c]))
     const topWithAvatars = topLevel.map((c: { id: string }) => avatarMap[c.id]).filter(Boolean)
     const replyMapWithAvatars: Record<string, unknown[]> = {}
     for (const [pid, replies] of Object.entries(replyMap)) {
