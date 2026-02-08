@@ -213,6 +213,56 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    const ACHIEVEMENTS: Record<string, number> = {
+      away_from_gambling: 10,
+      unlucky: 10,
+      strong_luck: 20,
+      first_cashout: 1,
+      first_death: 1,
+      survive_3_rounds: 2,
+      high_roller: 3,
+      cautious: 5,
+    }
+
+    if (action === 'achievement_claim') {
+      const achievementId = body.achievementId as string
+      const amount = ACHIEVEMENTS[achievementId]
+      if (!achievementId || amount === undefined) {
+        return NextResponse.json({ success: false, error: '无效成就' }, { status: 400 })
+      }
+
+      const { data: claimed } = await sb
+        .from('user_achievements')
+        .select('achievement_id')
+        .eq('user_id', user.id)
+        .eq('achievement_id', achievementId)
+        .maybeSingle()
+
+      if (claimed) {
+        return NextResponse.json({ success: false, error: '已领取过' }, { status: 400 })
+      }
+
+      await sb.from('user_achievements').insert({
+        user_id: user.id,
+        achievement_id: achievementId,
+      })
+
+      let newCoins = 0
+      if (amount > 0) {
+        const { data: row } = await sb.from('users').select('game_coins').eq('id', user.id).single()
+        const gameCoins = row?.game_coins ?? 0
+        newCoins = gameCoins + amount
+        await sb.from('users').update({ game_coins: newCoins }).eq('id', user.id)
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: '成就已领取',
+        amount,
+        gameCoins: newCoins || undefined,
+      })
+    }
+
     if (action === 'reward') {
       const { data: row, error: fetchErr } = await sb
         .from('users')

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import { useAuth } from '@/components/providers/AuthProvider'
@@ -11,6 +11,83 @@ import toast from 'react-hot-toast'
 const BULLET_MULTIPLIERS: Record<number, number> = { 1: 1, 2: 1.05, 3: 1.2, 4: 1.6, 5: 3 }
 const STAKE = 5
 
+const HIDDEN_ACHIEVEMENTS = new Set(['away_from_gambling', 'unlucky', 'strong_luck'])
+
+function playAchievementSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.setValueAtTime(523, ctx.currentTime)
+    osc.frequency.setValueAtTime(659, ctx.currentTime + 0.1)
+    osc.frequency.setValueAtTime(784, ctx.currentTime + 0.2)
+    gain.gain.setValueAtTime(0.3, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.4)
+  } catch (_) {}
+}
+
+function getStatsKey(uid: string) {
+  return `roulette_stats_${uid}`
+}
+
+type RouletteStats = {
+  consecutive_round1_cashout: number
+  consecutive_death_low: number
+  consecutive_survive_5: number
+  total_cashouts: number
+}
+
+const defaultStats: RouletteStats = {
+  consecutive_round1_cashout: 0,
+  consecutive_death_low: 0,
+  consecutive_survive_5: 0,
+  total_cashouts: 0,
+}
+
+function loadStats(uid: string): RouletteStats {
+  if (typeof window === 'undefined') return defaultStats
+  try {
+    const s = localStorage.getItem(getStatsKey(uid))
+    if (s) return { ...defaultStats, ...JSON.parse(s) }
+  } catch (_) {}
+  return defaultStats
+}
+
+function saveStats(uid: string, stats: RouletteStats) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(getStatsKey(uid), JSON.stringify(stats))
+  } catch (_) {}
+}
+
+const ACHIEVEMENT_NAMES: Record<string, string> = {
+  first_cashout: '首次收手',
+  first_death: '首次中弹',
+  survive_3_rounds: '存活3轮',
+  high_roller: '单局10铒币+',
+  cautious: '累计收手5次',
+}
+
+async function claimAchievement(session: { access_token: string }, id: string, withSound: boolean) {
+  const res = await fetch('/api/games/currency', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+    body: JSON.stringify({ action: 'achievement_claim', achievementId: id })
+  })
+  const json = await res.json()
+  if (json.success) {
+    if (withSound) playAchievementSound()
+    else if (json.amount > 0 && ACHIEVEMENT_NAMES[id]) {
+      toast.success(`成就：${ACHIEVEMENT_NAMES[id]} +${json.amount} 铒币`)
+    }
+  }
+  return json
+}
+
 export default function RoulettePage() {
   const { user } = useAuth()
   const [gameState, setGameState] = useState<'idle' | 'select' | 'playing' | 'choose' | 'dead' | 'win'>('idle')
@@ -19,6 +96,11 @@ export default function RoulettePage() {
   const [multiplier, setMultiplier] = useState(1)
   const [starting, setStarting] = useState(false)
   const [firing, setFiring] = useState(false)
+  const statsRef = useRef<RouletteStats>(defaultStats)
+
+  useEffect(() => {
+    if (user?.id) statsRef.current = loadStats(user.id)
+  }, [user?.id])
 
   const startGame = useCallback(async () => {
     if (!user) {
@@ -62,52 +144,102 @@ export default function RoulettePage() {
     setFiring(true)
     const chamber = Math.floor(Math.random() * 6)
     const isDead = chamber < bullets
-    setTimeout(() => {
+    setTimeout(async () => {
+      const uid = user?.id
       if (isDead) {
+        const s = statsRef.current
+        if (bullets <= 3) {
+          s.consecutive_death_low++
+          s.consecutive_round1_cashout = 0
+          s.consecutive_survive_5 = 0
+        } else {
+          s.consecutive_death_low = 0
+        }
+        if (uid) saveStats(uid, s)
         setGameState('dead')
         toast.error('砰！人财两空')
+        if (uid) {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session) {
+            if (s.consecutive_death_low >= 5) {
+              const j = await claimAchievement(session, 'unlucky', true)
+              if (j.success) toast.success('隐藏成就：资深倒霉蛋！+10 铒币')
+            }
+            await claimAchievement(session, 'first_death', false)
+          }
+        }
       } else {
         const newMult = multiplier * BULLET_MULTIPLIERS[bullets]
         setMultiplier(newMult)
         if (round >= 5) {
+          const s = statsRef.current
+          s.consecutive_survive_5++
+          s.consecutive_round1_cashout = 0
+          s.consecutive_death_low = 0
+          if (uid) saveStats(uid, s)
           setGameState('win')
           const reward = Math.floor(STAKE * newMult)
-          supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) {
-              fetch('/api/games/currency', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                body: JSON.stringify({ action: 'roulette_win', amount: reward })
-              }).then((r) => r.json()).then((j) => {
-                if (j.success) toast.success(`活过 5 轮！获得 ${reward} 铒币`)
-              })
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session) {
+            const winRes = await fetch('/api/games/currency', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+              body: JSON.stringify({ action: 'roulette_win', amount: reward })
+            })
+            const winJson = await winRes.json()
+            if (winJson.success) toast.success(`活过 5 轮！获得 ${reward} 铒币`)
+            if (s.consecutive_survive_5 >= 5) {
+              const j = await claimAchievement(session, 'strong_luck', true)
+              if (j.success) toast.success('隐藏成就：强运！+20 铒币')
             }
-          })
+            await claimAchievement(session, 'survive_3_rounds', false)
+          }
         } else {
+          const s = statsRef.current
+          s.consecutive_death_low = 0
+          if (uid) saveStats(uid, s)
           setGameState('choose')
         }
       }
       setFiring(false)
     }, 800)
-  }, [gameState, round, bullets, multiplier, firing])
+  }, [gameState, round, bullets, multiplier, firing, user?.id])
 
-  const cashOut = useCallback(() => {
+  const cashOut = useCallback(async () => {
     const reward = Math.floor(STAKE * multiplier)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        fetch('/api/games/currency', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-          body: JSON.stringify({ action: 'roulette_win', amount: reward })
-        }).then((r) => r.json()).then((j) => {
-          if (j.success) {
-            toast.success(`收手获得 ${reward} 铒币`)
-            setGameState('idle')
-          }
-        })
-      }
+    const uid = user?.id
+    const s = statsRef.current
+    if (round === 1) {
+      s.consecutive_round1_cashout++
+      s.consecutive_death_low = 0
+      s.consecutive_survive_5 = 0
+    } else {
+      s.consecutive_round1_cashout = 0
+    }
+    s.total_cashouts++
+    if (uid) saveStats(uid, s)
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const res = await fetch('/api/games/currency', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ action: 'roulette_win', amount: reward })
     })
-  }, [multiplier])
+    const j = await res.json()
+    if (j.success) {
+      toast.success(`收手获得 ${reward} 铒币`)
+      setGameState('idle')
+      if (s.consecutive_round1_cashout >= 10) {
+        const ach = await claimAchievement(session, 'away_from_gambling', true)
+        if (ach.success) toast.success('隐藏成就：远离赌博！+10 铒币')
+      }
+      await claimAchievement(session, 'first_cashout', false)
+      if (reward >= 10) await claimAchievement(session, 'high_roller', false)
+      if (s.total_cashouts >= 5) await claimAchievement(session, 'cautious', false)
+      if (round >= 3) await claimAchievement(session, 'survive_3_rounds', false)
+    }
+  }, [multiplier, round, user?.id])
 
   const continueGame = useCallback(() => {
     setRound((r) => r + 1)
