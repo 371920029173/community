@@ -95,6 +95,7 @@ export default function RoulettePage() {
   const [round, setRound] = useState(0)
   const [bullets, setBullets] = useState(1)
   const [totalReward, setTotalReward] = useState(0)
+  const [usedBullets, setUsedBullets] = useState<Set<number>>(new Set())
   const [starting, setStarting] = useState(false)
   const [firing, setFiring] = useState(false)
   const statsRef = useRef<RouletteStats>(defaultStats)
@@ -127,6 +128,7 @@ export default function RoulettePage() {
       }
       setRound(1)
       setTotalReward(0)
+      setUsedBullets(new Set())
       setGameState('select')
     } catch (e) {
       toast.error('启动失败')
@@ -137,6 +139,7 @@ export default function RoulettePage() {
 
   const confirmBullets = useCallback((n: number) => {
     setBullets(n)
+    setUsedBullets(prev => new Set(prev).add(n))
     setGameState('playing')
   }, [])
 
@@ -203,9 +206,13 @@ export default function RoulettePage() {
   }, [totalReward, user?.id])
 
   const continueGame = useCallback(() => {
+    if (usedBullets.size >= 5) {
+      toast.error('所有弹数已使用完毕，请收手')
+      return
+    }
     setRound((r) => r + 1)
     setGameState('select')
-  }, [])
+  }, [usedBullets.size])
 
 
 
@@ -256,18 +263,33 @@ export default function RoulettePage() {
             <div className="text-center animate-fade-in">
               <p className="text-slate-400 text-sm mb-4">第 {round} 轮 · 选择装弹数</p>
               <div className="flex flex-wrap justify-center gap-2">
-                {[1, 2, 3, 4, 5].map((n, i) => (
-                  <button
-                    key={n}
-                    onClick={() => confirmBullets(n)}
-                    className="w-14 h-14 rounded-xl bg-slate-700 hover:bg-red-600 hover:scale-110 border border-slate-500 hover:border-red-500 text-white font-bold transition-all duration-200"
-                  >
-                    {n}弹
-                  </button>
-                ))}
+                {[1, 2, 3, 4, 5].map((n, i) => {
+                  const isUsed = usedBullets.has(n)
+                  return (
+                    <button
+                      key={n}
+                      onClick={() => confirmBullets(n)}
+                      disabled={isUsed}
+                      className={`w-14 h-14 rounded-xl border font-bold transition-all duration-200 ${
+                        isUsed
+                          ? 'bg-slate-800 border-slate-600 text-slate-500 cursor-not-allowed opacity-50'
+                          : 'bg-slate-700 hover:bg-red-600 hover:scale-110 border-slate-500 hover:border-red-500 text-white'
+                      }`}
+                      title={isUsed ? '已使用' : ''}
+                    >
+                      {n}弹
+                    </button>
+                  )
+                })}
               </div>
               <p className="text-slate-500 text-xs mt-2">1弹+{BULLET_REWARDS[1]}铒币 2弹+{BULLET_REWARDS[2]}铒币 3弹+{BULLET_REWARDS[3]}铒币 4弹+{BULLET_REWARDS[4]}铒币 5弹+{BULLET_REWARDS[5]}铒币</p>
               {totalReward > 0 && <p className="text-amber-400 text-sm mt-2">当前累积：{totalReward} 铒币</p>}
+              {usedBullets.size > 0 && (
+                <p className="text-slate-500 text-xs mt-2">已使用：{[...usedBullets].sort((a, b) => a - b).join('、')}弹</p>
+              )}
+              {usedBullets.size >= 5 && (
+                <p className="text-red-400 text-sm mt-2 font-semibold">所有弹数已使用完毕，请收手</p>
+              )}
             </div>
           )}
 
