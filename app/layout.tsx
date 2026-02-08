@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/components/providers/AuthProvider'
 import { UiProvider } from '@/components/providers/UiProvider'
 import { TutorialProvider } from '@/components/providers/TutorialProvider'
+import { ThemeProvider } from '@/components/providers/ThemeProvider'
 import MouseTrail from '@/components/effects/MouseTrail'
 import ParticlePhysics from '@/components/effects/ParticlePhysics'
 import StayTracking from '@/components/effects/StayTracking'
@@ -25,8 +26,18 @@ const notoSerifSC = Noto_Serif_SC({
 })
 
 export const metadata: Metadata = {
-  title: '文件分享',
+  title: {
+    default: '文件分享平台 - 分享、交流、论坛',
+    template: '%s | 文件分享平台'
+  },
   description: '资源与你同频，信息予你无限。在这里分享文件、交流想法、创建论坛。',
+  keywords: ['文件分享', '云盘', '论坛', '资源分享'],
+  openGraph: {
+    title: '文件分享平台',
+    description: '资源与你同频，信息予你无限。',
+    type: 'website',
+  },
+  manifest: '/manifest.json',
   icons: {
     icon: [
       { url: '/favicon-rounded.svg', type: 'image/svg+xml' },
@@ -61,6 +72,7 @@ export default function RootLayout({
         <MouseTrail />
         
         <AuthProvider>
+          <ThemeProvider>
           <TutorialProvider>
           <StayTracking />
           <UiProvider>
@@ -72,6 +84,7 @@ export default function RootLayout({
             <Toaster position="top-right" />
           </UiProvider>
           </TutorialProvider>
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>

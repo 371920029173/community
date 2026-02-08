@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     // 使用管理端绕过RLS，保证可取到作者id等信息
     let query = supabaseAdmin
       .from('files')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('is_public', true)
       .eq('is_approved', true)
       .order('created_at', { ascending: false })

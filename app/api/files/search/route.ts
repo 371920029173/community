@@ -5,7 +5,7 @@ import { supabaseAdmin, getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, fileType, tagId } = await request.json()
+    const { query, fileType, tagId, sortBy, sortOrder } = await request.json()
 
     const hasFilter = tagId || (fileType && fileType !== 'all')
     if ((!query || query.trim().length === 0) && !hasFilter) {
@@ -14,6 +14,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    const orderBy = sortBy === 'file_size' ? 'file_size' : sortBy === 'original_name' ? 'original_name' : 'created_at'
+    const ascending = sortOrder === 'asc'
 
     const sb = await getSupabaseAdmin()
 
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest) {
       searchQuery = searchQuery.eq('file_type', fileType)
     }
 
-    searchQuery = searchQuery.order('created_at', { ascending: false }).limit(50)
+    searchQuery = searchQuery.order(orderBy, { ascending }).limit(50)
 
     const { data: files, error } = await searchQuery
 

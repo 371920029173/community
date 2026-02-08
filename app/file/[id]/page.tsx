@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { FileItem, Comment } from '@/lib/supabase'
+import { FileItem, CommentWithReplies } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import Navbar from '@/components/layout/Navbar'
 import { 
@@ -20,7 +20,10 @@ import {
   Eye,
   Shield,
   ArrowLeft,
-  ExternalLink
+  ExternalLink,
+  Bookmark,
+  ChevronRight,
+  Reply
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
@@ -41,15 +44,19 @@ export default function FileDetailPage() {
   const { user, loading: authLoading } = useAuth()
   
   const [file, setFile] = useState<FileItem | null>(null)
-  const [comments, setComments] = useState<Comment[]>([])
+  const [comments, setComments] = useState<CommentWithReplies[]>([])
   const [loading, setLoading] = useState(true)
   const [newComment, setNewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [fileContent, setFileContent] = useState<string>('')
   const [loadingContent, setLoadingContent] = useState(false)
   const [authorName, setAuthorName] = useState<string>('')
   const [likesCount, setLikesCount] = useState<number>(0)
   const [isLiking, setIsLiking] = useState(false)
+  const [showFavoriteModal, setShowFavoriteModal] = useState(false)
+  const [favoriteCollections, setFavoriteCollections] = useState<{ id: string; name: string }[]>([])
+  const [addingToFavorite, setAddingToFavorite] = useState(false)
 
   useEffect(() => {
     if (fileId && !authLoading) {
@@ -358,7 +365,8 @@ export default function FileDetailPage() {
         },
         body: JSON.stringify({
           fileId: fileId,
-          content: newComment.trim()
+          content: newComment.trim(),
+          ...(replyingTo && { parentId: replyingTo })
         })
       })
 
@@ -369,6 +377,7 @@ export default function FileDetailPage() {
       }
 
       setNewComment('')
+      setReplyingTo(null)
       await fetchComments()
       
       // 刷新文件信息以更新评论数
@@ -379,7 +388,8 @@ export default function FileDetailPage() {
           .eq('id', fileId)
           .single()
         if (updatedFile) {
-          setFile({ ...file, comments_count: updatedFile.comments_count ?? (comments.length + 1) })
+          const totalCount = comments.reduce((n, c) => n + 1 + (c.replies?.length || 0), 0)
+        setFile({ ...file, comments_count: updatedFile.comments_count ?? (totalCount + 1) })
         }
       }
       
@@ -1128,6 +1138,25 @@ export default function FileDetailPage() {
                     <Heart className={`w-4 h-4 mr-2 ${likesCount > 0 ? 'fill-red-500 text-red-500' : ''}`} />
                     {likesCount > 0 ? likesCount : ''} 点赞
                   </button>
+                  {user?.id && (
+                    <button
+                      onClick={async () => {
+                        setShowFavoriteModal(true)
+                        try {
+                          const { data: { session } } = await supabase.auth.getSession()
+                          if (!session) return
+                          const res = await fetch('/api/favorites/collections', { headers: { 'Authorization': `Bearer ${session.access_token}` } })
+                          const json = await res.json()
+                          if (json.success) setFavoriteCollections(json.data || [])
+                        } catch { setFavoriteCollections([]) }
+                      }}
+                      className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm flex items-center"
+                      title="收藏到收藏夹"
+                    >
+                      <Bookmark className="w-4 h-4 mr-2" />
+                      收藏
+                    </button>
+                  )}
               </div>
             </div>
               <div className="text-right text-sm text-blue-100">
@@ -1158,7 +1187,7 @@ export default function FileDetailPage() {
           <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 border-b border-gray-200/50">
             <h2 className="text-xl font-semibold text-gray-900 flex items-center">
               <MessageCircle className="w-6 h-6 mr-2 text-blue-500" />
-            评论 ({comments.length})
+            评论 ({comments.reduce((n, c) => n + 1 + (c.replies?.length || 0), 0)})
           </h2>
           </div>
           <div className="p-6">
@@ -1168,7 +1197,7 @@ export default function FileDetailPage() {
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              placeholder="写下你的评论..."
+              placeholder={replyingTo ? '写下你的回复...' : '写下你的评论...'}
                   className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white resize-none"
               rows={3}
             />
@@ -1184,7 +1213,7 @@ export default function FileDetailPage() {
             </div>
           </form>
 
-          {/* 评论列表 */}
+          {/* 评论列表（含回复） */}
           <div className="space-y-4">
             {comments.length === 0 ? (
                 <div className="text-center py-12">
@@ -1193,40 +1222,132 @@ export default function FileDetailPage() {
                 </div>
             ) : (
               comments.map((comment) => (
-                  <div key={comment.id} className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-start space-x-3">
+                <div key={comment.id} className="space-y-2">
+                  <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-start space-x-3">
                       {comment.avatar_url ? (
                         <img
                           src={comment.avatar_url}
                           alt={comment.username}
                           className="w-10 h-10 rounded-full object-cover shadow-lg border-2 border-white"
                           onError={(e) => {
-                            // 如果头像加载失败，显示默认头像
                             const target = e.target as HTMLImageElement
                             target.style.display = 'none'
                             target.nextElementSibling?.classList.remove('hidden')
                           }}
                         />
                       ) : null}
-                      <div className={`w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg ${comment.avatar_url ? 'hidden' : ''}`}>
+                      <div className={`w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg flex-shrink-0 ${comment.avatar_url ? 'hidden' : ''}`}>
                         <User className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-2 flex-wrap">
                           <span className="font-semibold text-gray-900">{comment.username}</span>
                           <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: zhCN })}
-                        </span>
-                      </div>
+                            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: zhCN })}
+                          </span>
+                          {user?.id && (
+                            <button
+                              type="button"
+                              onClick={() => { setReplyingTo(comment.id); setNewComment('') }}
+                              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                            >
+                              <Reply className="w-3.5 h-3.5" />
+                              回复
+                            </button>
+                          )}
+                        </div>
                         <p className="text-gray-700 leading-relaxed">{comment.content}</p>
+                      </div>
                     </div>
                   </div>
+                  {/* 回复列表 */}
+                  {(comment.replies?.length ?? 0) > 0 && (
+                    <div className="ml-12 space-y-2 pl-4 border-l-2 border-gray-200">
+                      {comment.replies!.map((reply) => (
+                        <div key={reply.id} className="bg-gray-50/80 rounded-lg p-3 border border-gray-100">
+                          <div className="flex items-start space-x-3">
+                            {reply.avatar_url ? (
+                              <img src={reply.avatar_url} alt={reply.username} className="w-8 h-8 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }} />
+                            ) : null}
+                            <div className={`w-8 h-8 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 ${reply.avatar_url ? 'hidden' : ''}`}>
+                              <User className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center space-x-2 mb-1 flex-wrap">
+                                <span className="font-medium text-gray-800 text-sm">{reply.username}</span>
+                                <span className="text-xs text-gray-500">
+                                  {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true, locale: zhCN })}
+                                </span>
+                                {user?.id && (
+                                  <button
+                                    type="button"
+                                    onClick={() => { setReplyingTo(comment.id); setNewComment(`@${reply.username} `) }}
+                                    className="text-xs text-blue-600 hover:text-blue-800"
+                                  >
+                                    回复
+                                  </button>
+                                )}
+                              </div>
+                              <p className="text-gray-600 text-sm leading-relaxed">{reply.content}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))
             )}
             </div>
           </div>
         </div>
+
+        {/* 收藏到收藏夹弹窗 */}
+        {showFavoriteModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowFavoriteModal(false)}>
+            <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">收藏到收藏夹</h3>
+              {favoriteCollections.length === 0 ? (
+                <p className="text-gray-500 text-sm mb-4">暂无收藏夹，请先在<a href="/profile/favorites" className="text-blue-600 hover:underline">个人中心</a>创建</p>
+              ) : (
+                <ul className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                  {favoriteCollections.map(c => (
+                    <li key={c.id}>
+                      <button
+                        onClick={async () => {
+                          if (addingToFavorite || !fileId) return
+                          setAddingToFavorite(true)
+                          try {
+                            const { data: { session } } = await supabase.auth.getSession()
+                            if (!session) { toast.error('请先登录'); return }
+                            const res = await fetch(`/api/favorites/collections/${c.id}/items`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                              body: JSON.stringify({ fileId })
+                            })
+                            const json = await res.json()
+                            if (json.success) {
+                              toast.success(`已添加到「${c.name}」`)
+                              setShowFavoriteModal(false)
+                            } else toast.error(json.error || '添加失败')
+                          } catch { toast.error('添加失败') }
+                          finally { setAddingToFavorite(false) }
+                        }}
+                        disabled={addingToFavorite}
+                        className="w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100 flex items-center justify-between"
+                      >
+                        <span>{c.name}</span>
+                        {addingToFavorite ? <span className="text-sm text-gray-400">添加中...</span> : <ChevronRight className="w-4 h-4 text-gray-400" />}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <button onClick={() => setShowFavoriteModal(false)} className="w-full py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">关闭</button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

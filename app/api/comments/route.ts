@@ -7,7 +7,7 @@ export const runtime = 'edge'
 // 创建评论
 export async function POST(request: NextRequest) {
   try {
-    const { fileId, content } = await request.json()
+    const { fileId, content, parentId } = await request.json()
 
     if (!fileId || !content || !content.trim()) {
       return NextResponse.json(
@@ -65,15 +65,18 @@ export async function POST(request: NextRequest) {
 
     const username = userData?.nickname || userData?.username || '未知用户'
 
-    // 插入评论
+    // 插入评论（支持回复：parentId 不为空时为回复）
+    const insertData: Record<string, unknown> = {
+      file_id: fileId,
+      user_id: authUser.id,
+      username: username,
+      content: content.trim()
+    }
+    if (parentId) insertData.parent_id = parentId
+
     const { data: comment, error: insertError } = await supabaseAdmin
       .from('comments')
-      .insert({
-        file_id: fileId,
-        user_id: authUser.id,
-        username: username,
-        content: content.trim()
-      })
+      .insert(insertData)
       .select('*')
       .single()
 
@@ -148,6 +151,16 @@ export async function GET(request: NextRequest) {
       .eq('file_id', fileId)
       .order('created_at', { ascending: true })
 
+    // 构建层级：顶级评论与回复
+    const topLevel = (comments || []).filter((c: { parent_id?: string }) => !c.parent_id)
+    const replyMap = (comments || []).reduce((acc: Record<string, unknown[]>, c: { parent_id?: string }) => {
+      if (c.parent_id) {
+        acc[c.parent_id] = acc[c.parent_id] || []
+        acc[c.parent_id].push(c)
+      }
+      return acc
+    }, {})
+
     if (error) {
       console.error('获取评论失败:', error)
       return NextResponse.json(
@@ -157,8 +170,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 为每条评论获取用户头像信息
+    const allComments = comments || []
     const commentsWithAvatars = await Promise.all(
-      (comments || []).map(async (comment) => {
+      allComments.map(async (comment: { user_id: string; [k: string]: unknown }) => {
         try {
           const { data: userData } = await supabaseAdmin
             .from('users')
@@ -179,6 +193,19 @@ export async function GET(request: NextRequest) {
       })
     )
 
+    // 构建带头像的层级结构
+    const avatarMap = Object.fromEntries(commentsWithAvatars.map((c: { id: string; [k: string]: unknown }) => [c.id, c]))
+    const topWithAvatars = topLevel.map((c: { id: string }) => avatarMap[c.id]).filter(Boolean)
+    const replyMapWithAvatars: Record<string, unknown[]> = {}
+    for (const [pid, replies] of Object.entries(replyMap)) {
+      replyMapWithAvatars[pid] = (replies as { id: string }[]).map((r: { id: string }) => avatarMap[r.id]).filter(Boolean)
+    }
+
+    const commentsTree = topWithAvatars.map((c: { id: string; [k: string]: unknown }) => ({
+      ...c,
+      replies: replyMapWithAvatars[c.id] || []
+    }))
+
     // 同步评论数到文件记录（确保数据一致性）
     try {
       const actualCommentCount = commentsWithAvatars.length
@@ -193,7 +220,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: commentsWithAvatars
+      data: commentsTree
     })
 
   } catch (error: any) {

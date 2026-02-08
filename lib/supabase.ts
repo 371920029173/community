@@ -87,6 +87,11 @@ export interface Comment {
   content: string
   created_at: string
   avatar_url?: string | null
+  parent_id?: string | null
+}
+
+export interface CommentWithReplies extends Comment {
+  replies?: Comment[]
 }
 
 export interface Message {
@@ -112,6 +117,7 @@ export interface Announcement {
   is_active: boolean
   expires_at?: string
   created_at: string
+  updated_at?: string
 }
 
 export interface FortuneResult {

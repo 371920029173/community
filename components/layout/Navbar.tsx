@@ -57,7 +57,7 @@ export default function Navbar() {
     storageRequests: 0
   })
   const [sandCoins, setSandCoins] = useState<number>(0)
-  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(0) // 实时未读消息计数器
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(0)
 
   const handleSignOut = async () => {
     try {

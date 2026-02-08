@@ -19,6 +19,10 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     animation: tidalFlow 20s ease-in-out infinite;
   }
+  .dark body {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    color: #e2e8f0;
+  }
 }
 
 /* UI模式切换：当 data-ui=mobile 时适配更紧凑布局 */

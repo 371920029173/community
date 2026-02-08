@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import Navbar from '@/components/layout/Navbar'
@@ -16,6 +17,7 @@ import {
   Share2,
   Heart,
   MessageSquare,
+  Eye,
   Search,
   Filter,
   Grid,
@@ -55,6 +57,10 @@ export default function SharePage() {
   const [filterTagId, setFilterTagId] = useState<string>('')
   const [tags, setTags] = useState<{ id: string; name: string }[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const limit = 40
   const [editingFile, setEditingFile] = useState<FileItem | null>(null)
   const [editForm, setEditForm] = useState({
     original_name: '',
@@ -69,29 +75,32 @@ export default function SharePage() {
       .catch(() => {})
   }, [])
 
-  // 获取公开文件列表
+  // 异步加载：先显示布局，后台获取文件（与主页一致）
+  useEffect(() => {
+    setPage(1)
+  }, [filterType, filterTagId])
   useEffect(() => {
     fetchPublicFiles()
-  }, [filterType, filterTagId])
+  }, [filterType, filterTagId, page])
 
   const fetchPublicFiles = async () => {
     try {
-      console.log('开始获取公开文件列表...')
       setIsLoading(true)
       const params = new URLSearchParams()
       if (filterType && filterType !== 'all') params.set('type', filterType)
       if (filterTagId) params.set('tagId', filterTagId)
+      params.set('limit', String(limit))
+      params.set('page', String(page))
       const response = await fetch(`/api/files/public?${params}`, {
         headers: { 'Content-Type': 'application/json' }
       })
       if (response.ok) {
         const data = await response.json()
-        console.log('获取到的文件数据:', data)
-        console.log('文件数量:', data.files?.length || 0)
         setFiles(data.files || [])
-        console.log('文件列表已更新')
+        const pag = data.pagination || {}
+        setTotalPages(pag.pages ?? 1)
+        setTotalCount(pag.total ?? 0)
       } else {
-        console.error('获取公开文件失败')
         setFiles([])
       }
     } catch (error) {
@@ -237,7 +246,7 @@ export default function SharePage() {
   }
 
   const filteredFiles = files.filter(file => {
-    const matchesSearch = file.original_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = !searchQuery || file.original_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (file.description && file.description.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchesType = filterType === 'all' || file.file_type === filterType
     const mineFilter = !onlyMine || (user ? file.user_id === user.id : false)
@@ -263,22 +272,7 @@ export default function SharePage() {
     }))
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <Navbar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">加载中...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
+  // 异步加载：始终显示页面布局，仅文件区域显示加载状态（与主页一致）
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <Navbar />
@@ -421,7 +415,14 @@ export default function SharePage() {
             </div>
 
             {/* 文件列表 */}
-            {filteredFiles.length === 0 ? (
+            {isLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">加载中...</p>
+                </div>
+              </div>
+            ) : filteredFiles.length === 0 ? (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
                 <div className="flex flex-col items-center">
                   <FileText className="w-16 h-16 text-gray-400 mb-4" />
@@ -500,27 +501,13 @@ export default function SharePage() {
                           </button>
                         </>
                       ) : (
-                        <>
-                          <button
-                            onClick={() => handleDownload(file)}
-                            className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700 hover:scale-105 transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md"
-                          >
-                            <Download className="w-4 h-4 mr-1" />
-                            下载
-                          </button>
-                          <button
-                            onClick={() => handleLike(file)}
-                            className="px-3 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 hover:scale-105 transition-all duration-200"
-                          >
-                            <Heart className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleComment(file)}
-                            className="px-3 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 hover:scale-105 transition-all duration-200"
-                          >
-                            <MessageSquare className="w-4 h-4" />
-                          </button>
-                        </>
+                        <Link
+                          href={`/file/${file.id}`}
+                          className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700 hover:scale-105 transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md"
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          打开
+                        </Link>
                       )}
                     </div>
                   </div>
@@ -529,9 +516,30 @@ export default function SharePage() {
             )}
 
             {/* 分页信息 */}
-            {filteredFiles.length > 0 && (
-              <div className="mt-8 text-center text-sm text-gray-500">
-                共找到 {filteredFiles.length} 个文件
+            {filteredFiles.length > 0 && !isLoading && (
+              <div className="mt-8 flex items-center justify-between flex-wrap gap-4">
+                <span className="text-sm text-gray-500">
+                  共 {totalCount} 个文件
+                  {totalPages > 1 && ` · 第 ${page}/${totalPages} 页`}
+                </span>
+                {totalPages > 1 && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      上一页
+                    </button>
+                    <button
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      下一页
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

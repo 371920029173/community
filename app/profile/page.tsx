@@ -321,6 +321,17 @@ export default function ProfilePage() {
               <p className="text-xs text-gray-500 mt-3">提交后由审核员审批</p>
             </motion.div>
 
+            {/* 我的收藏 */}
+            <motion.div variants={fadeInUp} className="bg-white/70 backdrop-blur-xl rounded-2xl p-8 border border-white/40 shadow-xl shadow-slate-200/30">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">我的收藏</h2>
+                <Link href="/profile/favorites" className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition-colors">
+                  管理收藏 <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+              <p className="text-sm text-gray-500">创建收藏夹，将喜欢的文件保存到对应收藏夹中</p>
+            </motion.div>
+
             {/* 我的论坛 */}
             <motion.div variants={fadeInUp} className="bg-white/70 backdrop-blur-xl rounded-2xl p-8 border border-white/40 shadow-xl shadow-slate-200/30">
               <div className="flex items-center justify-between mb-4">
@@ -442,6 +453,7 @@ export default function ProfilePage() {
                 <div className="flex justify-between py-2 border-b border-gray-100"><span>管理员</span><span className="font-medium">{user.is_admin ? '是' : '否'}</span></div>
                 <div className="flex justify-between py-2 border-b border-gray-100"><span>审核员</span><span className="font-medium">{user.is_moderator ? '是' : '否'}</span></div>
                 <div className="flex justify-between py-2 border-b border-gray-100 items-center"><span>下次登录播放教程</span><label className="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked={tutorialPlayOnLogin} onChange={e => { const v = e.target.checked; setTutorialPlayOnLogin(v); toast.success(v ? '已开启' : '已关闭') }} className="sr-only peer" /><div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600" /></label></div>
+                <div className="flex justify-between py-2 items-center"><span>更多设置</span><Link href="/profile/settings" className="text-blue-600 hover:text-blue-700 text-sm font-medium">打开设置</Link></div>
                 <div className="flex justify-between py-2"><span>注册时间</span><span className="font-medium">{new Date(user.created_at).toLocaleDateString('zh-CN')}</span></div>
               </div>
             </motion.div>

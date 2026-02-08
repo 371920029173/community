@@ -151,7 +151,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // 更新公告（announcements 表可能无 updated_at 列，不包含以免报错）
+    // 更新公告
     const { data: announcement, error: updateError } = await sb
       .from('announcements')
       .update({
@@ -159,7 +159,8 @@ export async function PUT(request: NextRequest) {
         content,
         type,
         is_active: isActive,
-        expires_at: expiresAt
+        expires_at: expiresAt,
+        updated_at: new Date().toISOString()
       })
       .eq('id', id)
       .select()

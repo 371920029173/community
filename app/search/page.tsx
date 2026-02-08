@@ -49,6 +49,8 @@ export default function SearchPage() {
   const [fileTypeFilter, setFileTypeFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('')
   const [tags, setTags] = useState<TagItem[]>([])
+  const [sortBy, setSortBy] = useState<'created_at' | 'file_size' | 'original_name'>('created_at')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
   useEffect(() => {
     fetch('/api/files/tags')
@@ -71,7 +73,9 @@ export default function SearchPage() {
         body: JSON.stringify({
           query: searchQuery.trim(),
           fileType: fileTypeFilter !== 'all' ? fileTypeFilter : undefined,
-          tagId: categoryFilter || undefined
+          tagId: categoryFilter || undefined,
+          sortBy,
+          sortOrder
         })
       })
 
@@ -152,9 +156,9 @@ export default function SearchPage() {
               </div>
             </div>
 
-            {/* 类别与类型过滤（搜索前可选） */}
-            {tags.length > 0 && (
-              <div className="mb-6 flex flex-wrap items-center gap-4">
+            {/* 类别、类型、排序（搜索前可选） */}
+            <div className="mb-6 flex flex-wrap items-center gap-4">
+              {tags.length > 0 && (
                 <div className="flex items-center gap-2">
                   <Tag className="w-4 h-4 text-gray-500" />
                   <span className="text-sm text-gray-600">类别：</span>
@@ -169,20 +173,41 @@ export default function SearchPage() {
                     ))}
                   </select>
                 </div>
+              )}
+              <select
+                value={fileTypeFilter}
+                onChange={(e) => setFileTypeFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">所有类型</option>
+                <option value="image">图片</option>
+                <option value="video">视频</option>
+                <option value="audio">音频</option>
+                <option value="document">文档</option>
+                <option value="archive">压缩包</option>
+              </select>
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-gray-500" />
+                <span className="text-sm text-gray-600">排序：</span>
                 <select
-                  value={fileTypeFilter}
-                  onChange={(e) => setFileTypeFilter(e.target.value)}
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'created_at' | 'file_size' | 'original_name')}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="all">所有类型</option>
-                  <option value="image">图片</option>
-                  <option value="video">视频</option>
-                  <option value="audio">音频</option>
-                  <option value="document">文档</option>
-                  <option value="archive">压缩包</option>
+                  <option value="created_at">时间</option>
+                  <option value="file_size">大小</option>
+                  <option value="original_name">名称</option>
+                </select>
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="desc">降序</option>
+                  <option value="asc">升序</option>
                 </select>
               </div>
-            )}
+            </div>
 
             {/* 搜索过滤器和视图控制 */}
             {searchResults.length > 0 && (
