@@ -23,7 +23,8 @@ import {
   Sparkles,
   Coins,
   Users,
-  FileText
+  FileText,
+  Gamepad2
 } from 'lucide-react'
 
 interface Notifications {
@@ -168,6 +169,9 @@ export default function Navbar() {
             </Link>
             <Link href="/fortune" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="占卜">
               <Sparkles className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            </Link>
+            <Link href="/games" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="小游戏">
+              <Gamepad2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
             <Link href="/forums" data-tutorial="nav-forums" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="论坛大厅">
               <Users className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -316,6 +320,14 @@ export default function Navbar() {
               >
                 <Sparkles className="w-5 h-5" />
                 占卜
+              </Link>
+              <Link 
+                href="/games"
+                className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Gamepad2 className="w-5 h-5" />
+                小游戏
               </Link>
               <Link 
                 href="/forums" 

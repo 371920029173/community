@@ -83,6 +83,9 @@ export function KeyboardShortcutsProvider({ children }: { children: React.ReactN
           case 'o':
             router.push('/forums')
             break
+          case 'g':
+            router.push('/games')
+            break
           default:
             break
         }

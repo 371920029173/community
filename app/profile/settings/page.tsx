@@ -131,6 +131,10 @@ export default function SettingsPage() {
                 <dt><kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">g</kbd> → <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">o</kbd></dt>
                 <dd className="text-gray-900 dark:text-gray-100">论坛</dd>
               </div>
+              <div className="flex justify-between gap-4 items-center">
+                <dt><kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">g</kbd> → <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">g</kbd></dt>
+                <dd className="text-gray-900 dark:text-gray-100">小游戏</dd>
+              </div>
             </dl>
           </div>
         </div>

@@ -1,0 +1,208 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import Navbar from '@/components/layout/Navbar'
+import { useAuth } from '@/components/providers/AuthProvider'
+import { supabase } from '@/lib/supabase'
+import { Gamepad2, Map, Crosshair, Activity, Zap, Coins, Music, Skull } from 'lucide-react'
+import toast from 'react-hot-toast'
+
+const GAMES = [
+  {
+    id: 'survival',
+    title: '生存模式',
+    desc: '敌人波次不断增强，你能撑到第几波？程序生成敌潮，每局不同。',
+    icon: Zap,
+    href: '/games/survival',
+    color: 'from-amber-500 to-orange-600',
+    tag: '波次',
+  },
+  {
+    id: 'dungeon',
+    title: '地牢探险',
+    desc: '程序生成地牢，永久死亡。每次进入都是全新地图，谨慎探索。',
+    icon: Map,
+    href: '/games/dungeon',
+    color: 'from-purple-500 to-indigo-600',
+    tag: 'Roguelike',
+  },
+  {
+    id: 'platformer',
+    title: '精确平台',
+    desc: '模块拼接的跑酷关卡，跳跃时机至关重要。一碰即死，挑战极限。',
+    icon: Activity,
+    href: '/games/platformer',
+    color: 'from-emerald-500 to-teal-600',
+    tag: '跑酷',
+  },
+  {
+    id: 'bullet-hell',
+    title: '弹幕 Boss',
+    desc: '躲避密集弹幕，寻找攻击间隙。多个 Boss，多种弹幕组合。',
+    icon: Crosshair,
+    href: '/games/bullet-hell',
+    color: 'from-rose-500 to-pink-600',
+    tag: '弹幕',
+  },
+  {
+    id: 'rhythm',
+    title: '节奏之舞',
+    desc: '冰与火之舞风格。球沿路径前进，在金黄圈处按空格击中节拍，错过即死。',
+    icon: Music,
+    href: '/games/rhythm',
+    color: 'from-cyan-500 to-blue-600',
+    tag: '节奏',
+  },
+  {
+    id: 'iwanna',
+    title: 'I Wanna',
+    desc: '高难度平台。触刺即死，精准跳跃，到达星星过关。',
+    icon: Skull,
+    href: '/games/iwanna',
+    color: 'from-amber-500 to-orange-600',
+    tag: '虐心',
+  },
+]
+
+export default function GamesHubPage() {
+  const { user } = useAuth()
+  const [sandCoins, setSandCoins] = useState(0)
+  const [gameCoins, setGameCoins] = useState(0)
+  const [exchanging, setExchanging] = useState(false)
+
+  useEffect(() => {
+    if (!user?.id) return
+    const fetchCurrency = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return
+        const res = await fetch('/api/games/currency', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        })
+        const json = await res.json()
+        if (json.success) {
+          setSandCoins(json.sandCoins ?? 0)
+          setGameCoins(json.gameCoins ?? 0)
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    fetchCurrency()
+  }, [user?.id])
+
+  const handleExchange = async (amount: number) => {
+    if (!user || amount < 1) return
+    setExchanging(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        toast.error('请先登录')
+        return
+      }
+      const res = await fetch('/api/games/currency', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: 'exchange', amount })
+      })
+      const json = await res.json()
+      if (json.success) {
+        setSandCoins(json.sandCoins ?? 0)
+        setGameCoins(json.gameCoins ?? 0)
+        toast.success(json.message)
+      } else {
+        toast.error(json.error || '兑换失败')
+      }
+    } catch (e) {
+      toast.error('兑换失败')
+    } finally {
+      setExchanging(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
+      <Navbar />
+      <main className="max-w-4xl mx-auto px-4 py-12">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-10">
+          <div className="flex items-center gap-3">
+            <Gamepad2 className="w-10 h-10 text-violet-400" />
+            <div>
+              <h1 className="text-3xl font-bold text-white">小游戏中心</h1>
+              <p className="text-slate-400">高难度、高参与感。5 沙币 = 1 铒币，每次游戏消耗 1 铒币，达成目标返还 2 铒币。</p>
+            </div>
+          </div>
+          {user && (
+            <div className="flex flex-col gap-3 p-4 rounded-xl bg-slate-800/60 border border-slate-700">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Coins className="w-5 h-5 text-amber-400" />
+                  <span className="text-white">{sandCoins} 沙币</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-violet-400 font-semibold">{gameCoins} 铒币</span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleExchange(1)}
+                  disabled={exchanging || sandCoins < 5}
+                  className="px-3 py-1.5 text-sm bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                >
+                  5 沙币 → 1 铒币
+                </button>
+                <button
+                  onClick={() => handleExchange(5)}
+                  disabled={exchanging || sandCoins < 25}
+                  className="px-3 py-1.5 text-sm bg-violet-600/80 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                >
+                  25 → 5 铒币
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        {!user && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-900/30 border border-amber-700/50 text-amber-200 text-sm">
+            请先登录后使用铒币玩游戏。点击广告可获得沙币，5 沙币可兑换 1 铒币。
+          </div>
+        )}
+        <div className="grid gap-6 md:grid-cols-2 mt-6">
+          {GAMES.map((g) => (
+            <Link
+              key={g.id}
+              href={g.href}
+              className="group block p-6 rounded-2xl bg-slate-800/60 border border-slate-700/50 hover:border-violet-500/50 hover:bg-slate-800/80 transition-all duration-300"
+            >
+              <div className="flex items-start gap-4">
+                <div className={`p-3 rounded-xl bg-gradient-to-br ${g.color}`}>
+                  <g.icon className="w-8 h-8 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h2 className="text-xl font-semibold text-white group-hover:text-violet-300 transition-colors">
+                      {g.title}
+                    </h2>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">
+                      {g.tag}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-400 leading-relaxed">{g.desc}</p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        <section className="mt-16 pt-8 border-t border-slate-700/50">
+          <h3 className="text-sm font-medium text-slate-500 mb-3">灵感来源 / 特别鸣谢</h3>
+          <p className="text-sm text-slate-400 leading-relaxed">
+            节奏之舞受《冰与火之舞》(A Dance of Fire and Ice, 7th Beat Games) 启发；
+            I Wanna 受《I Wanna Be The Guy》(Kayin) 等虐心平台游戏启发。本平台小游戏均为独立实现，与上述作品无隶属关系。
+          </p>
+        </section>
+      </main>
+    </div>
+  )
+}
