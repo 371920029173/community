@@ -122,10 +122,8 @@ export default function GamesHubPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950/40 to-slate-950">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,80,255,0.15),transparent)]" />
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl" />
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(99,102,241,0.08),transparent)]" />
       <Navbar />
       <main className="relative max-w-4xl mx-auto px-4 py-12">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-8 mb-12">
@@ -135,11 +133,11 @@ export default function GamesHubPage() {
             </div>
             <div>
               <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight mb-2">小游戏中心</h1>
-              <p className="text-slate-400 leading-relaxed max-w-xl">高难度、高参与感。5 沙币 = 1 铒币，每次游戏消耗 1 铒币，达成目标返还 2 铒币。<span className="text-amber-400/90">请合理控制游戏时间，适度娱乐。</span></p>
+              <p className="text-slate-300 leading-relaxed max-w-xl">高难度、高参与感。5 沙币 = 1 铒币，每次游戏消耗 1 铒币，达成目标返还 2 铒币。<span className="text-amber-300">请合理控制游戏时间，适度娱乐。</span></p>
             </div>
           </div>
           {user && (
-            <div className="flex-shrink-0 p-5 rounded-2xl bg-slate-800/80 backdrop-blur-sm border border-slate-600/50 shadow-xl shadow-black/20">
+            <div className="flex-shrink-0 p-5 rounded-2xl bg-slate-800/90 backdrop-blur-sm border border-slate-600/50 shadow-xl shadow-black/20">
               <div className="flex items-center gap-3 mb-4">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
                   <Coins className="w-4 h-4 text-amber-400" />
@@ -178,7 +176,7 @@ export default function GamesHubPage() {
             <Link
               key={g.id}
               href={g.href}
-              className="group relative block p-6 rounded-2xl bg-slate-800/70 backdrop-blur-sm border border-slate-600/50 hover:border-violet-500/50 hover:bg-slate-800/90 hover:shadow-xl hover:shadow-violet-500/10 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+              className="group relative block p-6 rounded-2xl bg-slate-800/90 backdrop-blur-sm border border-slate-600/50 hover:border-violet-500/50 hover:bg-slate-800 hover:shadow-xl hover:shadow-violet-500/10 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
             >
               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-violet-500/10" />
               <div className="relative flex items-start gap-4">
@@ -190,20 +188,20 @@ export default function GamesHubPage() {
                     <h2 className="text-lg font-semibold text-white group-hover:text-violet-200 transition-colors">
                       {g.title}
                     </h2>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/80 text-slate-300 border border-slate-600/50">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/80 text-slate-200 border border-slate-600/50">
                       {g.tag}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-400 leading-relaxed">{g.desc}</p>
+                  <p className="text-sm text-slate-300 leading-relaxed">{g.desc}</p>
                 </div>
               </div>
             </Link>
           ))}
         </div>
 
-        <section className="mt-16 pt-8 border-t border-slate-700/50">
-          <h3 className="text-sm font-medium text-slate-500 mb-3">灵感来源 / 特别鸣谢</h3>
-          <p className="text-sm text-slate-400 leading-relaxed">
+        <section className="mt-16 pt-8 border-t border-slate-600/50">
+          <h3 className="text-sm font-medium text-slate-400 mb-3">灵感来源 / 特别鸣谢</h3>
+          <p className="text-sm text-slate-300 leading-relaxed">
             节奏之舞受《冰与火之舞》(A Dance of Fire and Ice, 7th Beat Games) 启发；
             I Wanna 受《I Wanna Be The Guy》(Kayin) 等虐心平台游戏启发。本平台小游戏均为独立实现，与上述作品无隶属关系。
           </p>
