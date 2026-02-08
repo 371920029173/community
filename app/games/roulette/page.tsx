@@ -152,19 +152,22 @@ export default function RoulettePage() {
         </div>
 
         <div className="relative rounded-xl overflow-hidden border border-slate-600 bg-slate-800 min-h-[320px] flex flex-col items-center justify-center p-8">
+          {firing && (
+            <div className="absolute inset-0 bg-red-500/20 animate-pulse z-10 pointer-events-none" />
+          )}
           {gameState === 'idle' && (
-            <p className="text-slate-400">点击上方按钮开始</p>
+            <p className="text-slate-400 animate-fade-in">点击上方按钮开始</p>
           )}
 
           {gameState === 'select' && (
-            <div className="text-center">
+            <div className="text-center animate-fade-in">
               <p className="text-slate-400 text-sm mb-4">第 {round} 轮 · 选择装弹数</p>
               <div className="flex flex-wrap justify-center gap-2">
-                {[1, 2, 3, 4, 5].map((n) => (
+                {[1, 2, 3, 4, 5].map((n, i) => (
                   <button
                     key={n}
                     onClick={() => confirmBullets(n)}
-                    className="w-14 h-14 rounded-xl bg-slate-700 hover:bg-red-600 border border-slate-500 hover:border-red-500 text-white font-bold"
+                    className="w-14 h-14 rounded-xl bg-slate-700 hover:bg-red-600 hover:scale-110 border border-slate-500 hover:border-red-500 text-white font-bold transition-all duration-200"
                   >
                     {n}弹
                   </button>
@@ -175,57 +178,57 @@ export default function RoulettePage() {
           )}
 
           {(gameState === 'playing' || gameState === 'choose') && (
-            <>
+            <div className="animate-fade-in">
               <div className="text-center mb-6">
                 <p className="text-slate-400 text-sm">第 {round} 轮 · {bullets} 弹 · 倍率 {multiplier.toFixed(2)}x</p>
-                <p className="text-2xl font-bold text-amber-400 mt-2">若收手可得 {reward} 铒币</p>
+                <p className="text-2xl font-bold text-amber-400 mt-2 animate-pulse">若收手可得 {reward} 铒币</p>
               </div>
-              <div className="w-32 h-32 rounded-full bg-slate-700 border-4 border-slate-500 flex items-center justify-center mb-6">
+              <div className={`w-32 h-32 rounded-full bg-slate-700 border-4 flex items-center justify-center mb-6 mx-auto transition-all duration-300 ${firing ? 'border-red-500 scale-110' : 'border-slate-500'}`}>
                 <span className="text-4xl">{bullets}/6</span>
               </div>
               {gameState === 'playing' && (
                 <button
                   onClick={fire}
                   disabled={firing}
-                  className="px-8 py-4 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold rounded-xl text-lg"
+                  className={`px-8 py-4 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold rounded-xl text-lg transition-all duration-200 ${firing ? 'scale-95' : 'hover:scale-105'}`}
                 >
                   {firing ? '...' : '开枪'}
                 </button>
               )}
               {gameState === 'choose' && (
-                <div className="flex gap-4">
+                <div className="flex gap-4 animate-fade-in">
                   <button
                     onClick={cashOut}
-                    className="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-slate-900 font-semibold rounded-xl"
+                    className="px-6 py-3 bg-amber-600 hover:bg-amber-500 hover:scale-105 text-slate-900 font-semibold rounded-xl transition-all duration-200"
                   >
                     收手 ({reward} 铒币)
                   </button>
                   <button
                     onClick={continueGame}
-                    className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl"
+                    className="px-6 py-3 bg-red-600 hover:bg-red-500 hover:scale-105 text-white font-semibold rounded-xl transition-all duration-200"
                   >
                     继续
                   </button>
                 </div>
               )}
-            </>
+            </div>
           )}
 
           {gameState === 'dead' && (
-            <div className="text-center">
-              <p className="text-2xl font-bold text-red-400 mb-2">游戏结束</p>
+            <div className="text-center animate-fade-in">
+              <p className="text-2xl font-bold text-red-400 mb-2 animate-bounce">游戏结束</p>
               <p className="text-slate-400 mb-4">第 {round} 轮中弹，人财两空</p>
-              <button onClick={startGame} className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg">
+              <button onClick={startGame} className="px-6 py-2 bg-red-600 hover:bg-red-500 hover:scale-105 text-white font-semibold rounded-lg transition-all duration-200">
                 再来一局
               </button>
             </div>
           )}
 
           {gameState === 'win' && (
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-400 mb-2">恭喜通关！</p>
-              <p className="text-amber-400 text-xl mb-4">获得 {reward} 铒币</p>
-              <button onClick={startGame} className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg">
+            <div className="text-center animate-fade-in">
+              <p className="text-2xl font-bold text-green-400 mb-2 animate-bounce">恭喜通关！</p>
+              <p className="text-amber-400 text-xl mb-4 animate-pulse">获得 {reward} 铒币</p>
+              <button onClick={startGame} className="px-6 py-2 bg-red-600 hover:bg-red-500 hover:scale-105 text-white font-semibold rounded-lg transition-all duration-200">
                 再来一局
               </button>
             </div>
