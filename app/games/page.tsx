@@ -122,10 +122,9 @@ export default function GamesHubPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(99,102,241,0.08),transparent)]" />
+    <div className="min-h-screen bg-slate-800">
       <Navbar />
-      <main className="relative max-w-4xl mx-auto px-4 py-12">
+      <main className="max-w-4xl mx-auto px-4 py-12">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-8 mb-12">
           <div className="flex items-start gap-4">
             <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 border border-violet-500/30 shadow-lg shadow-violet-500/10">
