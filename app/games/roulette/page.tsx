@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Target } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-const BULLET_MULTIPLIERS: Record<number, number> = { 1: 1, 2: 1.05, 3: 1.2, 4: 1.6, 5: 3 }
+const BULLET_REWARDS: Record<number, number> = { 1: 0, 2: 1, 3: 3, 4: 8, 5: 15 }
 const STAKE = 5
 
 const HIDDEN_ACHIEVEMENTS = new Set(['away_from_gambling', 'unlucky', 'strong_luck'])
@@ -35,16 +35,12 @@ function getStatsKey(uid: string) {
 }
 
 type RouletteStats = {
-  consecutive_round1_cashout: number
   consecutive_death_low: number
-  consecutive_survive_5: number
   total_cashouts: number
 }
 
 const defaultStats: RouletteStats = {
-  consecutive_round1_cashout: 0,
   consecutive_death_low: 0,
-  consecutive_survive_5: 0,
   total_cashouts: 0,
 }
 
@@ -52,7 +48,13 @@ function loadStats(uid: string): RouletteStats {
   if (typeof window === 'undefined') return defaultStats
   try {
     const s = localStorage.getItem(getStatsKey(uid))
-    if (s) return { ...defaultStats, ...JSON.parse(s) }
+    if (s) {
+      const parsed = JSON.parse(s)
+      return {
+        consecutive_death_low: parsed.consecutive_death_low || 0,
+        total_cashouts: parsed.total_cashouts || 0
+      }
+    }
   } catch (_) {}
   return defaultStats
 }
@@ -67,7 +69,6 @@ function saveStats(uid: string, stats: RouletteStats) {
 const ACHIEVEMENT_NAMES: Record<string, string> = {
   first_cashout: '首次收手',
   first_death: '首次中弹',
-  survive_3_rounds: '存活3轮',
   high_roller: '单局10铒币+',
   cautious: '累计收手5次',
 }
@@ -93,7 +94,7 @@ export default function RoulettePage() {
   const [gameState, setGameState] = useState<'idle' | 'select' | 'playing' | 'choose' | 'dead' | 'win'>('idle')
   const [round, setRound] = useState(0)
   const [bullets, setBullets] = useState(1)
-  const [multiplier, setMultiplier] = useState(1)
+  const [totalReward, setTotalReward] = useState(0)
   const [starting, setStarting] = useState(false)
   const [firing, setFiring] = useState(false)
   const statsRef = useRef<RouletteStats>(defaultStats)
@@ -125,7 +126,7 @@ export default function RoulettePage() {
         return
       }
       setRound(1)
-      setMultiplier(1)
+      setTotalReward(0)
       setGameState('select')
     } catch (e) {
       toast.error('启动失败')
@@ -150,8 +151,6 @@ export default function RoulettePage() {
         const s = statsRef.current
         if (bullets <= 3) {
           s.consecutive_death_low++
-          s.consecutive_round1_cashout = 0
-          s.consecutive_survive_5 = 0
         } else {
           s.consecutive_death_low = 0
         }
@@ -169,53 +168,20 @@ export default function RoulettePage() {
           }
         }
       } else {
-        const newMult = multiplier * BULLET_MULTIPLIERS[bullets]
-        setMultiplier(newMult)
-        if (round >= 5) {
-          const s = statsRef.current
-          s.consecutive_survive_5++
-          s.consecutive_round1_cashout = 0
-          s.consecutive_death_low = 0
-          if (uid) saveStats(uid, s)
-          setGameState('win')
-          const reward = Math.floor(STAKE * newMult)
-          const { data: { session } } = await supabase.auth.getSession()
-          if (session) {
-            const winRes = await fetch('/api/games/currency', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-              body: JSON.stringify({ action: 'roulette_win', amount: reward })
-            })
-            const winJson = await winRes.json()
-            if (winJson.success) toast.success(`活过 5 轮！获得 ${reward} 铒币`)
-            if (s.consecutive_survive_5 >= 5) {
-              const j = await claimAchievement(session, 'strong_luck', true)
-              if (j.success) toast.success('隐藏成就：强运！+20 铒币')
-            }
-            await claimAchievement(session, 'survive_3_rounds', false)
-          }
-        } else {
-          const s = statsRef.current
-          s.consecutive_death_low = 0
-          if (uid) saveStats(uid, s)
-          setGameState('choose')
-        }
+        const s = statsRef.current
+        s.consecutive_death_low = 0
+        if (uid) saveStats(uid, s)
+        const roundReward = BULLET_REWARDS[bullets]
+        setTotalReward(prev => prev + roundReward)
+        setGameState('choose')
       }
       setFiring(false)
     }, 800)
-  }, [gameState, round, bullets, multiplier, firing, user?.id])
+  }, [gameState, bullets, firing, user?.id])
 
   const cashOut = useCallback(async () => {
-    const reward = Math.floor(STAKE * multiplier)
     const uid = user?.id
     const s = statsRef.current
-    if (round === 1) {
-      s.consecutive_round1_cashout++
-      s.consecutive_death_low = 0
-      s.consecutive_survive_5 = 0
-    } else {
-      s.consecutive_round1_cashout = 0
-    }
     s.total_cashouts++
     if (uid) saveStats(uid, s)
 
@@ -224,29 +190,24 @@ export default function RoulettePage() {
     const res = await fetch('/api/games/currency', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ action: 'roulette_win', amount: reward })
+      body: JSON.stringify({ action: 'roulette_win', amount: totalReward })
     })
     const j = await res.json()
     if (j.success) {
-      toast.success(`收手获得 ${reward} 铒币`)
+      toast.success(`收手获得 ${totalReward} 铒币`)
       setGameState('idle')
-      if (s.consecutive_round1_cashout >= 10) {
-        const ach = await claimAchievement(session, 'away_from_gambling', true)
-        if (ach.success) toast.success('隐藏成就：远离赌博！+10 铒币')
-      }
       await claimAchievement(session, 'first_cashout', false)
-      if (reward >= 10) await claimAchievement(session, 'high_roller', false)
+      if (totalReward >= 10) await claimAchievement(session, 'high_roller', false)
       if (s.total_cashouts >= 5) await claimAchievement(session, 'cautious', false)
-      if (round >= 3) await claimAchievement(session, 'survive_3_rounds', false)
     }
-  }, [multiplier, round, user?.id])
+  }, [totalReward, user?.id])
 
   const continueGame = useCallback(() => {
     setRound((r) => r + 1)
     setGameState('select')
   }, [])
 
-  const reward = Math.floor(STAKE * multiplier)
+
 
   return (
     <div className="min-h-screen bg-slate-900">
@@ -278,8 +239,8 @@ export default function RoulettePage() {
           <ul className="list-disc list-inside space-y-1">
             <li>每局消耗 {STAKE} 铒币，6 发弹巢</li>
             <li>每轮选择装弹数 1～5，死亡则人财两空</li>
-            <li>倍率：1弹+0%、2弹+5%、3弹+20%、4弹+60%、5弹+200%</li>
-            <li>存活后可继续或收手，活过 5 轮自动结算，奖励向下取整</li>
+            <li>奖励累加：1弹+{ BULLET_REWARDS[1] }铒币、2弹+{ BULLET_REWARDS[2] }铒币、3弹+{ BULLET_REWARDS[3] }铒币、4弹+{ BULLET_REWARDS[4] }铒币、5弹+{ BULLET_REWARDS[5] }铒币</li>
+            <li>存活后可继续或收手，奖励累加，不允许重复挑战</li>
           </ul>
         </div>
 
@@ -305,15 +266,16 @@ export default function RoulettePage() {
                   </button>
                 ))}
               </div>
-              <p className="text-slate-500 text-xs mt-2">1弹+0% 2弹+5% 3弹+20% 4弹+60% 5弹+200%</p>
+              <p className="text-slate-500 text-xs mt-2">1弹+{BULLET_REWARDS[1]}铒币 2弹+{BULLET_REWARDS[2]}铒币 3弹+{BULLET_REWARDS[3]}铒币 4弹+{BULLET_REWARDS[4]}铒币 5弹+{BULLET_REWARDS[5]}铒币</p>
+              {totalReward > 0 && <p className="text-amber-400 text-sm mt-2">当前累积：{totalReward} 铒币</p>}
             </div>
           )}
 
           {(gameState === 'playing' || gameState === 'choose') && (
             <div className="animate-fade-in">
               <div className="text-center mb-6">
-                <p className="text-slate-400 text-sm">第 {round} 轮 · {bullets} 弹 · 倍率 {multiplier.toFixed(2)}x</p>
-                <p className="text-2xl font-bold text-amber-400 mt-2 animate-pulse">若收手可得 {reward} 铒币</p>
+                <p className="text-slate-400 text-sm">第 {round} 轮 · {bullets} 弹 · +{BULLET_REWARDS[bullets]} 铒币</p>
+                <p className="text-2xl font-bold text-amber-400 mt-2 animate-pulse">若收手可得 {totalReward} 铒币</p>
               </div>
               <div className={`w-32 h-32 rounded-full bg-slate-700 border-4 flex items-center justify-center mb-6 mx-auto transition-all duration-300 ${firing ? 'border-red-500 scale-110' : 'border-slate-500'}`}>
                 <span className="text-4xl">{bullets}/6</span>
@@ -333,7 +295,7 @@ export default function RoulettePage() {
                     onClick={cashOut}
                     className="px-6 py-3 bg-amber-600 hover:bg-amber-500 hover:scale-105 text-slate-900 font-semibold rounded-xl transition-all duration-200"
                   >
-                    收手 ({reward} 铒币)
+                    收手 ({totalReward} 铒币)
                   </button>
                   <button
                     onClick={continueGame}
@@ -358,8 +320,8 @@ export default function RoulettePage() {
 
           {gameState === 'win' && (
             <div className="text-center animate-fade-in">
-              <p className="text-2xl font-bold text-green-400 mb-2 animate-bounce">恭喜通关！</p>
-              <p className="text-amber-400 text-xl mb-4 animate-pulse">获得 {reward} 铒币</p>
+              <p className="text-2xl font-bold text-green-400 mb-2 animate-bounce">存活！</p>
+              <p className="text-amber-400 text-xl mb-4 animate-pulse">获得 {BULLET_REWARDS[bullets]} 铒币</p>
               <button onClick={startGame} className="px-6 py-2 bg-red-600 hover:bg-red-500 hover:scale-105 text-white font-semibold rounded-lg transition-all duration-200">
                 再来一局
               </button>

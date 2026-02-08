@@ -214,12 +214,9 @@ export async function POST(request: NextRequest) {
     }
 
     const ACHIEVEMENTS: Record<string, number> = {
-      away_from_gambling: 10,
       unlucky: 10,
-      strong_luck: 20,
       first_cashout: 1,
       first_death: 1,
-      survive_3_rounds: 2,
       high_roller: 3,
       cautious: 5,
     }
