@@ -157,13 +157,13 @@ export default function Navbar() {
             <Link href="/" data-tutorial="nav-home" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="首页">
               <Home className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
-            <Link href="/share" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="文件分享">
+            <Link href="/share" data-tutorial="nav-share" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="文件分享">
               <Share2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
             <Link href="/files" data-tutorial="nav-files" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="云盘">
               <Cloud className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
-            <Link href="/search" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="搜索">
+            <Link href="/search" data-tutorial="nav-search" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="搜索">
               <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
             <Link href="/fortune" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="占卜">

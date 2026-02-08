@@ -7,7 +7,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import { useTutorial } from '@/components/providers/TutorialProvider'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Moon, Sun, BookOpen, Settings } from 'lucide-react'
+import { ArrowLeft, Moon, Sun, BookOpen, Settings, Keyboard } from 'lucide-react'
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -85,6 +85,53 @@ export default function SettingsPage() {
                 <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600" />
               </label>
             </div>
+          </div>
+          <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3 mb-4">
+              <Keyboard className="w-5 h-5 text-gray-500" />
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">键盘快捷键</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">使用键盘快速导航</p>
+              </div>
+            </div>
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between gap-4 items-center">
+                <dt><kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">?</kbd></dt>
+                <dd className="text-gray-900 dark:text-gray-100">打开新手教程</dd>
+              </div>
+              <div className="flex justify-between gap-4 items-center">
+                <dt><kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">Esc</kbd></dt>
+                <dd className="text-gray-900 dark:text-gray-100">关闭弹窗</dd>
+              </div>
+              <div className="flex justify-between gap-4 items-center">
+                <dt><kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">g</kbd> → <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">h</kbd></dt>
+                <dd className="text-gray-900 dark:text-gray-100">首页</dd>
+              </div>
+              <div className="flex justify-between gap-4 items-center">
+                <dt><kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">g</kbd> → <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">s</kbd></dt>
+                <dd className="text-gray-900 dark:text-gray-100">文件分享</dd>
+              </div>
+              <div className="flex justify-between gap-4 items-center">
+                <dt><kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">g</kbd> → <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">f</kbd></dt>
+                <dd className="text-gray-900 dark:text-gray-100">云盘</dd>
+              </div>
+              <div className="flex justify-between gap-4 items-center">
+                <dt><kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">g</kbd> → <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">r</kbd></dt>
+                <dd className="text-gray-900 dark:text-gray-100">搜索</dd>
+              </div>
+              <div className="flex justify-between gap-4 items-center">
+                <dt><kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">g</kbd> → <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">u</kbd></dt>
+                <dd className="text-gray-900 dark:text-gray-100">个人中心</dd>
+              </div>
+              <div className="flex justify-between gap-4 items-center">
+                <dt><kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">g</kbd> → <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">m</kbd></dt>
+                <dd className="text-gray-900 dark:text-gray-100">私信</dd>
+              </div>
+              <div className="flex justify-between gap-4 items-center">
+                <dt><kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">g</kbd> → <kbd className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs">o</kbd></dt>
+                <dd className="text-gray-900 dark:text-gray-100">论坛</dd>
+              </div>
+            </dl>
           </div>
         </div>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">设置已保存到本地，下次访问时生效</p>

@@ -7,6 +7,7 @@ import { AuthProvider } from '@/components/providers/AuthProvider'
 import { UiProvider } from '@/components/providers/UiProvider'
 import { TutorialProvider } from '@/components/providers/TutorialProvider'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
+import { KeyboardShortcutsProvider } from '@/components/providers/KeyboardShortcutsProvider'
 import MouseTrail from '@/components/effects/MouseTrail'
 import ParticlePhysics from '@/components/effects/ParticlePhysics'
 import StayTracking from '@/components/effects/StayTracking'
@@ -74,6 +75,7 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider>
           <TutorialProvider>
+          <KeyboardShortcutsProvider>
           <StayTracking />
           <UiProvider>
             <div className="flex flex-col min-h-screen">
@@ -83,6 +85,7 @@ export default function RootLayout({
             <CookieConsent />
             <Toaster position="top-right" />
           </UiProvider>
+          </KeyboardShortcutsProvider>
           </TutorialProvider>
           </ThemeProvider>
         </AuthProvider>

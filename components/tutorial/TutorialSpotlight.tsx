@@ -15,6 +15,8 @@ import {
   SkipForward,
   X,
   Sparkles,
+  Share2,
+  Search,
 } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 
@@ -54,6 +56,19 @@ const SPOTLIGHT_STEPS: SpotlightStep[] = [
     targetPage: '/',
   },
   {
+    id: 'nav-share',
+    title: '文件分享',
+    icon: Share2,
+    content: (
+      <div className="space-y-2">
+        <p><strong>文件分享</strong>可浏览其他用户分享的公开文件，支持按类型、标签筛选和分页。</p>
+        <p className="text-sm text-gray-600">点击文件卡片「打开」进入详情页，可预览、下载、点赞、评论、收藏。</p>
+      </div>
+    ),
+    targetSelector: '[data-tutorial="nav-share"]',
+    targetPage: '/',
+  },
+  {
     id: 'nav-files',
     title: '云盘',
     icon: FileText,
@@ -64,6 +79,19 @@ const SPOTLIGHT_STEPS: SpotlightStep[] = [
       </div>
     ),
     targetSelector: '[data-tutorial="nav-files"]',
+    targetPage: '/',
+  },
+  {
+    id: 'nav-search',
+    title: '搜索',
+    icon: Search,
+    content: (
+      <div className="space-y-2">
+        <p><strong>搜索</strong>可按文件名、描述、作者快速查找文件，支持按类型、标签筛选，以及按时间、大小、名称排序。</p>
+        <p className="text-sm text-gray-600">输入关键词或选择筛选条件后点击搜索即可。</p>
+      </div>
+    ),
+    targetSelector: '[data-tutorial="nav-search"]',
     targetPage: '/',
   },
   {
@@ -99,7 +127,7 @@ const SPOTLIGHT_STEPS: SpotlightStep[] = [
     content: (
       <div className="space-y-2">
         <p><strong>个人中心</strong>集中管理您的账户信息与功能入口。</p>
-        <p className="text-sm text-gray-600">可编辑昵称、头像、昵称颜色；查看沙币余额与云盘使用情况；获取邀请码；使用私密记事本。</p>
+        <p className="text-sm text-gray-600">可编辑昵称、头像、昵称颜色；查看沙币余额与云盘使用情况；获取邀请码；使用私密记事本。<strong>我的收藏</strong>可将喜欢的文件收藏到收藏夹；<strong>设置</strong>中可切换深色模式、选择下次登录是否播放教程。</p>
       </div>
     ),
     targetSelector: '[data-tutorial="nav-profile"]',
@@ -118,6 +146,7 @@ const SPOTLIGHT_STEPS: SpotlightStep[] = [
           <li>停留 10 分钟：单日累计 10 分钟再得 5 沙币</li>
           <li>邀请好友：好友激活后双方各得 20 沙币</li>
         </ul>
+        <p className="text-sm text-amber-700 mt-2">按 <kbd className="px-1 py-0.5 bg-amber-100 rounded">?</kbd> 可随时打开本教程；在设置中可查看键盘快捷键。</p>
       </div>
     ),
     targetSelector: '[data-tutorial="sand-coins"]',
@@ -205,6 +234,20 @@ export function TutorialSpotlight({ open, onClose, showPlayChoice = false, onPla
       setShowChoice(false)
     }
   }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    const onShortcutClose = () => onClose()
+    window.addEventListener('keydown', onEsc)
+    window.addEventListener('keyboard-shortcut-close', onShortcutClose)
+    return () => {
+      window.removeEventListener('keydown', onEsc)
+      window.removeEventListener('keyboard-shortcut-close', onShortcutClose)
+    }
+  }, [open, onClose])
 
   const handleNext = useCallback(() => {
     if (isLast) {
