@@ -15,7 +15,7 @@ const W = 600
 const H = 360
 const GRAV = 0.6
 const JUMP = -10
-const MOVE = 4
+const MOVE = 2.5
 const PL_W = 18
 const PL_H = 24
 
@@ -346,7 +346,7 @@ export default function IwannaPage() {
           WASD/方向键移动，触刺即死。到达绿色星星过关。I Wanna 风格高难度平台。
         </p>
         <p className="text-amber-400/90 text-sm mb-2">
-          达成目标返还 2 铒币：进度 50 / 100 / 200 / 350 / 500 或过关
+          达成目标返还 2 铒币：进度 30 / 60 / 120 / 200 / 300 或过关
         </p>
         <div className={`relative rounded-xl overflow-hidden border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}>
           <canvas

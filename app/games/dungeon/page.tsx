@@ -165,7 +165,7 @@ export default function DungeonPage() {
     if (!ctx) return
 
     let lastMove = 0
-    const moveInterval = 150
+    const moveInterval = 80
 
     const loop = () => {
       const now = Date.now()

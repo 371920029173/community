@@ -15,7 +15,7 @@ const BALL_R = 10
 const GATE_R = 14
 const BPM = 120
 const BEAT_MS = 60000 / BPM
-const PATH_SPEED = 0.0002 // t per ms
+const PATH_SPEED = 0.00012
 
 function seededRandom(seed: number) {
   const x = Math.sin(seed) * 10000
@@ -121,7 +121,7 @@ export default function RhythmPage() {
       const segLen = 1 / (g.path.length - 1)
       const gateT = gi * segLen
       const dist = Math.abs(g.t - gateT)
-      if (dist < 0.04) {
+      if (dist < 0.06) {
         g.nextGateIdx++
         setNodes((n) => n + 1)
         if (!rewardedRef.current && checkRhythmGoal(g.nextGateIdx)) {
@@ -138,7 +138,7 @@ export default function RhythmPage() {
             }
           })
         }
-      } else if (dist < 0.08) {
+      } else if (dist < 0.12) {
         g.nextGateIdx++
         setNodes((n) => n + 1)
       }
@@ -156,7 +156,7 @@ export default function RhythmPage() {
         const gi = g.gateIndices[g.nextGateIdx]
         const segLen = 1 / (g.path.length - 1)
         const gateT = gi * segLen
-        if (g.t > gateT + 0.03) {
+        if (g.t > gateT + 0.08) {
           setGameState('dead')
           return
         }
@@ -168,28 +168,26 @@ export default function RhythmPage() {
       const t = idx - i0
       const pos = lerpPoint(g.path[i0], g.path[i1], t)
 
-      ctx.fillStyle = '#0a0a12'
+      const bg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, W)
+      bg.addColorStop(0, '#0f172a')
+      bg.addColorStop(1, '#020617')
+      ctx.fillStyle = bg
       ctx.fillRect(0, 0, W, H)
-      ctx.strokeStyle = '#1e293b'
-      ctx.lineWidth = 2
+      ctx.strokeStyle = '#334155'
+      ctx.lineWidth = 3
       ctx.beginPath()
       ctx.moveTo(g.path[0].x, g.path[0].y)
       for (let i = 1; i < g.path.length; i++) {
         ctx.lineTo(g.path[i].x, g.path[i].y)
       }
       ctx.stroke()
-      ctx.strokeStyle = '#334155'
-      ctx.lineWidth = 1
-      ctx.setLineDash([4, 4])
-      ctx.stroke()
-      ctx.setLineDash([])
 
       g.gateIndices.forEach((gi, ii) => {
         if (gi < g.path.length) {
           const p = g.path[gi]
           const isNext = ii === g.nextGateIdx
-          ctx.fillStyle = isNext ? '#f59e0b' : '#475569'
-          ctx.strokeStyle = isNext ? '#fbbf24' : '#64748b'
+          ctx.fillStyle = isNext ? '#fbbf24' : '#475569'
+          ctx.strokeStyle = isNext ? '#fde047' : '#64748b'
           ctx.lineWidth = 2
           ctx.beginPath()
           ctx.arc(p.x, p.y, GATE_R, 0, Math.PI * 2)
@@ -229,12 +227,15 @@ export default function RhythmPage() {
     <div className="min-h-screen bg-slate-900">
       <Navbar />
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <Link href="/games" className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-6">
+        <Link href="/games" className="inline-flex items-center gap-2 text-slate-400 hover:text-cyan-300 mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" /> 返回游戏中心
         </Link>
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Music className="w-6 h-6 text-cyan-400" /> 节奏之舞
+            <span className="p-2 rounded-lg bg-cyan-500/20 border border-cyan-500/40">
+              <Music className="w-6 h-6 text-cyan-400" />
+            </span>
+            节奏之舞
           </h1>
           {gameState === 'idle' && (
             <button
@@ -246,13 +247,13 @@ export default function RhythmPage() {
             </button>
           )}
         </div>
-        <p className="text-slate-400 text-sm mb-4">
-          球沿路径自动前进，到达金黄色圈时按空格键击中节拍。错过即死。
+        <p className="text-slate-300 text-sm mb-4">
+          球沿路径自动前进，接近金黄色圈时按空格键击中节拍。错过即死。
         </p>
         <p className="text-amber-400/90 text-sm mb-2">
           达成目标返还 2 铒币：击中 3 / 5 / 10 / 15 / 20 个节拍
         </p>
-        <div className="relative bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+        <div className="relative bg-slate-800/95 rounded-xl overflow-hidden border border-slate-600 shadow-xl shadow-black/30">
           <canvas
             ref={canvasRef}
             width={W}
