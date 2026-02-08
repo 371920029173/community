@@ -247,9 +247,14 @@ export default function RhythmPage() {
             </button>
           )}
         </div>
-        <p className="text-slate-300 text-sm mb-4">
-          球沿路径自动前进，接近金黄色圈时按空格键击中节拍。错过即死。
-        </p>
+        <div className="p-4 rounded-lg bg-cyan-900/30 border border-cyan-500/30 mb-4 text-sm text-slate-200">
+          <p className="font-medium text-cyan-300 mb-2">玩法说明</p>
+          <ol className="list-decimal list-inside space-y-1">
+            <li>球会沿路径自动移动</li>
+            <li>当球快要到达或刚到达金黄色圆圈时，按 <kbd className="px-1.5 py-0.5 bg-slate-700 rounded">空格</kbd></li>
+            <li>击中即得分并继续，错过则游戏结束</li>
+          </ol>
+        </div>
         <p className="text-amber-400/90 text-sm mb-2">
           达成目标返还 2 铒币：击中 3 / 5 / 10 / 15 / 20 个节拍
         </p>

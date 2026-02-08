@@ -31,8 +31,8 @@ function generateChunks(seed: number, count: number): Platform[] {
   for (let i = 0; i < count; i++) {
     const gap = 40 + seededRandom(seed + i * 3) * 80
     const rise = (seededRandom(seed + i * 5) - 0.4) * 120
-    const platW = 50 + seededRandom(seed + i * 7) * 80
-    const platH = 12
+    const platW = 35 + seededRandom(seed + i * 7) * 45
+    const platH = 10
     lastX += gap
     lastY = Math.max(40, Math.min(H - 40, lastY + rise))
     platforms.push({ x: lastX, y: lastY, w: platW, h: platH })
@@ -83,7 +83,7 @@ export default function PlatformerPage() {
       rewardedRef.current = false
       const seed = Date.now()
       const platforms = generateChunks(seed, 200)
-      platforms.unshift({ x: 0, y: H - 50, w: 120, h: 16 })
+      platforms.unshift({ x: 0, y: H - 50, w: 80, h: 12 })
       gameRef.current = {
         seed,
         platforms,

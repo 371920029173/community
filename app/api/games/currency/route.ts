@@ -144,6 +144,75 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    if (action === 'roulette_play') {
+      const cost = 5
+      const { data: row, error: fetchErr } = await sb
+        .from('users')
+        .select('game_coins')
+        .eq('id', user.id)
+        .single()
+
+      if (fetchErr || !row) {
+        return NextResponse.json({ success: false, error: '获取用户信息失败' }, { status: 500 })
+      }
+
+      const gameCoins = row.game_coins ?? 0
+      if (gameCoins < cost) {
+        return NextResponse.json({
+          success: false,
+          error: `铒币不足，俄罗斯轮盘消耗 ${cost} 铒币`
+        }, { status: 400 })
+      }
+
+      const { error: updateErr } = await sb
+        .from('users')
+        .update({ game_coins: gameCoins - cost })
+        .eq('id', user.id)
+
+      if (updateErr) {
+        return NextResponse.json({ success: false, error: '扣除失败' }, { status: 500 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: '开始游戏',
+        gameCoins: gameCoins - cost
+      })
+    }
+
+    if (action === 'roulette_win') {
+      const amount = Math.floor(Number(body.amount) || 0)
+      if (amount < 0) {
+        return NextResponse.json({ success: false, error: '无效奖励' }, { status: 400 })
+      }
+
+      const { data: row, error: fetchErr } = await sb
+        .from('users')
+        .select('game_coins')
+        .eq('id', user.id)
+        .single()
+
+      if (fetchErr || !row) {
+        return NextResponse.json({ success: false, error: '获取用户信息失败' }, { status: 500 })
+      }
+
+      const gameCoins = row.game_coins ?? 0
+      const { error: updateErr } = await sb
+        .from('users')
+        .update({ game_coins: gameCoins + amount })
+        .eq('id', user.id)
+
+      if (updateErr) {
+        return NextResponse.json({ success: false, error: '发放奖励失败' }, { status: 500 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `获得 ${amount} 铒币`,
+        gameCoins: gameCoins + amount
+      })
+    }
+
     if (action === 'reward') {
       const { data: row, error: fetchErr } = await sb
         .from('users')

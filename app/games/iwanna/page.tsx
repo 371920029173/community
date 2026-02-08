@@ -186,28 +186,31 @@ export default function IwannaPage() {
       g.px += g.vx
       g.py += g.vy
 
-      const cx = Math.floor(g.px / TILE)
-      const cy = Math.floor(g.py / TILE)
-      const cx2 = Math.floor((g.px + PL_W) / TILE)
-      const cy2 = Math.floor((g.py + PL_H) / TILE)
-      for (let yy = cy; yy <= cy2; yy++) {
-        for (let xx = Math.max(0, cx - 1); xx <= Math.min(cols - 1, cx2 + 1); xx++) {
-          const cell = g.grid[yy]?.[xx]
-          if (cell === 2) {
-            const sx = xx * TILE
-            const sy = yy * TILE
-            if (g.px + PL_W > sx && g.px < sx + TILE &&
-              g.py + PL_H > sy && g.py + PL_H < sy + TILE + 4) {
+      for (let iter = 0; iter < 4; iter++) {
+        const pl = g.px, pr = g.px + PL_W, pt = g.py, pb = g.py + PL_H
+        const c0 = Math.max(0, Math.floor(pl / TILE))
+        const c1 = Math.min(cols - 1, Math.floor(pr / TILE))
+        const r0 = Math.max(0, Math.floor(pt / TILE))
+        const r1 = Math.min(rows - 1, Math.floor(pb / TILE))
+        let resolved = false
+
+        for (let yy = r0; yy <= r1; yy++) {
+          for (let xx = c0; xx <= c1; xx++) {
+            const cell = g.grid[yy]?.[xx]
+            const bx = xx * TILE
+            const by = yy * TILE
+            const br = bx + TILE
+            const bb = by + TILE
+            const overlapX = Math.min(pr, br) - Math.max(pl, bx)
+            const overlapY = Math.min(pb, bb) - Math.max(pt, by)
+            if (overlapX <= 0 || overlapY <= 0) continue
+
+            if (cell === 2) {
               setDeaths((d) => d + 1)
               setGameState('dead')
               return
             }
-          }
-          if (cell === 3) {
-            const gx = xx * TILE
-            const gy = yy * TILE
-            if (g.px + PL_W > gx && g.px < gx + TILE &&
-              g.py + PL_H > gy && g.py < gy + TILE) {
+            if (cell === 3) {
               setGameState('win')
               if (!rewardedRef.current) {
                 rewardedRef.current = true
@@ -225,36 +228,31 @@ export default function IwannaPage() {
               }
               return
             }
-          }
-        }
-      }
-
-      for (let yy = cy; yy <= cy2; yy++) {
-        for (let xx = cx; xx <= cx2; xx++) {
-          const cell = g.grid[yy]?.[xx]
-          if (cell === 1 || cell === 3) {
-            const bx = xx * TILE
-            const by = yy * TILE
-            if (g.vy > 0 && g.py + PL_H >= by - 1 && g.py + PL_H <= by + TILE + 6 &&
-              g.px + PL_W > bx + 2 && g.px < bx + TILE - 2) {
-              g.py = by - PL_H
-              g.vy = 0
-            } else if (g.vy < 0 && g.py <= by + TILE + 2 && g.py + PL_H > by - 2 &&
-              g.px + PL_W > bx + 2 && g.px < bx + TILE - 2) {
-              g.py = by + TILE
-              g.vy = 0
-            }
-            if (g.vx > 0 && g.px + PL_W >= bx - 1 && g.px + PL_W <= bx + 8 &&
-              g.py + PL_H > by + 4 && g.py < by + TILE - 4) {
-              g.px = bx - PL_W
-              g.vx = 0
-            } else if (g.vx < 0 && g.px <= bx + TILE + 2 && g.px >= bx + TILE - 8 &&
-              g.py + PL_H > by + 4 && g.py < by + TILE - 4) {
-              g.px = bx + TILE
-              g.vx = 0
+            if (cell === 1) {
+              if (overlapX < overlapY) {
+                if (g.vx > 0) {
+                  g.px = bx - PL_W
+                  g.vx = 0
+                } else {
+                  g.px = br
+                  g.vx = 0
+                }
+              } else {
+                if (g.vy > 0) {
+                  g.py = by - PL_H
+                  g.vy = 0
+                } else {
+                  g.py = bb
+                  g.vy = 0
+                }
+              }
+              resolved = true
+              break
             }
           }
+          if (resolved) break
         }
+        if (!resolved) break
       }
 
       g.maxX = Math.max(g.maxX, g.px)

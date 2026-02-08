@@ -5,10 +5,22 @@ import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { supabase } from '@/lib/supabase'
-import { Gamepad2, Map, Crosshair, Activity, Zap, Coins, Music, Skull } from 'lucide-react'
+import { Gamepad2, Map, Crosshair, Activity, Zap, Coins, Music, Skull, Target } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-const GAMES = [
+const OPERATING_GAMES = [
+  {
+    id: 'roulette',
+    title: '俄罗斯轮盘',
+    desc: '每轮选择装弹数1～5，存活倍率叠加。收手或活过5轮得奖励，死亡则人财两空。',
+    icon: Target,
+    href: '/games/roulette',
+    color: 'from-red-500 to-rose-600',
+    tag: '运营',
+  },
+]
+
+const TRIAL_GAMES = [
   {
     id: 'survival',
     title: '生存模式',
@@ -16,7 +28,7 @@ const GAMES = [
     icon: Zap,
     href: '/games/survival',
     color: 'from-amber-500 to-orange-600',
-    tag: '波次',
+    tag: '试玩',
   },
   {
     id: 'dungeon',
@@ -25,7 +37,7 @@ const GAMES = [
     icon: Map,
     href: '/games/dungeon',
     color: 'from-purple-500 to-indigo-600',
-    tag: 'Roguelike',
+    tag: '试玩',
   },
   {
     id: 'platformer',
@@ -34,7 +46,7 @@ const GAMES = [
     icon: Activity,
     href: '/games/platformer',
     color: 'from-emerald-500 to-teal-600',
-    tag: '跑酷',
+    tag: '试玩',
   },
   {
     id: 'bullet-hell',
@@ -43,7 +55,7 @@ const GAMES = [
     icon: Crosshair,
     href: '/games/bullet-hell',
     color: 'from-rose-500 to-pink-600',
-    tag: '弹幕',
+    tag: '试玩',
   },
   {
     id: 'rhythm',
@@ -52,7 +64,7 @@ const GAMES = [
     icon: Music,
     href: '/games/rhythm',
     color: 'from-cyan-500 to-blue-600',
-    tag: '节奏',
+    tag: '试玩',
   },
   {
     id: 'iwanna',
@@ -61,7 +73,7 @@ const GAMES = [
     icon: Skull,
     href: '/games/iwanna',
     color: 'from-amber-500 to-orange-600',
-    tag: '虐心',
+    tag: '试玩',
   },
 ]
 
@@ -170,8 +182,43 @@ export default function GamesHubPage() {
             请先登录后使用铒币玩游戏。点击广告可获得沙币，5 沙币可兑换 1 铒币。
           </div>
         )}
-        <div className="grid gap-5 md:grid-cols-2 mt-8">
-          {GAMES.map((g) => (
+        {OPERATING_GAMES.length > 0 && (
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold text-white mb-4">正在运营</h2>
+            <div className="grid gap-5 md:grid-cols-2">
+              {OPERATING_GAMES.map((g) => (
+                <Link
+                  key={g.id}
+                  href={g.href}
+                  className="group relative block p-6 rounded-2xl bg-slate-800/90 backdrop-blur-sm border border-amber-500/30 hover:border-amber-500/50 hover:bg-slate-800 hover:shadow-xl hover:shadow-amber-500/10 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                >
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-amber-500/10" />
+                  <div className="relative flex items-start gap-4">
+                    <div className={`p-3.5 rounded-xl bg-gradient-to-br ${g.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                      <g.icon className="w-7 h-7 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h2 className="text-lg font-semibold text-white group-hover:text-amber-200 transition-colors">
+                          {g.title}
+                        </h2>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          {g.tag}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-300 leading-relaxed">{g.desc}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section>
+          <h2 className="text-lg font-semibold text-slate-400 mb-4">试玩（技术测试中）</h2>
+          <div className="grid gap-5 md:grid-cols-2">
+            {TRIAL_GAMES.map((g) => (
             <Link
               key={g.id}
               href={g.href}
@@ -196,7 +243,8 @@ export default function GamesHubPage() {
               </div>
             </Link>
           ))}
-        </div>
+          </div>
+        </section>
 
         <section className="mt-16 pt-8 border-t border-slate-600/50">
           <h3 className="text-sm font-medium text-slate-400 mb-3">灵感来源 / 特别鸣谢</h3>

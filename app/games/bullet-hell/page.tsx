@@ -52,9 +52,34 @@ export default function BulletHellPage() {
   } | null>(null)
   const mouseRef = useRef({ x: W / 2, y: H / 2 })
 
-  const startGame = useCallback(async () => {
+  const initGame = useCallback(() => {
+    const seed = Date.now()
+    gameRef.current = {
+      seed,
+      px: W / 2,
+      py: H - 80,
+      bossX: W / 2,
+      bossY: 60,
+      bossHp: 100,
+      bossMaxHp: 100,
+      bullets: [],
+      lastShot: 0,
+      patternIndex: 0,
+    }
+    setBossHp(100)
+    setBossMaxHp(100)
+    setWave(1)
+    setGameState('playing')
+  }, [])
+
+  const startGame = useCallback(async (isRetry = false) => {
     if (!user) {
       toast.error('请先登录')
+      return
+    }
+    if (isRetry) {
+      rewardedRef.current = false
+      initGame()
       return
     }
     setStarting(true)
@@ -75,29 +100,13 @@ export default function BulletHellPage() {
         return
       }
       rewardedRef.current = false
-      const seed = Date.now()
-      gameRef.current = {
-        seed,
-        px: W / 2,
-        py: H - 80,
-        bossX: W / 2,
-        bossY: 60,
-        bossHp: 100,
-        bossMaxHp: 100,
-        bullets: [],
-        lastShot: 0,
-        patternIndex: 0,
-      }
-      setBossHp(100)
-      setBossMaxHp(100)
-      setWave(1)
-      setGameState('playing')
+      initGame()
     } catch (e) {
       toast.error('启动失败')
     } finally {
       setStarting(false)
     }
-  }, [user])
+  }, [user, initGame])
 
   useEffect(() => {
     if (gameState !== 'playing' || !gameRef.current) return
@@ -260,7 +269,7 @@ export default function BulletHellPage() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-white">弹幕 Boss</h1>
           {gameState === 'idle' && (
-            <button onClick={startGame} disabled={starting || !user} className="px-6 py-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-semibold rounded-lg">
+            <button onClick={() => startGame(false)} disabled={starting || !user} className="px-6 py-2 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-semibold rounded-lg">
               {!user ? '请先登录' : starting ? '启动中…' : '开始游戏 (消耗 1 铒币)'}
             </button>
           )}
@@ -284,7 +293,7 @@ export default function BulletHellPage() {
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm">
               <p className="text-2xl font-bold text-red-400 mb-2">游戏结束</p>
               <p className="text-white mb-4">波次: {wave}</p>
-              <button onClick={startGame} className="px-6 py-2 bg-rose-500 hover:bg-rose-600 text-white font-semibold rounded-lg">
+              <button onClick={() => startGame(true)} className="px-6 py-2 bg-rose-500 hover:bg-rose-600 text-white font-semibold rounded-lg">
                 再来一局
               </button>
             </div>
