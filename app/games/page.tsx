@@ -122,40 +122,45 @@ export default function GamesHubPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950/40 to-slate-950">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,80,255,0.15),transparent)]" />
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl" />
       <Navbar />
-      <main className="max-w-4xl mx-auto px-4 py-12">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-10">
-          <div className="flex items-center gap-3">
-            <Gamepad2 className="w-10 h-10 text-violet-400" />
+      <main className="relative max-w-4xl mx-auto px-4 py-12">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-8 mb-12">
+          <div className="flex items-start gap-4">
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 border border-violet-500/30 shadow-lg shadow-violet-500/10">
+              <Gamepad2 className="w-10 h-10 text-violet-300" />
+            </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">小游戏中心</h1>
-              <p className="text-slate-400">高难度、高参与感。5 沙币 = 1 铒币，每次游戏消耗 1 铒币，达成目标返还 2 铒币。请合理控制游戏时间，适度娱乐。</p>
+              <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight mb-2">小游戏中心</h1>
+              <p className="text-slate-400 leading-relaxed max-w-xl">高难度、高参与感。5 沙币 = 1 铒币，每次游戏消耗 1 铒币，达成目标返还 2 铒币。<span className="text-amber-400/90">请合理控制游戏时间，适度娱乐。</span></p>
             </div>
           </div>
           {user && (
-            <div className="flex flex-col gap-3 p-4 rounded-xl bg-slate-800/60 border border-slate-700">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Coins className="w-5 h-5 text-amber-400" />
-                  <span className="text-white">{sandCoins} 沙币</span>
+            <div className="flex-shrink-0 p-5 rounded-2xl bg-slate-800/80 backdrop-blur-sm border border-slate-600/50 shadow-xl shadow-black/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <Coins className="w-4 h-4 text-amber-400" />
+                  <span className="text-amber-200 font-medium">{sandCoins} 沙币</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-violet-400 font-semibold">{gameCoins} 铒币</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                  <span className="text-violet-300 font-semibold">{gameCoins} 铒币</span>
                 </div>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleExchange(1)}
                   disabled={exchanging || sandCoins < 5}
-                  className="px-3 py-1.5 text-sm bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-lg shadow-violet-500/20"
                 >
                   5 沙币 → 1 铒币
                 </button>
                 <button
                   onClick={() => handleExchange(5)}
                   disabled={exchanging || sandCoins < 25}
-                  className="px-3 py-1.5 text-sm bg-violet-600/80 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  className="px-4 py-2 text-sm font-medium bg-violet-600/60 hover:bg-violet-500/60 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl border border-violet-500/30 transition-all"
                 >
                   25 → 5 铒币
                 </button>
@@ -164,27 +169,28 @@ export default function GamesHubPage() {
           )}
         </div>
         {!user && (
-          <div className="mb-6 p-4 rounded-xl bg-amber-900/30 border border-amber-700/50 text-amber-200 text-sm">
+          <div className="mb-8 p-5 rounded-2xl bg-gradient-to-r from-amber-900/30 to-orange-900/20 border border-amber-600/40 text-amber-200 text-sm backdrop-blur-sm">
             请先登录后使用铒币玩游戏。点击广告可获得沙币，5 沙币可兑换 1 铒币。
           </div>
         )}
-        <div className="grid gap-6 md:grid-cols-2 mt-6">
+        <div className="grid gap-5 md:grid-cols-2 mt-8">
           {GAMES.map((g) => (
             <Link
               key={g.id}
               href={g.href}
-              className="group block p-6 rounded-2xl bg-slate-800/60 border border-slate-700/50 hover:border-violet-500/50 hover:bg-slate-800/80 transition-all duration-300"
+              className="group relative block p-6 rounded-2xl bg-slate-800/70 backdrop-blur-sm border border-slate-600/50 hover:border-violet-500/50 hover:bg-slate-800/90 hover:shadow-xl hover:shadow-violet-500/10 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
             >
-              <div className="flex items-start gap-4">
-                <div className={`p-3 rounded-xl bg-gradient-to-br ${g.color}`}>
-                  <g.icon className="w-8 h-8 text-white" />
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-violet-500/10" />
+              <div className="relative flex items-start gap-4">
+                <div className={`p-3.5 rounded-xl bg-gradient-to-br ${g.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                  <g.icon className="w-7 h-7 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
-                    <h2 className="text-xl font-semibold text-white group-hover:text-violet-300 transition-colors">
+                    <h2 className="text-lg font-semibold text-white group-hover:text-violet-200 transition-colors">
                       {g.title}
                     </h2>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700/80 text-slate-300 border border-slate-600/50">
                       {g.tag}
                     </span>
                   </div>
