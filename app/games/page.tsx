@@ -130,7 +130,7 @@ export default function GamesHubPage() {
             <Gamepad2 className="w-10 h-10 text-violet-400" />
             <div>
               <h1 className="text-3xl font-bold text-white">小游戏中心</h1>
-              <p className="text-slate-400">高难度、高参与感。5 沙币 = 1 铒币，每次游戏消耗 1 铒币，达成目标返还 2 铒币。</p>
+              <p className="text-slate-400">高难度、高参与感。5 沙币 = 1 铒币，每次游戏消耗 1 铒币，达成目标返还 2 铒币。请合理控制游戏时间，适度娱乐。</p>
             </div>
           </div>
           {user && (
