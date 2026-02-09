@@ -285,7 +285,7 @@ export default function RoulettePage() {
               <p className="text-slate-500 text-xs mt-2">1弹+{BULLET_REWARDS[1]}铒币 2弹+{BULLET_REWARDS[2]}铒币 3弹+{BULLET_REWARDS[3]}铒币 4弹+{BULLET_REWARDS[4]}铒币 5弹+{BULLET_REWARDS[5]}铒币</p>
               {totalReward > 0 && <p className="text-amber-400 text-sm mt-2">当前累积：{totalReward} 铒币</p>}
               {usedBullets.size > 0 && (
-                <p className="text-slate-500 text-xs mt-2">已使用：{[...usedBullets].sort((a, b) => a - b).join('、')}弹</p>
+                <p className="text-slate-500 text-xs mt-2">已使用：{Array.from(usedBullets).sort((a, b) => a - b).join('、')}弹</p>
               )}
               {usedBullets.size >= 5 && (
                 <p className="text-red-400 text-sm mt-2 font-semibold">所有弹数已使用完毕，请收手</p>
