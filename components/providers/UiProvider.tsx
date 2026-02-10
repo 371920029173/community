@@ -1,5 +1,6 @@
 "use client"
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
 
 type UiMode = 'desktop' | 'mobile'
 
@@ -29,7 +30,13 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
   }, [uiMode])
 
   const setUiMode = (mode: UiMode) => setUiModeState(mode)
-  const toggleUiMode = () => setUiModeState(prev => (prev === 'desktop' ? 'mobile' : 'desktop'))
+  const toggleUiMode = () => {
+    setUiModeState(prev => {
+      const next = prev === 'desktop' ? 'mobile' : 'desktop'
+      toast.success(next === 'mobile' ? '已切换到手机版布局' : '已切换到电脑版布局', { duration: 1500 })
+      return next
+    })
+  }
 
   const value = useMemo(() => ({ uiMode, toggleUiMode, setUiMode }), [uiMode])
 

@@ -34,7 +34,8 @@ import {
   X,
   Trash,
   Loader2,
-  Coins
+  Coins,
+  Gift
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -64,6 +65,8 @@ export default function AdminPage() {
   const [cleanupResult, setCleanupResult] = useState<any>(null)
   const [givingCoins, setGivingCoins] = useState<{userId: string, coins: number} | null>(null)
   const [coinsAmount, setCoinsAmount] = useState('')
+  const [giftVoucherHistory, setGiftVoucherHistory] = useState<any[]>([])
+  const [giftVouchersToggling, setGiftVouchersToggling] = useState<string | null>(null)
 
   useEffect(() => {
     if (user && (user.is_admin || user.is_moderator)) {
@@ -135,6 +138,20 @@ export default function AdminPage() {
           }
         }
         
+        // 超级管理员：获取礼品卷历史
+        if (user.username === '371920029173') {
+          try {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) {
+              const gvRes = await fetch('/api/admin/gift-vouchers', {
+                headers: { Authorization: `Bearer ${session.access_token}` }
+              })
+              const gvJson = await gvRes.json()
+              if (gvJson.success) setGiftVoucherHistory(gvJson.history || [])
+            }
+          } catch (_) {}
+        }
+
         // 调试信息
         console.log('管理后台获取的文件:', filesData.data)
         console.log('待审核文件数量:', filesData.data?.filter(f => !f.is_approved).length || 0)
@@ -195,6 +212,31 @@ export default function AdminPage() {
     } catch (e) {
       console.error('头像审核失败:', e)
       toast.error('操作失败')
+    }
+  }
+
+  const handleGiftVouchersToggle = async (targetUserId: string, currentAllowed: boolean) => {
+    if (!user || user.username !== '371920029173' || giftVouchersToggling) return
+    setGiftVouchersToggling(targetUserId)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const res = await fetch('/api/admin/gift-vouchers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ userId: targetUserId, allowed: !currentAllowed })
+      })
+      const json = await res.json()
+      if (json.success) {
+        setUsers(prev => prev.map(u => u.id === targetUserId ? { ...u, gift_vouchers_allowed: json.allowed } : u))
+        toast.success(json.allowed ? '已开放该用户礼品卷' : '已关闭该用户礼品卷')
+      } else {
+        toast.error(json.error || '操作失败')
+      }
+    } catch (e) {
+      toast.error('操作失败')
+    } finally {
+      setGiftVouchersToggling(null)
     }
   }
 
@@ -558,16 +600,29 @@ export default function AdminPage() {
             )}
             {/* 新增：管理员变更审批（仅超管） */}
             {user.username === '371920029173' && (
-              <button
-                onClick={() => setActiveTab('admin-requests')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'admin-requests'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                管理员变更审批
-              </button>
+              <>
+                <button
+                  onClick={() => setActiveTab('admin-requests')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'admin-requests'
+                      ? 'border-primary-500 text-primary-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  管理员变更审批
+                </button>
+                <button
+                  onClick={() => setActiveTab('gift-vouchers')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-1 ${
+                    activeTab === 'gift-vouchers'
+                      ? 'border-primary-500 text-primary-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Gift className="w-4 h-4" />
+                  礼品卷记录
+                </button>
+              </>
             )}
           </nav>
         </div>
@@ -671,12 +726,22 @@ export default function AdminPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       角色
                     </th>
+                    {user.username === '371920029173' && (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        沙币
+                      </th>
+                    )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       注册时间
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       操作
                     </th>
+                    {user.username === '371920029173' && (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        礼品卷开放
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="bg-white/60 backdrop-blur-sm divide-y divide-gray-200">
@@ -725,6 +790,11 @@ export default function AdminPage() {
                           )}
                         </div>
                       </td>
+                      {user.username === '371920029173' && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-amber-600">
+                          {(userItem as any).sand_coins ?? 0}
+                        </td>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(userItem.created_at).toLocaleDateString('zh-CN')}
                       </td>
@@ -765,6 +835,20 @@ export default function AdminPage() {
                           )}
                         </div>
                       </td>
+                      {user.username === '371920029173' && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <button
+                            onClick={() => handleGiftVouchersToggle(userItem.id, !!(userItem as any).gift_vouchers_allowed)}
+                            disabled={giftVouchersToggling === userItem.id}
+                            className={`px-3 py-1 rounded text-xs font-medium flex items-center gap-1 ${
+                              (userItem as any).gift_vouchers_allowed ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            } disabled:opacity-50`}
+                          >
+                            {giftVouchersToggling === userItem.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Gift className="w-3 h-3" />}
+                            {(userItem as any).gift_vouchers_allowed ? '已开放' : '已关闭'}
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -870,6 +954,40 @@ export default function AdminPage() {
               ))}
               {avatarRequests.filter(req => req.status === 'pending').length === 0 && <p className="text-center text-gray-500 py-8">暂无待审核的头像申请</p>}
             </div>
+          </div>
+        )}
+
+        {/* 礼品卷记录面板（仅超管） */}
+        {activeTab === 'gift-vouchers' && user.username === '371920029173' && (
+          <div className="card">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+              <Gift className="w-6 h-6 text-amber-500" />
+              礼品卷月度记录
+            </h2>
+            <p className="text-sm text-gray-500 mb-4">保留近三个月记录，每月1号归档上月数据</p>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">月份</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">用户</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">礼品卷数</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {giftVoucherHistory.map((row: any) => (
+                    <tr key={row.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.month}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.username}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-amber-600">{row.vouchers_count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {giftVoucherHistory.length === 0 && (
+              <p className="text-center text-gray-500 py-8">暂无礼品卷记录</p>
+            )}
           </div>
         )}
 

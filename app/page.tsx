@@ -140,8 +140,8 @@ export default function HomePage() {
         
         {/* 主要内容 */}
         <div className="mb-12">
-          {/* 标题部分 - 左对齐，距离左边界125px */}
-          <div className="mb-[45px]" style={{ marginLeft: '125px', marginTop: '30px', maxWidth: 'max-content' }}>
+          {/* 标题部分 - 左对齐，距离左边界125px，手机版自动适配 */}
+          <div className="mb-[45px] home-title-block" style={{ marginLeft: '125px', marginTop: '30px', maxWidth: 'max-content' }}>
             <h1 className="text-5xl font-bold text-left" style={{
               fontFamily: "'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif",
               fontWeight: 600,

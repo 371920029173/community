@@ -25,11 +25,42 @@
   }
 }
 
-/* UI模式切换：当 data-ui=mobile 时适配更紧凑布局 */
-[data-ui="mobile"] .max-w-7xl { max-width: 100%; }
-[data-ui="mobile"] .lg\:px-8 { padding-left: 1rem; padding-right: 1rem; }
+/* UI模式切换：手机版更紧凑、柔和，带过渡 */
+[data-ui="mobile"] {
+  --mobile-transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+[data-ui="mobile"] .max-w-7xl {
+  max-width: 100%;
+  transition: max-width var(--mobile-transition);
+}
+[data-ui="mobile"] .lg\:px-8 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  transition: padding var(--mobile-transition);
+}
 [data-ui="mobile"] .md\:flex { display: none; }
 [data-ui="mobile"] .md\:hidden { display: block; }
+
+/* 手机版：更紧凑的间距与字号 */
+[data-ui="mobile"] main { padding-top: 0.75rem; padding-bottom: 1.5rem; }
+[data-ui="mobile"] .text-5xl { font-size: 1.875rem; line-height: 2.25rem; }
+[data-ui="mobile"] .text-3xl { font-size: 1.5rem; line-height: 2rem; }
+[data-ui="mobile"] .text-xl { font-size: 1.125rem; }
+[data-ui="mobile"] .card,
+[data-ui="mobile"] .card-minimal { padding: 1rem; border-radius: 1rem; }
+[data-ui="mobile"] .btn-elegant { padding: 0.625rem 1rem; font-size: 0.875rem; }
+
+/* 手机版：减弱背景动画以减轻性能压力 */
+[data-ui="mobile"] body {
+  animation: tidalFlow 40s ease-in-out infinite;
+}
+
+/* 手机版：首页标题区更紧凑 */
+[data-ui="mobile"] .home-title-block {
+  margin-left: 0 !important;
+  margin-top: 0.5rem !important;
+  padding-left: 0.5rem;
+}
 
 @layer components {
   /* 自然渐变卡片样式 - 更丝滑的过渡 */

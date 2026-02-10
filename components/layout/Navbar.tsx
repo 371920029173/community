@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useUi } from '@/components/providers/UiProvider'
+import { supabase } from '@/lib/supabase'
 import { getFriendlyErrorMessage } from '@/lib/utils'
 import NotificationDot from '@/components/ui/NotificationDot'
 import { 
@@ -24,7 +25,8 @@ import {
   Coins,
   Users,
   FileText,
-  Gamepad2
+  Gamepad2,
+  Gift
 } from 'lucide-react'
 
 interface Notifications {
@@ -59,6 +61,7 @@ export default function Navbar() {
   })
   const [sandCoins, setSandCoins] = useState<number>(0)
   const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(0)
+  const [giftVouchersAllowed, setGiftVouchersAllowed] = useState(false)
 
   const handleSignOut = async () => {
     try {
@@ -77,9 +80,11 @@ export default function Navbar() {
     }
 
     try {
-      const [notifRes, coinsRes] = await Promise.all([
+      const { data: { session } } = await supabase.auth.getSession()
+      const [notifRes, coinsRes, gvRes] = await Promise.all([
         fetch(`/api/notifications?userId=${user.id}`),
-        fetch(`/api/user/coins?userId=${user.id}`)
+        fetch(`/api/user/coins?userId=${user.id}`),
+        session ? fetch('/api/gift-vouchers', { headers: { Authorization: `Bearer ${session.access_token}` } }) : Promise.resolve(null)
       ])
 
       if (notifRes.ok) {
@@ -98,6 +103,13 @@ export default function Navbar() {
         const coinsData = await coinsRes.json()
         if (coinsData.success) setSandCoins(coinsData.coins ?? 0)
       }
+      if (gvRes && gvRes.ok) {
+        const gvData = await gvRes.json()
+        if (gvData.success && gvData.enabled) setGiftVouchersAllowed(true)
+        else setGiftVouchersAllowed(false)
+      } else {
+        setGiftVouchersAllowed(false)
+      }
     } catch (error) {
       console.error('[Navbar] 获取通知失败:', error)
     }
@@ -109,6 +121,7 @@ export default function Navbar() {
       setUnreadMessagesCount(0)
       setNotifications({ messages: 0, fileReview: 0, storageRequests: 0 })
       setSandCoins(0)
+      setGiftVouchersAllowed(false)
       return
     }
 
@@ -130,7 +143,7 @@ export default function Navbar() {
   }, [user?.id, fetchAllNotifications])
 
   return (
-    <nav className="nav-minimal sticky top-0 z-50">
+    <nav className="nav-minimal sticky top-0 z-[100]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-center items-center h-16">
           {/* Desktop Navigation */}
@@ -173,6 +186,11 @@ export default function Navbar() {
             <Link href="/games" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="小游戏">
               <Gamepad2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
+            {giftVouchersAllowed && (
+              <Link href="/gift-vouchers" className="flex items-center gap-2 text-gray-700 hover:text-amber-600 transition-colors group" title="礼品卷">
+                <Gift className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              </Link>
+            )}
             <Link href="/forums" data-tutorial="nav-forums" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="论坛大厅">
               <Users className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
@@ -329,6 +347,16 @@ export default function Navbar() {
                 <Gamepad2 className="w-5 h-5" />
                 小游戏
               </Link>
+              {giftVouchersAllowed && (
+                <Link 
+                  href="/gift-vouchers"
+                  className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-amber-600 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Gift className="w-5 h-5" />
+                  礼品卷
+                </Link>
+              )}
               <Link 
                 href="/forums" 
                 className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"

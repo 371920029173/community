@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { supabase } from '@/lib/supabase'
-import { Gamepad2, Map, Crosshair, Activity, Zap, Coins, Music, Skull, Target } from 'lucide-react'
+import { Gamepad2, Map, Crosshair, Activity, Zap, Coins, Music, Skull, Target, Gift } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const OPERATING_GAMES = [
@@ -82,6 +82,7 @@ export default function GamesHubPage() {
   const [sandCoins, setSandCoins] = useState(0)
   const [gameCoins, setGameCoins] = useState(0)
   const [exchanging, setExchanging] = useState(false)
+  const [giftVouchersAllowed, setGiftVouchersAllowed] = useState(false)
 
   useEffect(() => {
     if (!user?.id) return
@@ -101,7 +102,17 @@ export default function GamesHubPage() {
         console.error(e)
       }
     }
+    const fetchGiftVouchers = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return
+        const res = await fetch('/api/gift-vouchers', { headers: { Authorization: `Bearer ${session.access_token}` } })
+        const json = await res.json()
+        if (json.success && json.enabled) setGiftVouchersAllowed(true)
+      } catch (_) {}
+    }
     fetchCurrency()
+    fetchGiftVouchers()
   }, [user?.id])
 
   const handleExchange = async (amount: number) => {
@@ -181,6 +192,22 @@ export default function GamesHubPage() {
           <div className="mb-8 p-5 rounded-2xl bg-gradient-to-r from-amber-900/30 to-orange-900/20 border border-amber-600/40 text-amber-200 text-sm backdrop-blur-sm">
             请先登录后使用铒币玩游戏。点击广告可获得沙币，5 沙币可兑换 1 铒币。
           </div>
+        )}
+        {giftVouchersAllowed && (
+          <Link
+            href="/gift-vouchers"
+            className="mb-8 block p-5 rounded-2xl bg-gradient-to-r from-amber-900/40 to-orange-900/30 border border-amber-500/40 hover:border-amber-400/60 hover:shadow-lg hover:shadow-amber-500/20 transition-all duration-300"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-amber-500/20">
+                <Gift className="w-8 h-8 text-amber-400" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-amber-200">礼品卷</h2>
+                <p className="text-sm text-amber-200/70">50 沙币或 40 铒币可兑换 1 礼品卷，每月 1 号清零</p>
+              </div>
+            </div>
+          </Link>
         )}
         {OPERATING_GAMES.length > 0 && (
           <section className="mb-8">
