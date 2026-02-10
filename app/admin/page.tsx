@@ -671,6 +671,11 @@ export default function AdminPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       角色
                     </th>
+                    {user.username === '371920029173' && (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        沙币
+                      </th>
+                    )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       注册时间
                     </th>
@@ -725,6 +730,11 @@ export default function AdminPage() {
                           )}
                         </div>
                       </td>
+                      {user.username === '371920029173' && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-amber-600">
+                          {(userItem as any).sand_coins ?? 0}
+                        </td>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(userItem.created_at).toLocaleDateString('zh-CN')}
                       </td>
