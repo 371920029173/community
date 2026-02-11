@@ -20,12 +20,25 @@ interface FileItem {
   mime_type: string
   created_at: string
   is_public: boolean
+  folder_id?: string | null
+}
+
+interface FolderItem {
+  id: string
+  name: string
+  parent_id: string | null
+  created_at: string
 }
 
 export default function FilesPage() {
   const { user } = useAuth()
   const [files, setFiles] = useState<FileItem[]>([])
+  const [folders, setFolders] = useState<FolderItem[]>([])
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
+  const [folderPath, setFolderPath] = useState<FolderItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [creatingFolder, setCreatingFolder] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
@@ -37,10 +50,10 @@ export default function FilesPage() {
   })
   const [isUploading, setIsUploading] = useState(false)
 
-  // Get user files (cloud drive: drive_files)
-  const fetchFiles = async () => {
+  // Get user files and folders (cloud drive)
+  const fetchFiles = async (folderId?: string | null) => {
     if (!user) return
-    
+    const fid = folderId !== undefined ? folderId : currentFolderId
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
@@ -48,7 +61,8 @@ export default function FilesPage() {
         return
       }
 
-      const response = await fetch('/api/drive/user-files', {
+      const url = fid ? `/api/drive/user-files?folderId=${fid}` : '/api/drive/user-files'
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
@@ -57,16 +71,15 @@ export default function FilesPage() {
       if (response.ok) {
         const data = await response.json()
         const fileList = data.files || []
+        const folderList = data.folders || []
         setFiles(fileList)
+        setFolders(folderList)
         
-        // Calculate actual storage usage
         const totalSize = fileList.reduce((sum: number, file: any) => sum + (file.file_size || 0), 0)
         setStorageInfo({
           used: totalSize,
           limit: user.storage_limit || 107374182400
         })
-        
-        console.log('云盘文件加载成功:', fileList.length, '个文件')
       } else {
         const errorData = await response.json()
         console.error('Failed to get files:', errorData)
@@ -89,7 +102,8 @@ export default function FilesPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('userId', user.id) // 添加userId参数
+      formData.append('userId', user.id)
+      if (currentFolderId) formData.append('folderId', currentFolderId)
 
       // 获取当前会话，如果过期则尝试刷新
       let { data: { session }, error: sessionError } = await supabase.auth.getSession()
@@ -313,11 +327,117 @@ export default function FilesPage() {
     file.original_name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  useEffect(() => {
-    if (user) {
-      fetchFiles()
+  const navigateToFolder = (folderId: string | null, folder?: FolderItem) => {
+    setCurrentFolderId(folderId)
+    if (folderId && folder) {
+      setFolderPath(prev => [...prev, folder])
+    } else {
+      setFolderPath([])
     }
-  }, [user])
+  }
+
+  const navigateToBreadcrumb = (index: number) => {
+    if (index === -1) {
+      setCurrentFolderId(null)
+      setFolderPath([])
+    } else {
+      setCurrentFolderId(folderPath[index].id)
+      setFolderPath(prev => prev.slice(0, index + 1))
+    }
+  }
+
+  const createFolder = async () => {
+    if (!newFolderName.trim() || !user) return
+    setCreatingFolder(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { toast.error('会话已过期'); return }
+      const res = await fetch('/api/drive/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ name: newFolderName.trim(), parentId: currentFolderId })
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success('文件夹创建成功')
+        setNewFolderName('')
+        fetchFiles(currentFolderId)
+      } else {
+        toast.error(data.error || '创建失败')
+      }
+    } catch (e) {
+      toast.error('创建失败')
+    } finally {
+      setCreatingFolder(false)
+    }
+  }
+
+  const handleFolderUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = event.target.files
+    if (!fileList || !user) return
+    const files = Array.from(fileList) as File[]
+    if (files.length === 0) return
+
+    setIsUploading(true)
+    const session = (await supabase.auth.getSession()).data.session
+    if (!session) { toast.error('会话已过期'); setIsUploading(false); return }
+
+    const pathToFolderId = new Map<string, string>()
+    pathToFolderId.set('', currentFolderId || '')
+
+    const ensureFolder = async (path: string): Promise<string | null> => {
+      if (!path) return currentFolderId
+      const cached = pathToFolderId.get(path)
+      if (cached) return cached || null
+      const parts = path.split('/').filter(Boolean)
+      let parentId = currentFolderId
+      let built = ''
+      for (const part of parts) {
+        built = built ? `${built}/${part}` : part
+        let fid = pathToFolderId.get(built)
+        if (!fid) {
+          const res = await fetch('/api/drive/folders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+            body: JSON.stringify({ name: part, parentId })
+          })
+          const data = await res.json()
+          if (!data.success || !data.folder?.id) return null
+          const newFid = data.folder.id as string
+          fid = newFid
+          pathToFolderId.set(built, newFid)
+          parentId = newFid
+        }
+        parentId = fid!
+      }
+      return parentId
+    }
+
+    let done = 0
+    for (const file of files) {
+      const rel = (file as any).webkitRelativePath || file.name
+      const dir = rel.includes('/') ? rel.substring(0, rel.lastIndexOf('/')) : ''
+      const folderId = await ensureFolder(dir)
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('userId', user.id)
+      if (folderId) formData.append('folderId', folderId)
+      const res = await fetch('/api/drive/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+        body: formData
+      })
+      if (res.ok) done++
+    }
+    toast.success(`已上传 ${done}/${files.length} 个文件`)
+    fetchFiles(currentFolderId)
+    setIsUploading(false)
+    event.target.value = ''
+  }
+
+  useEffect(() => {
+    if (user) fetchFiles(currentFolderId)
+  }, [user, currentFolderId])
 
   if (!user) {
     return (
@@ -355,17 +475,71 @@ export default function FilesPage() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => window.location.href = '/upload'}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                  >
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors flex items-center gap-2 cursor-pointer">
+                    <Folder className="w-4 h-4" />
+                    {isUploading ? '上传中...' : '上传文件夹'}
+                    <input
+                      type="file"
+                      {...({ webkitdirectory: '', directory: '' } as React.InputHTMLAttributes<HTMLInputElement>)}
+                      multiple
+                      onChange={handleFolderUpload}
+                      disabled={isUploading}
+                      className="hidden"
+                    />
+                  </label>
+                  <label className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 cursor-pointer">
                     <Upload className="w-4 h-4" />
-                    上传到云盘
-                  </button>
+                    {isUploading ? '上传中...' : '上传文件'}
+                    <input
+                      type="file"
+                      onChange={handleFileUpload}
+                      disabled={isUploading}
+                      className="hidden"
+                    />
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={newFolderName}
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                      placeholder="新建文件夹"
+                      className="px-3 py-2 border border-gray-200 rounded-lg text-sm w-32"
+                      onKeyDown={(e) => e.key === 'Enter' && createFolder()}
+                    />
+                    <button
+                      onClick={createFolder}
+                      disabled={creatingFolder || !newFolderName.trim()}
+                      className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm"
+                    >
+                      {creatingFolder ? '...' : '新建'}
+                    </button>
+                  </div>
                 </div>
               </div>
 
+              {/* Breadcrumb */}
+              {(currentFolderId || folderPath.length > 0) && (
+                <div className="flex items-center gap-1 text-sm text-gray-600 mb-3">
+                  <button
+                    onClick={() => navigateToBreadcrumb(-1)}
+                    className="hover:text-blue-600"
+                  >
+                    根目录
+                  </button>
+                  {folderPath.map((f, i) => (
+                    <span key={f.id}>
+                      <span className="mx-1">/</span>
+                      <button
+                        onClick={() => navigateToBreadcrumb(i)}
+                        className="hover:text-blue-600"
+                      >
+                        {f.name}
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
               {/* Search and view toggle */}
               <div className="flex items-center justify-between">
                 <div className="relative flex-1 max-w-lg">
@@ -426,7 +600,7 @@ export default function FilesPage() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
                   <p className="text-gray-600">加载中...</p>
                 </div>
-              ) : filteredFiles.length === 0 ? (
+              ) : (filteredFiles.length === 0 && folders.length === 0) ? (
                 <div className="p-12 text-center">
                   <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-8">
                     <Folder className="w-12 h-12 text-blue-600" />
@@ -449,7 +623,7 @@ export default function FilesPage() {
                     <p className="text-gray-600">没有找到匹配的文件</p>
                   )}
                 </div>
-              ) : (
+                  ) : (
                 <div className="p-6">
                   {/* 表头 */}
                   <div className="flex items-center gap-4 mb-4 pb-3 border-b border-gray-200">
@@ -462,8 +636,28 @@ export default function FilesPage() {
                     <span className="text-sm font-medium text-gray-500">全选</span>
                   </div>
 
-                  {/* 文件列表 */}
+                  {/* 文件夹列表 */}
                   <div className="space-y-2">
+                    {folders.map((folder) => (
+                      <div
+                        key={folder.id}
+                        onClick={() => navigateToFolder(folder.id, folder)}
+                        className="flex items-center gap-4 p-3 rounded-lg hover:bg-gradient-to-br from-amber-50 to-orange-50 cursor-pointer transition-colors"
+                      >
+                        <div className="flex-1 flex items-center gap-3">
+                          <Folder className="w-8 h-8 text-amber-500" />
+                          <div>
+                            <p className="font-medium text-gray-900">{folder.name}</p>
+                            <p className="text-sm text-gray-500">文件夹</p>
+                          </div>
+                        </div>
+                        <span title="进入"><Eye className="w-4 h-4 text-gray-400" /></span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 文件列表 */}
+                  <div className="space-y-2 mt-4">
                     {filteredFiles.map((file) => (
                       <div
                         key={file.id}

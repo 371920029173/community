@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { FileItem, CommentWithReplies } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import Navbar from '@/components/layout/Navbar'
+import Link from 'next/link'
 import { 
   FileText, 
   Image, 
@@ -23,7 +24,8 @@ import {
   ExternalLink,
   Bookmark,
   ChevronRight,
-  Reply
+  Reply,
+  Folder
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
@@ -57,17 +59,44 @@ export default function FileDetailPage() {
   const [showFavoriteModal, setShowFavoriteModal] = useState(false)
   const [favoriteCollections, setFavoriteCollections] = useState<{ id: string; name: string }[]>([])
   const [addingToFavorite, setAddingToFavorite] = useState(false)
+  const [isFolder, setIsFolder] = useState(false)
+  const [folderData, setFolderData] = useState<{
+    currentFolder: { id: string; name: string }
+    files: { id: string; original_name: string; file_path: string; file_size: number }[]
+    subfolders: { id: string; name: string }[]
+  } | null>(null)
 
   useEffect(() => {
-    if (fileId && !authLoading) {
-      // 添加延迟，避免权限检查闪烁
-      const timer = setTimeout(() => {
-      fetchFileDetails()
-      fetchComments()
-      }, 100)
-      
-      return () => clearTimeout(timer)
+    if (!fileId) return
+    const load = async () => {
+      setLoading(true)
+      setIsFolder(false)
+      setFolderData(null)
+      setFile(null)
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers: HeadersInit = {}
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`
+      const folderRes = await fetch(`/api/share/folder/${fileId}`, { headers })
+      const folderJson = await folderRes.json()
+      if (folderRes.ok && folderJson.success) {
+        setIsFolder(true)
+        setFolderData({
+          currentFolder: folderJson.currentFolder,
+          files: folderJson.files || [],
+          subfolders: folderJson.subfolders || []
+        })
+        setLoading(false)
+        return
+      }
+      if (!authLoading) {
+        const timer = setTimeout(() => {
+          fetchFileDetails()
+          fetchComments()
+        }, 100)
+        return () => clearTimeout(timer)
+      }
     }
+    load()
   }, [fileId, authLoading])
 
   useEffect(() => {
@@ -1045,6 +1074,61 @@ export default function FileDetailPage() {
             {authLoading ? '正在验证用户权限...' : '加载中...'}
           </p>
         </div>
+      </div>
+    )
+  }
+
+  if (isFolder && folderData) {
+    const getFileUrl = (f: { file_path: string }) => {
+      const { data } = supabase.storage.from('files').getPublicUrl(f.file_path)
+      return data.publicUrl
+    }
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <Navbar />
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+          <button onClick={() => window.history.back()} className="flex items-center text-gray-600 hover:text-gray-800 mb-6">
+            <ArrowLeft className="w-5 h-5 mr-2" /> 返回
+          </button>
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 overflow-hidden">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-6 text-white">
+              <div className="flex items-center gap-3">
+                <Folder className="w-10 h-10" />
+                <h1 className="text-2xl font-bold">{folderData.currentFolder.name}</h1>
+              </div>
+            </div>
+            <div className="p-6 space-y-2">
+              {folderData.subfolders.map((f) => (
+                <Link key={f.id} href={`/file/${f.id}`} className="flex items-center gap-4 p-3 rounded-lg hover:bg-amber-50 transition-colors">
+                  <Folder className="w-8 h-8 text-amber-500" />
+                  <div>
+                    <p className="font-medium text-gray-900">{f.name}</p>
+                    <p className="text-sm text-gray-500">文件夹</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400 ml-auto" />
+                </Link>
+              ))}
+              {folderData.files.map((f) => (
+                <div key={f.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-blue-50">
+                  <File className="w-8 h-8 text-blue-500" />
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{f.original_name}</p>
+                    <p className="text-sm text-gray-500">{formatFileSize(f.file_size)}</p>
+                  </div>
+                  <a href={getFileUrl(f)} download={f.original_name} className="p-2 text-green-600 hover:bg-green-100 rounded">
+                    <Download className="w-4 h-4" />
+                  </a>
+                  <Link href={`/file/${f.id}`} className="p-2 text-blue-600 hover:bg-blue-100 rounded">
+                    <Eye className="w-4 h-4" />
+                  </Link>
+                </div>
+              ))}
+              {folderData.subfolders.length === 0 && folderData.files.length === 0 && (
+                <p className="text-center text-gray-500 py-8">此文件夹为空</p>
+              )}
+            </div>
+          </div>
+        </main>
       </div>
     )
   }

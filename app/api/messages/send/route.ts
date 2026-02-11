@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('收到消息发送请求:', body)
     
-    const { conversationId, otherUserId, content, messageType, receiverId, fileUrl, fileName, fileType, fileSize, mimeType, fileId } = body
+    const { conversationId, otherUserId, content, messageType, receiverId, fileUrl, fileName, fileType, fileSize, mimeType, fileId, folderId, folderName } = body
 
     // 从请求头获取认证token
     const authHeader = request.headers.get('authorization')
@@ -36,10 +36,10 @@ export async function POST(request: NextRequest) {
     const senderId = user.id
 
     // 验证必需参数
-    if (!content && !fileUrl) {
-      console.log('参数验证失败: 缺少消息内容或文件', { content, fileUrl })
+    if (!content && !fileUrl && !folderId) {
+      console.log('参数验证失败: 缺少消息内容、文件或文件夹', { content, fileUrl, folderId })
       return NextResponse.json(
-        { success: false, error: '缺少消息内容或文件' },
+        { success: false, error: '缺少消息内容、文件或文件夹' },
         { status: 400 }
       )
     }
@@ -146,33 +146,28 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // 发送消息 - 支持文件和文本
+    // 发送消息 - 支持文件、文件夹和文本
     const messageData: any = {
       conversation_id: currentConversationId,
       sender_id: senderId,
-      receiver_id: actualReceiverId, // 添加receiver_id字段
-      content: content || '',
-      message_type: messageType || 'text',
+      receiver_id: actualReceiverId,
+      content: content || (folderName || '') || '',
+      message_type: messageType || (folderId ? 'folder' : 'text'),
       sent_at: new Date().toISOString(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }
 
-    // 如果有文件信息，添加到消息中
+    if (folderId) {
+      messageData.folder_id = folderId
+      messageData.file_name = folderName || '文件夹'
+    }
     if (fileUrl) {
       messageData.file_url = fileUrl
       messageData.file_name = fileName
       messageData.file_type = fileType
       messageData.file_size = fileSize
       messageData.mime_type = mimeType
-      // 当前线上 messages 表无 file_id 列，避免插入报错（PGRST204）
-      console.log('添加文件信息到消息:', {
-        file_url: fileUrl,
-        file_name: fileName,
-        file_type: fileType,
-        file_size: fileSize,
-        mime_type: mimeType
-      })
     }
 
     console.log('准备插入的消息数据:', messageData)
@@ -202,7 +197,6 @@ export async function POST(request: NextRequest) {
       await tryGrantInviteReward(sb, senderId)
     } catch (_) {}
 
-    // 确保返回完整的消息对象
     const fullMessage = {
       id: message.id,
       conversation_id: message.conversation_id,
@@ -214,7 +208,8 @@ export async function POST(request: NextRequest) {
       file_url: message.file_url,
       file_name: message.file_name,
       file_type: message.file_type,
-      file_size: message.file_size
+      file_size: message.file_size,
+      folder_id: message.folder_id
     }
 
     return NextResponse.json({

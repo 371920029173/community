@@ -49,7 +49,15 @@ export async function POST(request: NextRequest) {
     console.log('文件审核API调用:', { fileId, approved, userId: user.id })
 
     if (approved) {
-      // 审核通过：更新文件状态
+      const { data: fileRow } = await supabaseAdmin.from('files').select('folder_id').eq('id', fileId).single()
+      if (fileRow?.folder_id) {
+        let fid: string | null = fileRow.folder_id
+        while (fid) {
+          await supabaseAdmin.from('share_folders').update({ is_approved: true }).eq('id', fid)
+          const { data: parent } = await supabaseAdmin.from('share_folders').select('parent_id').eq('id', fid).single()
+          fid = parent?.parent_id || null
+        }
+      }
       const { data: updateResult, error } = await supabaseAdmin
         .from('files')
         .update({ is_approved: true })

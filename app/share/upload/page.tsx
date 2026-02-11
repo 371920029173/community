@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import Navbar from '@/components/layout/Navbar'
 import { 
@@ -15,9 +15,11 @@ import {
   Check,
   AlertCircle,
   Tag,
-  Plus
+  Plus,
+  Folder
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { supabase } from '@/lib/supabase'
 
 interface TagItem {
   id: string
@@ -32,11 +34,14 @@ interface FileItem {
   progress: number
   status: 'uploading' | 'success' | 'error'
   error?: string
+  /** 相对路径，用于文件夹上传 */
+  relativePath?: string
 }
 
 export default function ShareUploadPage() {
   const { user } = useAuth()
   const [files, setFiles] = useState<FileItem[]>([])
+  const filesRef = useRef<Map<string, File>>(new Map())
   const [isUploading, setIsUploading] = useState(false)
   const [descriptions, setDescriptions] = useState<{ [key: string]: string }>({})
   const [existingTags, setExistingTags] = useState<TagItem[]>([])
@@ -54,26 +59,31 @@ export default function ShareUploadPage() {
     const selectedFiles = event.target.files
     if (!selectedFiles) return
 
-    // 检查文件大小限制（5GB）
     const maxSize = 5 * 1024 * 1024 * 1024 // 5GB
     const oversizedFiles = Array.from(selectedFiles).filter(file => file.size > maxSize)
-    
     if (oversizedFiles.length > 0) {
       toast.error(`文件 ${oversizedFiles[0].name} 超过5GB限制`)
       return
     }
 
-    const newFiles: FileItem[] = Array.from(selectedFiles).map((file, index) => ({
-      id: Date.now() + index.toString(),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      progress: 0,
-      status: 'uploading'
-    }))
+    const newFiles: FileItem[] = Array.from(selectedFiles).map((file, index) => {
+      const webkitPath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || ''
+      const id = Date.now() + index.toString()
+      filesRef.current.set(id, file)
+      return {
+        id,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        progress: 0,
+        status: 'uploading' as const,
+        ...(webkitPath && { relativePath: webkitPath })
+      }
+    })
 
     setFiles(prev => [...prev, ...newFiles])
-    toast.success(`已选择 ${selectedFiles.length} 个文件`)
+    const isFolder = newFiles.some(f => f.relativePath)
+    toast.success(isFolder ? `已选择文件夹，共 ${selectedFiles.length} 个文件` : `已选择 ${selectedFiles.length} 个文件`)
   }
 
   const addTag = (name: string) => {
@@ -89,8 +99,8 @@ export default function ShareUploadPage() {
   }
 
   const removeFile = (fileId: string) => {
+    filesRef.current.delete(fileId)
     setFiles(prev => prev.filter(f => f.id !== fileId))
-    // 同时移除描述
     setDescriptions(prev => {
       const newDescriptions = { ...prev }
       delete newDescriptions[fileId]
@@ -121,65 +131,103 @@ export default function ShareUploadPage() {
     }
 
     setIsUploading(true)
-    
-    // 真实上传文件
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      toast.error('请先登录')
+      setIsUploading(false)
+      return
+    }
+
+    const isFolderUpload = files.some(f => f.relativePath)
+    let pathToFolderId: Record<string, string> = {}
+    let rootFolderId: string | null = null
+
+    if (isFolderUpload) {
+      const paths = new Set<string>()
+      for (const f of files) {
+        if (f.relativePath) {
+          const dir = f.relativePath.replace(/\/[^/]+$/, '')
+          if (dir) paths.add(dir)
+          else paths.add('') // 根目录文件，用空字符串表示
+        }
+      }
+      const allPaths = new Set<string>()
+      for (const p of Array.from(paths)) {
+        if (p) {
+          const parts = p.split('/').filter(Boolean)
+          for (let i = 1; i <= parts.length; i++) allPaths.add(parts.slice(0, i).join('/'))
+        }
+      }
+      const sortedPaths = Array.from(allPaths).sort((a, b) => a.split('/').length - b.split('/').length)
+      for (const p of sortedPaths) {
+        const parts = p.split('/').filter(Boolean)
+        const parentPath = parts.slice(0, -1).join('/')
+        const parentId = parentPath ? pathToFolderId[parentPath] : null
+        const res = await fetch('/api/share/folders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({ name: parts[parts.length - 1], parentId })
+        })
+        const data = await res.json()
+        if (!data.success || !data.folder) {
+          toast.error('创建文件夹失败')
+          setIsUploading(false)
+          return
+        }
+        pathToFolderId[p] = data.folder.id
+        if (!rootFolderId) rootFolderId = data.folder.id
+      }
+    }
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       if (file.status === 'uploading') {
         try {
-          // 创建FormData
+          const actualFile = filesRef.current.get(file.id) || await getFileFromFileItem(file)
           const formData = new FormData()
-          formData.append('file', await getFileFromFileItem(file))
+          formData.append('file', actualFile)
           formData.append('userId', user.id)
           formData.append('description', descriptions[file.id] || '')
           formData.append('isPublic', 'true')
           formData.append('tags', JSON.stringify(selectedTags))
+          if (file.relativePath) {
+            const dir = file.relativePath.replace(/\/[^/]+$/, '')
+            const folderId = dir ? pathToFolderId[dir] : rootFolderId
+            if (folderId) formData.append('folderId', folderId)
+          } else if (rootFolderId) {
+            formData.append('folderId', rootFolderId)
+          }
 
-          // 更新进度
-          setFiles(prev => prev.map(f => 
-            f.id === file.id ? { ...f, progress: 10 } : f
-          ))
+          setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, progress: 10 } : f)))
 
-          // 上传文件
-          const response = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-          })
+          const response = await fetch('/api/upload', { method: 'POST', body: formData })
 
           if (!response.ok) {
             const errorData = await response.json()
             throw new Error(errorData.error || '上传失败')
-        }
-        
-        // 标记为成功
-        setFiles(prev => prev.map(f => 
-            f.id === file.id ? { ...f, status: 'success', progress: 100 } : f
-        ))
-          // 可视化引导：提示待审核
-          toast.success(
-            `${file.name} 上传成功，已提交审核。审核通过后会在“文件分享”页面展示。`,
-            { duration: 4000 }
-          )
+          }
+
+          setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, status: 'success', progress: 100 } : f)))
+          toast.success(`${file.name} 上传成功，已提交审核。`, { duration: 3000 })
         } catch (error: any) {
           console.error('Upload error:', error)
-          setFiles(prev => prev.map(f => 
-            f.id === file.id ? { 
-              ...f, 
-              status: 'error', 
-              error: error.message || '上传失败' 
-            } : f
-          ))
+          setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, status: 'error', error: error.message || '上传失败' } : f)))
           toast.error(`${file.name} 上传失败: ${error.message}`)
         }
       }
     }
-    
+
     setIsUploading(false)
-    
-    // 检查是否有成功上传的文件
     const successCount = files.filter(f => f.status === 'success').length
     if (successCount > 0) {
-      toast.success(`成功上传 ${successCount} 个文件！`)
+      if (isFolderUpload && rootFolderId) {
+        toast.success(`成功上传 ${successCount} 个文件！分享链接：${typeof window !== 'undefined' ? window.location.origin : ''}/file/${rootFolderId}`, { duration: 6000 })
+      } else {
+        toast.success(`成功上传 ${successCount} 个文件！`)
+      }
     }
   }
 
@@ -322,7 +370,7 @@ export default function ShareUploadPage() {
             {/* 文件选择区域 */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  选择要分享的文件
+                  选择要分享的文件或文件夹
                 </label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
                 <input
@@ -333,18 +381,28 @@ export default function ShareUploadPage() {
                     id="file-upload"
                     accept="image/*,video/*,audio/*,application/*,text/*"
                   />
-                  <label
-                    htmlFor="file-upload"
-                    className="cursor-pointer flex flex-col items-center"
-                  >
-                    <Upload className="w-12 h-12 text-gray-400 mb-4" />
-                    <span className="text-lg font-medium text-gray-900 mb-2">
-                      点击选择文件或拖拽到此处
+                <input
+                  type="file"
+                  multiple
+                  {...({ webkitdirectory: '', directory: '' } as any)}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="folder-upload"
+                />
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
+                      <Upload className="w-12 h-12 text-gray-400 mb-2" />
+                      <span className="text-sm font-medium text-gray-900">选择文件</span>
+                    </label>
+                    <span className="text-gray-400">或</span>
+                    <label htmlFor="folder-upload" className="cursor-pointer flex flex-col items-center">
+                      <Folder className="w-12 h-12 text-amber-500 mb-2" />
+                      <span className="text-sm font-medium text-gray-900">选择文件夹</span>
+                    </label>
+                  </div>
+                    <span className="text-sm text-gray-500 mt-2 block">
+                      支持图片、视频、音频、文档、压缩包等多种格式，单个文件最大5GB，可上传整个文件夹保留结构
                     </span>
-                    <span className="text-sm text-gray-500">
-                      支持图片、视频、音频、文档、压缩包等多种格式，单个文件最大5GB
-                </span>
-              </label>
                 </div>
             </div>
 

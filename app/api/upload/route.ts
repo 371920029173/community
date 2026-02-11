@@ -142,6 +142,7 @@ export async function POST(request: NextRequest) {
     const userId = formData.get('userId') as string
     const description = formData.get('description') as string
     const isPublic = formData.get('isPublic') === 'true'
+    const folderId = (formData.get('folderId') as string) || null
     let tagsRaw = formData.get('tags') as string | null
     const tagsInput: string[] = (() => {
       if (!tagsRaw) return []
@@ -250,6 +251,7 @@ export async function POST(request: NextRequest) {
         file_hash: fileHash,
         user_id: userId,
         is_public: isPublic,
+        folder_id: folderId || null,
         // 分享上传默认待审核，只有在"文件分享上传页"才传 isPublic=true
         is_approved: isPublic ? false : true,
         // 直接存储作者名称和描述

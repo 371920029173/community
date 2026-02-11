@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import Navbar from '@/components/layout/Navbar'
+import Link from 'next/link'
 import { 
   MessageSquare, 
   Send, 
@@ -21,7 +22,8 @@ import {
   Eye,
   Paperclip,
   File,
-  Loader2
+  Loader2,
+  Folder
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
@@ -66,6 +68,7 @@ interface Message {
   file_url?: string
   file_size?: number
   file_id?: string
+  folder_id?: string
   created_at: string
   sender?: User
 }
@@ -77,6 +80,7 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedFolder, setSelectedFolder] = useState<{ files: File[]; rootName: string } | null>(null)
   const [showNewChat, setShowNewChat] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<User[]>([])
@@ -135,14 +139,12 @@ export default function MessagesPage() {
 
   // 发送消息
   const sendMessage = async () => {
-    if ((!inputMessage.trim() && !selectedFile) || !selectedConversation || !user) return
+    if ((!inputMessage.trim() && !selectedFile && !selectedFolder) || !selectedConversation || !user) return
     if (isSending) return
     
     setIsSending(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      console.log('当前会话状态:', { session: !!session, userId: session?.user?.id })
-      
       if (!session) {
         toast.error('会话已过期，请重新登录')
         return
@@ -151,44 +153,90 @@ export default function MessagesPage() {
       const messageData: any = {
         conversationId: selectedConversation.id,
         content: inputMessage.trim() || '',
-        messageType: selectedFile ? 'file' : 'text',
+        messageType: selectedFile ? 'file' : selectedFolder ? 'folder' : 'text',
         senderId: user.id,
-        receiverId: selectedConversation.other_user?.id // 添加接收者ID
+        receiverId: selectedConversation.other_user?.id
       }
 
-      // 如果有文件，先上传文件（优化：使用 AbortController 支持取消，并行处理）
       if (selectedFile) {
         const formData = new FormData()
         formData.append('file', selectedFile)
         formData.append('userId', user.id)
         formData.append('isPublic', 'false')
-        
-        // 优化：显示上传进度
-        const uploadController = new AbortController()
-        const uploadResponse = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-          signal: uploadController.signal
-        })
-        
+        const uploadResponse = await fetch('/api/upload', { method: 'POST', body: formData })
         if (!uploadResponse.ok) {
           const uploadError = await uploadResponse.json()
-          console.error('文件上传失败:', uploadError)
           toast.error(uploadError.error || '文件上传失败')
           return
         }
-        
         const uploadData = await uploadResponse.json()
-        console.log('文件上传成功:', uploadData)
-        
-        if (uploadData.success && uploadData.data && uploadData.data.file) {
+        if (uploadData.success && uploadData.data?.file) {
           messageData.fileName = uploadData.data.file.original_name
           messageData.fileType = getFileType(uploadData.data.file.original_name)
-          messageData.fileUrl = uploadData.data.url // 使用正确的URL字段
-          messageData.fileId = uploadData.data.file.id // 添加文件ID
+          messageData.fileUrl = uploadData.data.url
+          messageData.fileId = uploadData.data.file.id
           messageData.fileSize = uploadData.data.file.file_size
-          messageData.mimeType = uploadData.data.file.mime_type // 使用正确的mime_type字段
+          messageData.mimeType = uploadData.data.file.mime_type
         }
+      } else if (selectedFolder && selectedFolder.files.length > 0) {
+        const { files, rootName } = selectedFolder
+        const paths = new Set<string>()
+        for (const f of files) {
+          const p = (f as File & { webkitRelativePath?: string }).webkitRelativePath || ''
+          const dir = p.replace(/\/[^/]+$/, '')
+          if (dir) paths.add(dir)
+        }
+        const allPaths = new Set<string>()
+        for (const p of Array.from(paths)) {
+          const parts = p.split('/').filter(Boolean)
+          for (let i = 1; i <= parts.length; i++) allPaths.add(parts.slice(0, i).join('/'))
+        }
+        const sortedPaths = Array.from(allPaths).sort((a, b) => a.split('/').length - b.split('/').length)
+        const pathToFolderId: Record<string, string> = {}
+        let rootFolderId: string | null = null
+        for (const p of sortedPaths) {
+          const parts = p.split('/').filter(Boolean)
+          const parentPath = parts.slice(0, -1).join('/')
+          const parentId = parentPath ? pathToFolderId[parentPath] : null
+          const res = await fetch('/api/share/folders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ name: parts[parts.length - 1], parentId, isPublic: false })
+          })
+          const data = await res.json()
+          if (!data.success || !data.folder) {
+            toast.error('创建文件夹失败')
+            return
+          }
+          pathToFolderId[p] = data.folder.id
+          if (!rootFolderId) rootFolderId = data.folder.id
+        }
+        if (!rootFolderId) {
+          const res = await fetch('/api/share/folders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ name: rootName || '文件夹', parentId: null, isPublic: false })
+          })
+          const data = await res.json()
+          rootFolderId = data.success ? data.folder?.id : null
+        }
+        for (const f of files) {
+          const formData = new FormData()
+          formData.append('file', f)
+          formData.append('userId', user.id)
+          formData.append('isPublic', 'false')
+          const rp = (f as File & { webkitRelativePath?: string }).webkitRelativePath || ''
+          const dir = rp.replace(/\/[^/]+$/, '')
+          const fid = dir ? pathToFolderId[dir] : rootFolderId
+          if (fid) formData.append('folderId', fid)
+          const uploadResponse = await fetch('/api/upload', { method: 'POST', body: formData })
+          if (!uploadResponse.ok) {
+            toast.error(`上传 ${f.name} 失败`)
+            return
+          }
+        }
+        messageData.folderId = rootFolderId
+        messageData.folderName = rootName
       }
 
       console.log('发送消息数据:', messageData)
@@ -220,9 +268,9 @@ export default function MessagesPage() {
           ))
           
           toast.success('消息发送成功')
-          // 清空输入和文件选择
           setInputMessage('')
           setSelectedFile(null)
+          setSelectedFolder(null)
         } else {
           toast.error(data.message || '消息发送失败')
         }
@@ -235,10 +283,6 @@ export default function MessagesPage() {
       toast.error(getFriendlyErrorMessage(error) || '发送消息失败')
     } finally {
       setIsSending(false)
-      if (inputMessage.trim() || selectedFile) {
-        setInputMessage('')
-        setSelectedFile(null)
-      }
     }
   }
 
@@ -684,7 +728,21 @@ export default function MessagesPage() {
                               ? 'bg-blue-500 text-white'
                               : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {message.message_type === 'file' && message.file_name ? (
+                            {message.message_type === 'folder' && message.folder_id ? (
+                              <div className="space-y-2">
+                                <Link
+                                  href={`/file/${message.folder_id}`}
+                                  className="flex items-center gap-3 p-3 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
+                                >
+                                  <Folder className="w-8 h-8 text-amber-500" />
+                                  <div>
+                                    <p className="font-medium text-gray-900">{message.file_name || message.content || '文件夹'}</p>
+                                    <p className="text-xs text-gray-500">点击查看文件夹内容</p>
+                                  </div>
+                                  <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
+                                </Link>
+                              </div>
+                            ) : message.message_type === 'file' && message.file_name ? (
                               <div className="space-y-2">
                                 {/* 图片直接显示 */}
                                 {message.file_type?.startsWith('image/') ? (
@@ -863,17 +921,32 @@ export default function MessagesPage() {
                         type="file"
                         id="file-input"
                         onChange={(e) => {
+                          setSelectedFolder(null)
                           setSelectedFile(e.target.files?.[0] || null)
-                          // 清空input value，确保可以重复选择同一个文件
                           e.target.value = ''
                         }}
                         className="hidden"
                       />
-                      <label
-                        htmlFor="file-input"
-                        className="flex items-center justify-center w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer transition-colors"
-                      >
-                        <Plus className="w-5 h-5 text-gray-600" />
+                      <input
+                        type="file"
+                        id="folder-input"
+                        {...({ webkitdirectory: '', directory: '' } as any)}
+                        onChange={(e) => {
+                          const list = e.target.files
+                          if (list && list.length > 0) {
+                            setSelectedFile(null)
+                            const rootName = (list[0] as File & { webkitRelativePath?: string }).webkitRelativePath?.split('/')[0] || '文件夹'
+                            setSelectedFolder({ files: Array.from(list), rootName })
+                          }
+                          e.target.value = ''
+                        }}
+                        className="hidden"
+                      />
+                      <label htmlFor="file-input" className="flex items-center justify-center w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer transition-colors" title="选择文件">
+                        <Paperclip className="w-5 h-5 text-gray-600" />
+                      </label>
+                      <label htmlFor="folder-input" className="flex items-center justify-center w-10 h-10 bg-amber-100 hover:bg-amber-200 rounded-lg cursor-pointer transition-colors" title="选择文件夹">
+                        <Folder className="w-5 h-5 text-amber-600" />
                       </label>
                       <div className="flex-1 flex gap-2">
                         <input
@@ -886,19 +959,28 @@ export default function MessagesPage() {
                         />
                         <button
                           onClick={sendMessage}
-                          disabled={(!inputMessage.trim() && !selectedFile) || isSending}
+                          disabled={(!inputMessage.trim() && !selectedFile && !selectedFolder) || isSending}
                           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                         >
                           {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                         </button>
                       </div>
                     </div>
-                    {selectedFile && (
+                    {(selectedFile || selectedFolder) && (
                       <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
-                        <FileText className="w-4 h-4" />
-                        <span>{selectedFile.name}</span>
+                        {selectedFile ? (
+                          <>
+                            <FileText className="w-4 h-4" />
+                            <span>{selectedFile.name}</span>
+                          </>
+                        ) : selectedFolder ? (
+                          <>
+                            <Folder className="w-4 h-4 text-amber-500" />
+                            <span>{selectedFolder.rootName}（{selectedFolder.files.length} 个文件）</span>
+                          </>
+                        ) : null}
                         <button
-                          onClick={() => setSelectedFile(null)}
+                          onClick={() => { setSelectedFile(null); setSelectedFolder(null) }}
                           className="text-red-500 hover:text-red-700"
                         >
                           <X className="w-4 h-4" />

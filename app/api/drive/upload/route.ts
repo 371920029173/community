@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File | null
     const userId = (formData.get('userId') as string) || ''
+    const folderId = (formData.get('folderId') as string) || null
 
     if (!file || !userId) {
       return NextResponse.json({ success: false, error: '缺少必要参数' }, { status: 400 })
@@ -140,6 +141,7 @@ export async function POST(request: NextRequest) {
         // 存储私密文件建议不公开URL，这里保存签名URL供短期预览
         signed_url: signed.signedUrl,
         user_id: userId,
+        folder_id: folderId || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
