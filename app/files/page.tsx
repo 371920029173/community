@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Navbar from '@/components/layout/Navbar'
 // import { SidebarAd } from '@/components/ads/AdBanner' // 已移除，仅保留主页广告
 import { useAuth } from '@/components/providers/AuthProvider'
+import { useUpload } from '@/components/providers/UploadProvider'
 import { supabase } from '@/lib/supabase'
 import { 
   Folder, File, Trash2, Download, Share2, Edit3, 
@@ -32,6 +33,7 @@ interface FolderItem {
 
 export default function FilesPage() {
   const { user } = useAuth()
+  const uploadQueue = useUpload()
   const [files, setFiles] = useState<FileItem[]>([])
   const [folders, setFolders] = useState<FolderItem[]>([])
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
@@ -93,65 +95,49 @@ export default function FilesPage() {
     }
   }
 
-  // Upload file to cloud drive
+  // Upload file to cloud drive（通过全局队列，切页后继续上传）
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file || !user) return
+    if (!file || !user || !uploadQueue) return
+
+    let { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError || !session) {
+      const { data: refreshData } = await supabase.auth.refreshSession()
+      if (!refreshData?.session) {
+        toast.error('会话已过期，请重新登录')
+        return
+      }
+      session = refreshData.session
+    }
+    const token = session!.access_token
+    const folderId = currentFolderId
 
     setIsUploading(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('userId', user.id)
-      if (currentFolderId) formData.append('folderId', currentFolderId)
-
-      // 获取当前会话，如果过期则尝试刷新
-      let { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      
-      if (sessionError || !session) {
-        console.log('会话获取失败，尝试刷新:', sessionError)
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-        if (refreshError || !refreshData.session) {
-          console.error('会话刷新失败:', refreshError)
-          toast.error('会话已过期，请重新登录')
-          return
-        }
-        session = refreshData.session
-      }
-
-      console.log('使用认证token上传文件:', session.access_token ? '有效' : '无效')
-
-      const response = await fetch('/api/drive/upload', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: formData
-      })
-
-      console.log('上传响应状态:', response.status)
-
-      if (response.ok) {
-        const result = await response.json()
-        if (result.success) {
+    uploadQueue.addTasks(
+      [{
+        id: file.name + file.size,
+        name: file.name,
+        run: async () => {
+          const formData = new FormData()
+          formData.append('file', file)
+          formData.append('userId', user.id)
+          if (folderId) formData.append('folderId', folderId)
+          const response = await fetch('/api/drive/upload', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+          })
+          const result = await response.json()
+          if (!response.ok || !result.success) throw new Error(result.error || '上传失败')
           toast.success('文件上传成功')
-          fetchFiles() // 重新加载文件列表
-        } else {
-          toast.error(result.error || '上传失败')
         }
-      } else {
-        const errorData = await response.json()
-        console.error('上传失败:', errorData)
-        toast.error(errorData.error || '上传失败')
-      }
-    } catch (error) {
-      console.error('Upload error:', error)
-      toast.error('上传失败')
-    } finally {
+      }],
+      { concurrency: 1, onComplete: () => { fetchFiles(currentFolderId); setIsUploading(false) } }
+    ).catch((e) => {
+      toast.error(e?.message || '上传失败')
       setIsUploading(false)
-      // 清空文件输入
-      event.target.value = ''
-    }
+    })
+    event.target.value = ''
   }
 
   // Delete file (cloud drive)
@@ -374,13 +360,12 @@ export default function FilesPage() {
 
   const handleFolderUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = event.target.files
-    if (!fileList || !user) return
+    if (!fileList || !user || !uploadQueue) return
     const files = Array.from(fileList) as File[]
     if (files.length === 0) return
 
-    setIsUploading(true)
     const session = (await supabase.auth.getSession()).data.session
-    if (!session) { toast.error('会话已过期'); setIsUploading(false); return }
+    if (!session) { toast.error('会话已过期'); return }
 
     const pathToFolderId = new Map<string, string>()
     pathToFolderId.set('', currentFolderId || '')
@@ -413,25 +398,45 @@ export default function FilesPage() {
       return parentId
     }
 
-    let done = 0
+    const token = session.access_token
+    const tasks = []
     for (const file of files) {
       const rel = (file as any).webkitRelativePath || file.name
       const dir = rel.includes('/') ? rel.substring(0, rel.lastIndexOf('/')) : ''
       const folderId = await ensureFolder(dir)
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('userId', user.id)
-      if (folderId) formData.append('folderId', folderId)
-      const res = await fetch('/api/drive/upload', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
-        body: formData
+      tasks.push({
+        id: file.name + file.size + rel,
+        name: file.name,
+        run: async () => {
+          const formData = new FormData()
+          formData.append('file', file)
+          formData.append('userId', user.id)
+          if (folderId) formData.append('folderId', folderId)
+          const res = await fetch('/api/drive/upload', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+          })
+          if (!res.ok) {
+            const err = await res.json()
+            throw new Error(err.error || '上传失败')
+          }
+        }
       })
-      if (res.ok) done++
     }
-    toast.success(`已上传 ${done}/${files.length} 个文件`)
-    fetchFiles(currentFolderId)
-    setIsUploading(false)
+
+    setIsUploading(true)
+    uploadQueue.addTasks(tasks, {
+      concurrency: 4,
+      onComplete: () => {
+        toast.success(`已上传 ${tasks.length} 个文件`)
+        fetchFiles(currentFolderId)
+        setIsUploading(false)
+      }
+    }).catch((e) => {
+      toast.error(e?.message || '上传失败')
+      setIsUploading(false)
+    })
     event.target.value = ''
   }
 

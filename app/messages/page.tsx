@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
+import { runWithConcurrency } from '@/lib/uploadUtils'
 import NotificationDot from '@/components/ui/NotificationDot'
 import { getFriendlyErrorMessage } from '@/lib/utils'
 
@@ -220,20 +221,23 @@ export default function MessagesPage() {
           const data = await res.json()
           rootFolderId = data.success ? data.folder?.id : null
         }
-        for (const f of files) {
-          const formData = new FormData()
-          formData.append('file', f)
-          formData.append('userId', user.id)
-          formData.append('isPublic', 'false')
-          const rp = (f as File & { webkitRelativePath?: string }).webkitRelativePath || ''
-          const dir = rp.replace(/\/[^/]+$/, '')
-          const fid = dir ? pathToFolderId[dir] : rootFolderId
-          if (fid) formData.append('folderId', fid)
-          const uploadResponse = await fetch('/api/upload', { method: 'POST', body: formData })
-          if (!uploadResponse.ok) {
-            toast.error(`上传 ${f.name} 失败`)
-            return
-          }
+        try {
+          await runWithConcurrency(Array.from(files), 4, async (f) => {
+            const formData = new FormData()
+            formData.append('file', f)
+            formData.append('userId', user.id)
+            formData.append('isPublic', 'false')
+            const rp = (f as File & { webkitRelativePath?: string }).webkitRelativePath || ''
+            const dir = rp.replace(/\/[^/]+$/, '')
+            const fid = dir ? pathToFolderId[dir] : rootFolderId
+            if (fid) formData.append('folderId', fid)
+            const uploadResponse = await fetch('/api/upload', { method: 'POST', body: formData })
+            if (!uploadResponse.ok) throw new Error(`上传 ${f.name} 失败`)
+          })
+        } catch (e: any) {
+          toast.error(e.message || '文件夹上传失败')
+          setIsSending(false)
+          return
         }
         messageData.folderId = rootFolderId
         messageData.folderName = rootName

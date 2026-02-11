@@ -5,6 +5,7 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/components/providers/AuthProvider'
 import { UiProvider } from '@/components/providers/UiProvider'
+import { UploadProvider } from '@/components/providers/UploadProvider'
 import { TutorialProvider } from '@/components/providers/TutorialProvider'
 import { ThemeProvider } from '@/components/providers/ThemeProvider'
 import { KeyboardShortcutsProvider } from '@/components/providers/KeyboardShortcutsProvider'
@@ -77,6 +78,7 @@ export default function RootLayout({
           <TutorialProvider>
           <KeyboardShortcutsProvider>
           <StayTracking />
+          <UploadProvider>
           <UiProvider>
             <div className="flex flex-col min-h-screen">
               {children}
@@ -85,6 +87,7 @@ export default function RootLayout({
             <CookieConsent />
             <Toaster position="top-right" />
           </UiProvider>
+          </UploadProvider>
           </KeyboardShortcutsProvider>
           </TutorialProvider>
           </ThemeProvider>

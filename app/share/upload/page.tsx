@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
+import { runWithConcurrency } from '@/lib/uploadUtils'
 
 interface TagItem {
   id: string
@@ -182,46 +183,40 @@ export default function ShareUploadPage() {
       }
     }
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i]
-      if (file.status === 'uploading') {
-        try {
-          const actualFile = filesRef.current.get(file.id) || await getFileFromFileItem(file)
-          const formData = new FormData()
-          formData.append('file', actualFile)
-          formData.append('userId', user.id)
-          formData.append('description', descriptions[file.id] || '')
-          formData.append('isPublic', 'true')
-          formData.append('tags', JSON.stringify(selectedTags))
-          if (file.relativePath) {
-            const dir = file.relativePath.replace(/\/[^/]+$/, '')
-            const folderId = dir ? pathToFolderId[dir] : rootFolderId
-            if (folderId) formData.append('folderId', folderId)
-          } else if (rootFolderId) {
-            formData.append('folderId', rootFolderId)
-          }
-
-          setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, progress: 10 } : f)))
-
-          const response = await fetch('/api/upload', { method: 'POST', body: formData })
-
-          if (!response.ok) {
-            const errorData = await response.json()
-            throw new Error(errorData.error || '上传失败')
-          }
-
-          setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, status: 'success', progress: 100 } : f)))
-          toast.success(`${file.name} 上传成功，已提交审核。`, { duration: 3000 })
-        } catch (error: any) {
-          console.error('Upload error:', error)
-          setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, status: 'error', error: error.message || '上传失败' } : f)))
-          toast.error(`${file.name} 上传失败: ${error.message}`)
+    const toUpload = files.filter(f => f.status === 'uploading')
+    let successCount = 0
+    await runWithConcurrency(toUpload, 4, async (file) => {
+      try {
+        const actualFile = filesRef.current.get(file.id) ?? await getFileFromFileItem(file, !!file.relativePath)
+        if (!actualFile || actualFile.size === 0) {
+          throw new Error('无法获取文件内容，请重新选择')
         }
+        const formData = new FormData()
+        formData.append('file', actualFile)
+        formData.append('userId', user.id)
+        formData.append('description', descriptions[file.id] || '')
+        formData.append('isPublic', 'true')
+        formData.append('tags', JSON.stringify(selectedTags))
+        if (file.relativePath) {
+          const dir = file.relativePath.replace(/\/[^/]+$/, '')
+          const folderId = dir ? pathToFolderId[dir] : rootFolderId
+          if (folderId) formData.append('folderId', folderId)
+        } else if (rootFolderId) formData.append('folderId', rootFolderId)
+        setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, progress: 10 } : f)))
+        const response = await fetch('/api/upload', { method: 'POST', body: formData })
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || '上传失败')
+        }
+        successCount++
+        setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, status: 'success', progress: 100 } : f)))
+        toast.success(`${file.name} 上传成功，已提交审核。`, { duration: 3000 })
+      } catch (error: any) {
+        setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, status: 'error', error: error.message || '上传失败' } : f)))
+        toast.error(`${file.name} 上传失败: ${error.message}`)
       }
-    }
-
+    })
     setIsUploading(false)
-    const successCount = files.filter(f => f.status === 'success').length
     if (successCount > 0) {
       if (isFolderUpload && rootFolderId) {
         toast.success(`成功上传 ${successCount} 个文件！分享链接：${typeof window !== 'undefined' ? window.location.origin : ''}/file/${rootFolderId}`, { duration: 6000 })
@@ -231,20 +226,15 @@ export default function ShareUploadPage() {
     }
   }
 
-  // 从FileItem获取真实的File对象
-  const getFileFromFileItem = async (fileItem: FileItem): Promise<File> => {
-    // 这里需要从input中重新获取文件
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement
-    if (input && input.files) {
+  // 从 FileItem 获取真实 File 对象（优先 filesRef，回退到对应 input）
+  const getFileFromFileItem = async (fileItem: FileItem, fromFolder: boolean): Promise<File> => {
+    const input = document.getElementById(fromFolder ? 'folder-upload' : 'file-upload') as HTMLInputElement
+    if (input?.files) {
       for (let i = 0; i < input.files.length; i++) {
-        if (input.files[i].name === fileItem.name && input.files[i].size === fileItem.size) {
-          return input.files[i]
-        }
+        const f = input.files[i]
+        if (f.name === fileItem.name && f.size === fileItem.size) return f
       }
     }
-    
-    // 如果找不到，尝试从全局文件存储获取
-    // 这里可以改进为使用useRef来存储文件引用
     return new File([], fileItem.name, { type: fileItem.type })
   }
 
