@@ -185,38 +185,43 @@ export default function ShareUploadPage() {
 
     const toUpload = files.filter(f => f.status === 'uploading')
     let successCount = 0
-    await runWithConcurrency(toUpload, 4, async (file) => {
-      try {
-        const actualFile = filesRef.current.get(file.id) ?? await getFileFromFileItem(file, !!file.relativePath)
-        if (!actualFile || actualFile.size === 0) {
-          throw new Error('无法获取文件内容，请重新选择')
+    try {
+      await runWithConcurrency(toUpload, 4, async (file) => {
+        try {
+          const actualFile = filesRef.current.get(file.id) ?? await getFileFromFileItem(file, !!file.relativePath)
+          if (!actualFile || actualFile.size === 0) {
+            throw new Error('无法获取文件内容，请重新选择')
+          }
+          const formData = new FormData()
+          formData.append('file', actualFile)
+          formData.append('userId', user.id)
+          formData.append('description', descriptions[file.id] || '')
+          formData.append('isPublic', 'true')
+          formData.append('tags', JSON.stringify(selectedTags))
+          if (file.relativePath) {
+            const dir = file.relativePath.replace(/\/[^/]+$/, '')
+            const folderId = dir ? pathToFolderId[dir] : rootFolderId
+            if (folderId) formData.append('folderId', folderId)
+          } else if (rootFolderId) formData.append('folderId', rootFolderId)
+          setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, progress: 10 } : f)))
+          const response = await fetch('/api/upload', { method: 'POST', body: formData })
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}))
+            throw new Error(errorData.error || '上传失败')
+          }
+          successCount++
+          setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, status: 'success', progress: 100 } : f)))
+          toast.success(`${file.name} 上传成功，已提交审核。`, { duration: 3000 })
+        } catch (error: any) {
+          setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, status: 'error', error: error.message || '上传失败' } : f)))
+          toast.error(`${file.name} 上传失败: ${error.message}`)
         }
-        const formData = new FormData()
-        formData.append('file', actualFile)
-        formData.append('userId', user.id)
-        formData.append('description', descriptions[file.id] || '')
-        formData.append('isPublic', 'true')
-        formData.append('tags', JSON.stringify(selectedTags))
-        if (file.relativePath) {
-          const dir = file.relativePath.replace(/\/[^/]+$/, '')
-          const folderId = dir ? pathToFolderId[dir] : rootFolderId
-          if (folderId) formData.append('folderId', folderId)
-        } else if (rootFolderId) formData.append('folderId', rootFolderId)
-        setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, progress: 10 } : f)))
-        const response = await fetch('/api/upload', { method: 'POST', body: formData })
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || '上传失败')
-        }
-        successCount++
-        setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, status: 'success', progress: 100 } : f)))
-        toast.success(`${file.name} 上传成功，已提交审核。`, { duration: 3000 })
-      } catch (error: any) {
-        setFiles(prev => prev.map(f => (f.id === file.id ? { ...f, status: 'error', error: error.message || '上传失败' } : f)))
-        toast.error(`${file.name} 上传失败: ${error.message}`)
-      }
-    })
-    setIsUploading(false)
+      })
+    } catch (e: any) {
+      toast.error(e?.message || '上传过程出错')
+    } finally {
+      setIsUploading(false)
+    }
     if (successCount > 0) {
       if (isFolderUpload && rootFolderId) {
         toast.success(`成功上传 ${successCount} 个文件！分享链接：${typeof window !== 'undefined' ? window.location.origin : ''}/file/${rootFolderId}`, { duration: 6000 })

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Navbar from '@/components/layout/Navbar'
 // import { SidebarAd } from '@/components/ads/AdBanner' // 已移除，仅保留主页广告
 import { useAuth } from '@/components/providers/AuthProvider'
-import { useUpload } from '@/components/providers/UploadProvider'
+import { runWithConcurrency } from '@/lib/uploadUtils'
 import { supabase } from '@/lib/supabase'
 import { 
   Folder, File, Trash2, Download, Share2, Edit3, 
@@ -33,7 +33,6 @@ interface FolderItem {
 
 export default function FilesPage() {
   const { user } = useAuth()
-  const uploadQueue = useUpload()
   const [files, setFiles] = useState<FileItem[]>([])
   const [folders, setFolders] = useState<FolderItem[]>([])
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
@@ -44,6 +43,7 @@ export default function FilesPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
+  const [selectedFolders, setSelectedFolders] = useState<string[]>([])
   const [editingFile, setEditingFile] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [storageInfo, setStorageInfo] = useState({
@@ -95,10 +95,10 @@ export default function FilesPage() {
     }
   }
 
-  // Upload file to cloud drive（通过全局队列，切页后继续上传）
+  // 上传单文件到云盘
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file || !user || !uploadQueue) return
+    if (!file || !user) return
 
     let { data: { session }, error: sessionError } = await supabase.auth.getSession()
     if (sessionError || !session) {
@@ -109,35 +109,30 @@ export default function FilesPage() {
       }
       session = refreshData.session
     }
-    const token = session!.access_token
-    const folderId = currentFolderId
-
     setIsUploading(true)
-    uploadQueue.addTasks(
-      [{
-        id: file.name + file.size,
-        name: file.name,
-        run: async () => {
-          const formData = new FormData()
-          formData.append('file', file)
-          formData.append('userId', user.id)
-          if (folderId) formData.append('folderId', folderId)
-          const response = await fetch('/api/drive/upload', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
-          })
-          const result = await response.json()
-          if (!response.ok || !result.success) throw new Error(result.error || '上传失败')
-          toast.success('文件上传成功')
-        }
-      }],
-      { concurrency: 1, onComplete: () => { fetchFiles(currentFolderId); setIsUploading(false) } }
-    ).catch((e) => {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('userId', user.id)
+      if (currentFolderId) formData.append('folderId', currentFolderId)
+      const response = await fetch('/api/drive/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session!.access_token}` },
+        body: formData
+      })
+      const result = await response.json()
+      if (response.ok && result.success) {
+        toast.success('文件上传成功')
+        fetchFiles(currentFolderId)
+      } else {
+        toast.error(result.error || '上传失败')
+      }
+    } catch (e: any) {
       toast.error(e?.message || '上传失败')
+    } finally {
       setIsUploading(false)
-    })
-    event.target.value = ''
+      event.target.value = ''
+    }
   }
 
   // Delete file (cloud drive)
@@ -183,35 +178,45 @@ export default function FilesPage() {
     }
   }
 
-  // Batch delete files
   const deleteSelectedFiles = async () => {
-    if (selectedFiles.length === 0) return
-    if (!confirm(`确定要删除选中的 ${selectedFiles.length} 个文件吗？`)) return
-    
+    if (selectedFiles.length === 0 && selectedFolders.length === 0) return
+    const total = selectedFiles.length + selectedFolders.length
+    if (!confirm(`确定要删除选中的 ${total} 项吗？${selectedFolders.length > 0 ? '（文件夹及其内文件将被删除）' : ''}`)) return
+
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         toast.error('会话已过期，请重新登录')
         return
       }
+      const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }
 
-      const response = await fetch('/api/drive/batch-delete', {
-        method: 'DELETE',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({ fileIds: selectedFiles })
-      })
-      
-      if (response.ok) {
-        toast.success('Batch delete successful')
+      if (selectedFiles.length > 0) {
+        const res = await fetch('/api/drive/batch-delete', {
+          method: 'DELETE', headers, body: JSON.stringify({ fileIds: selectedFiles })
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          toast.error(getFriendlyErrorMessage(data.error) || '批量删除失败')
+          return
+        }
         setFiles(files.filter(f => !selectedFiles.includes(f.id)))
         setSelectedFiles([])
-      } else {
-        const error = await response.json()
-        toast.error(getFriendlyErrorMessage(error.error) || '批量删除失败')
       }
+      if (selectedFolders.length > 0) {
+        const res = await fetch('/api/drive/folders/batch-delete', {
+          method: 'DELETE', headers, body: JSON.stringify({ folderIds: selectedFolders })
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          toast.error(getFriendlyErrorMessage(data.error) || '文件夹删除失败')
+          return
+        }
+        setFolders(folders.filter(f => !selectedFolders.includes(f.id)))
+        setSelectedFolders([])
+      }
+      toast.success('删除成功')
+      fetchFiles(currentFolderId)
     } catch (error) {
       console.error('Batch delete error:', error)
       toast.error(getFriendlyErrorMessage(error) || '批量删除失败')
@@ -268,21 +273,23 @@ export default function FilesPage() {
     setEditName('')
   }
 
-  // Toggle file selection
   const toggleFileSelection = (fileId: string) => {
-    setSelectedFiles(prev => 
-      prev.includes(fileId) 
-        ? prev.filter(id => id !== fileId)
-        : [...prev, fileId]
-    )
+    setSelectedFiles(prev => prev.includes(fileId) ? prev.filter(id => id !== fileId) : [...prev, fileId])
   }
 
-  // Select/Deselect all
+  const toggleFolderSelection = (folderId: string) => {
+    setSelectedFolders(prev => prev.includes(folderId) ? prev.filter(id => id !== folderId) : [...prev, folderId])
+  }
+
   const toggleSelectAll = () => {
-    if (selectedFiles.length === files.length) {
+    const allFiles = selectedFiles.length === files.length
+    const allFolders = selectedFolders.length === folders.length
+    if (allFiles && allFolders && (files.length > 0 || folders.length > 0)) {
       setSelectedFiles([])
+      setSelectedFolders([])
     } else {
       setSelectedFiles(files.map(f => f.id))
+      setSelectedFolders(folders.map(f => f.id))
     }
   }
 
@@ -360,7 +367,7 @@ export default function FilesPage() {
 
   const handleFolderUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = event.target.files
-    if (!fileList || !user || !uploadQueue) return
+    if (!fileList || !user) return
     const files = Array.from(fileList) as File[]
     if (files.length === 0) return
 
@@ -399,45 +406,37 @@ export default function FilesPage() {
     }
 
     const token = session.access_token
-    const tasks = []
+    const items: { file: File; folderId: string | null }[] = []
     for (const file of files) {
-      const rel = (file as any).webkitRelativePath || file.name
+      const rel = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name
       const dir = rel.includes('/') ? rel.substring(0, rel.lastIndexOf('/')) : ''
       const folderId = await ensureFolder(dir)
-      tasks.push({
-        id: file.name + file.size + rel,
-        name: file.name,
-        run: async () => {
-          const formData = new FormData()
-          formData.append('file', file)
-          formData.append('userId', user.id)
-          if (folderId) formData.append('folderId', folderId)
-          const res = await fetch('/api/drive/upload', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
-          })
-          if (!res.ok) {
-            const err = await res.json()
-            throw new Error(err.error || '上传失败')
-          }
-        }
-      })
+      items.push({ file, folderId })
     }
 
     setIsUploading(true)
-    uploadQueue.addTasks(tasks, {
-      concurrency: 4,
-      onComplete: () => {
-        toast.success(`已上传 ${tasks.length} 个文件`)
-        fetchFiles(currentFolderId)
-        setIsUploading(false)
-      }
-    }).catch((e) => {
+    try {
+      await runWithConcurrency(items, 4, async ({ file, folderId }) => {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('userId', user.id)
+        if (folderId) formData.append('folderId', folderId)
+        const res = await fetch('/api/drive/upload', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        })
+        const data = await res.json()
+        if (!res.ok || !data.success) throw new Error(data.error || '上传失败')
+      })
+      toast.success(`已上传 ${items.length} 个文件`)
+      fetchFiles(currentFolderId)
+    } catch (e: any) {
       toast.error(e?.message || '上传失败')
+    } finally {
       setIsUploading(false)
-    })
-    event.target.value = ''
+      event.target.value = ''
+    }
   }
 
   useEffect(() => {
@@ -579,11 +578,11 @@ export default function FilesPage() {
             </div>
 
             {/* Batch operation bar */}
-            {selectedFiles.length > 0 && (
+            {(selectedFiles.length > 0 || selectedFolders.length > 0) && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <div className="flex items-center justify-between">
                   <span className="text-blue-800">
-                    已选择 {selectedFiles.length} 个文件
+                    已选择 {selectedFiles.length + selectedFolders.length} 项
                   </span>
                   <div className="flex items-center gap-2">
                     <button
@@ -634,7 +633,7 @@ export default function FilesPage() {
                   <div className="flex items-center gap-4 mb-4 pb-3 border-b border-gray-200">
                     <input
                       type="checkbox"
-                      checked={selectedFiles.length === files.length && files.length > 0}
+                      checked={(files.length > 0 || folders.length > 0) && selectedFiles.length === files.length && selectedFolders.length === folders.length}
                       onChange={toggleSelectAll}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
@@ -646,17 +645,33 @@ export default function FilesPage() {
                     {folders.map((folder) => (
                       <div
                         key={folder.id}
-                        onClick={() => navigateToFolder(folder.id, folder)}
-                        className="flex items-center gap-4 p-3 rounded-lg hover:bg-gradient-to-br from-amber-50 to-orange-50 cursor-pointer transition-colors"
+                        className="flex items-center gap-4 p-3 rounded-lg hover:bg-gradient-to-br from-amber-50 to-orange-50 transition-colors"
                       >
-                        <div className="flex-1 flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedFolders.includes(folder.id)}
+                          onChange={(e) => { e.stopPropagation(); toggleFolderSelection(folder.id) }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <div
+                          className="flex-1 flex items-center gap-3 cursor-pointer"
+                          onClick={() => navigateToFolder(folder.id, folder)}
+                        >
                           <Folder className="w-8 h-8 text-amber-500" />
                           <div>
                             <p className="font-medium text-gray-900">{folder.name}</p>
                             <p className="text-sm text-gray-500">文件夹</p>
                           </div>
                         </div>
-                        <span title="进入"><Eye className="w-4 h-4 text-gray-400" /></span>
+                        <button
+                          type="button"
+                          onClick={() => navigateToFolder(folder.id, folder)}
+                          className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                          title="进入"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                       </div>
                     ))}
                   </div>
