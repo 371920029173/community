@@ -47,6 +47,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '缺少必要参数' }, { status: 400 })
     }
 
+    // 文件大小限制（Supabase 免费版 50MB）
+    const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ success: false, error: '单个文件不能超过 50MB' }, { status: 413 })
+    }
+
     // 用户存在校验（可选，防止脏数据）
     const { data: userProfile, error: userErr } = await supabaseAdmin
       .from('users')

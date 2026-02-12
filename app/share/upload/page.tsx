@@ -60,10 +60,10 @@ export default function ShareUploadPage() {
     const selectedFiles = event.target.files
     if (!selectedFiles) return
 
-    const maxSize = 5 * 1024 * 1024 * 1024 // 5GB
+    const maxSize = 50 * 1024 * 1024 // 50MB（Supabase 免费版限制）
     const oversizedFiles = Array.from(selectedFiles).filter(file => file.size > maxSize)
     if (oversizedFiles.length > 0) {
-      toast.error(`文件 ${oversizedFiles[0].name} 超过5GB限制`)
+      toast.error(`文件 ${oversizedFiles[0].name} 超过 50MB 限制`)
       return
     }
 
@@ -356,7 +356,7 @@ export default function ShareUploadPage() {
                     <h3 className="text-sm font-medium text-blue-800">文件分享说明</h3>
                     <p className="text-sm text-blue-700 mt-1">
                       这里上传的文件将公开分享给所有用户，请确保文件内容合法且适合公开。
-                      文件大小限制为5GB，上传后需要管理员审核才能公开显示。
+                      文件大小限制为 50MB，上传后需要管理员审核才能公开显示。
                     </p>
                 </div>
               </div>
@@ -396,7 +396,7 @@ export default function ShareUploadPage() {
                     </label>
                   </div>
                     <span className="text-sm text-gray-500 mt-2 block">
-                      支持图片、视频、音频、文档、压缩包等多种格式，单个文件最大5GB，可上传整个文件夹保留结构
+                      支持图片、视频、音频、文档、压缩包等多种格式，单个文件最大 50MB，可上传整个文件夹保留结构
                     </span>
                 </div>
             </div>

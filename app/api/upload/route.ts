@@ -6,7 +6,7 @@ export const runtime = 'edge'
 
 // 文件配置
 const FILE_CONFIG = {
-  maxSize: 3 * 1024 * 1024 * 1024, // 3GB
+  maxSize: 50 * 1024 * 1024, // 50MB（Supabase 免费版限制）
   allowedTypes: {
     'image': ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'],
     'video': ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv'],
