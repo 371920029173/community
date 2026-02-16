@@ -37,6 +37,9 @@ export default function ContactPage() {
                     </a>
                   </div>
                   <p className="text-gray-600 text-sm mt-2">一般咨询、隐私、法律、技术支持等均可通过上述邮箱联系。</p>
+                  <p className="text-gray-600 text-sm mt-2">
+                    <strong>响应时间：</strong>工作日内我们会在 24-48 小时内回复。紧急问题请标题注明「紧急」。
+                  </p>
                 </div>
               </div>
             </section>

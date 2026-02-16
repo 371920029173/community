@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const type = searchParams.get('type') || 'all'
     const tagId = searchParams.get('tagId') || ''
+    const sort = searchParams.get('sort') || 'newest' // newest | popular
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = (page - 1) * limit
@@ -22,16 +23,32 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact' })
       .eq('is_public', true)
       .eq('is_approved', true)
-      .order('created_at', { ascending: false })
+
+    // 排序：newest 最新 | popular 热门（按下载量）
+    if (sort === 'popular') {
+      query = query.order('download_count', { ascending: false, nullsFirst: false })
+    } else {
+      query = query.order('created_at', { ascending: false })
+    }
 
     // 添加搜索条件
     if (search) {
       query = query.or(`original_name.ilike.%${search}%,description.ilike.%${search}%,author_name.ilike.%${search}%`)
     }
 
-    // 添加类型筛选
+    // 添加类型筛选（file_type 或 mime_type）
     if (type && type !== 'all') {
-      query = query.eq('file_type', type)
+      if (type === 'image') {
+        query = query.or('file_type.eq.image,mime_type.ilike.image/%')
+      } else if (type === 'video') {
+        query = query.or('file_type.eq.video,mime_type.ilike.video/%')
+      } else if (type === 'audio') {
+        query = query.or('file_type.eq.audio,mime_type.ilike.audio/%')
+      } else if (type === 'document') {
+        query = query.or('file_type.eq.document,mime_type.eq.application/pdf,mime_type.eq.text/plain,mime_type.ilike.application/vnd.%')
+      } else {
+        query = query.eq('file_type', type)
+      }
     }
 
     // 类别（标签）筛选

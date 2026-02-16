@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { supabase } from '@/lib/supabase'
@@ -49,12 +50,22 @@ interface FileItem {
 
 export default function SharePage() {
   const { user } = useAuth()
+  const searchParams = useSearchParams()
   const [files, setFiles] = useState<FileItem[]>([])
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [onlyMine, setOnlyMine] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState<string>('all')
   const [filterTagId, setFilterTagId] = useState<string>('')
+  const [sortBy, setSortBy] = useState<string>('newest')
+
+  // 从 URL 读取 type、sort 参数
+  useEffect(() => {
+    const type = searchParams.get('type') || 'all'
+    const sort = searchParams.get('sort') || 'newest'
+    setFilterType(['all','image','video','audio','document'].includes(type) ? type : 'all')
+    setSortBy(['newest','popular'].includes(sort) ? sort : 'newest')
+  }, [searchParams])
   const [tags, setTags] = useState<{ id: string; name: string }[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -78,10 +89,10 @@ export default function SharePage() {
   // 异步加载：先显示布局，后台获取文件（与主页一致）
   useEffect(() => {
     setPage(1)
-  }, [filterType, filterTagId])
+  }, [filterType, filterTagId, sortBy])
   useEffect(() => {
     fetchPublicFiles()
-  }, [filterType, filterTagId, page])
+  }, [filterType, filterTagId, sortBy, page])
 
   const fetchPublicFiles = async () => {
     try {
@@ -89,6 +100,7 @@ export default function SharePage() {
       const params = new URLSearchParams()
       if (filterType && filterType !== 'all') params.set('type', filterType)
       if (filterTagId) params.set('tagId', filterTagId)
+      params.set('sort', sortBy)
       params.set('limit', String(limit))
       params.set('page', String(page))
       const response = await fetch(`/api/files/public?${params}`, {
@@ -245,10 +257,21 @@ export default function SharePage() {
     }
   }
 
+  const inferFileTypeFromFile = (f: FileItem) => {
+    const mime = (f as any).mime_type || ''
+    const ext = (f.original_name || '').toLowerCase().split('.').pop() || ''
+    if (mime.startsWith('image/') || ['jpg','jpeg','png','gif','webp','svg','bmp'].includes(ext)) return 'image'
+    if (mime.startsWith('video/') || ['mp4','webm','mov','mkv','avi','wmv','flv'].includes(ext)) return 'video'
+    if (mime.startsWith('audio/') || ['mp3','wav','flac','aac','ogg'].includes(ext)) return 'audio'
+    if (['pdf','doc','docx','txt','xls','xlsx','ppt','pptx'].includes(ext)) return 'document'
+    return f.file_type || 'file'
+  }
+
   const filteredFiles = files.filter(file => {
     const matchesSearch = !searchQuery || file.original_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (file.description && file.description.toLowerCase().includes(searchQuery.toLowerCase()))
-    const matchesType = filterType === 'all' || file.file_type === filterType
+    const fileType = file.file_type || inferFileTypeFromFile(file)
+    const matchesType = filterType === 'all' || fileType === filterType
     const mineFilter = !onlyMine || (user ? file.user_id === user.id : false)
     const isApproved = file.is_approved
     return matchesSearch && matchesType && isApproved && mineFilter
@@ -457,7 +480,7 @@ export default function SharePage() {
                   >
                     {/* 文件图标 */}
                     <div className={`flex items-center ${viewMode === 'list' ? 'mr-4' : 'mb-4'}`}>
-                        {getFileIcon(file.file_type)}
+                        {getFileIcon(file.file_type || inferFileTypeFromFile(file))}
                       <div className={`${viewMode === 'list' ? 'ml-3' : 'ml-2'}`}>
                           <h3 className="font-medium text-gray-900 line-clamp-2 break-words" title={displayNameWithoutExt(file.original_name)}>{displayNameWithoutExt(file.original_name)}</h3>
                           <p className="text-sm text-gray-500">

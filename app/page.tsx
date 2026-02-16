@@ -138,28 +138,21 @@ export default function HomePage() {
         {/* 公告栏 */}
         <AnnouncementBanner />
         
+        {/* 平台简介 */}
+        <div className="mb-10 max-w-3xl">
+          <h1 className="text-4xl md:text-5xl font-bold text-slate-800 mb-4">文件分享平台</h1>
+          <p className="text-lg text-slate-600 leading-relaxed mb-2">
+            <strong>资源与你同频，信息予你无限。</strong> 我们提供安全、便捷的文件存储、分享与管理服务，
+            支持云盘、公开分享、私信传输，同时提供论坛社区、占卜等丰富功能。
+          </p>
+          <p className="text-slate-600 leading-relaxed">
+            上传文件最大 50MB，支持图片、视频、音频、文档、压缩包等多种格式。注册即可获得云盘空间，分享资源、交流想法。
+          </p>
+        </div>
+
         {/* 主要内容 */}
         <div className="mb-12">
-          {/* 标题部分 - 左对齐，距离左边界125px，手机版自动适配 */}
-          <div className="mb-[45px] home-title-block" style={{ marginLeft: '125px', marginTop: '30px', maxWidth: 'max-content' }}>
-            <h1 className="text-5xl font-bold text-left" style={{
-              fontFamily: "'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif",
-              fontWeight: 600,
-              letterSpacing: '-0.02em',
-              background: 'linear-gradient(135deg, #1e293b 0%, #475569 50%, #64748b 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              marginBottom: '40px'
-            }}>
-              文件分享
-            </h1>
-            <p className="text-xl text-gray-600 text-left leading-relaxed" style={{ fontWeight: 'normal', letterSpacing: '5px' }}>
-              资源与你同频，信息予你无限
-            </p>
-          </div>
-          
-          {/* 快速操作按钮 - 居中 */}
+          {/* 快速操作按钮 */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="flex flex-wrap justify-center gap-4 mb-8">
             {quickActions.map((action, index) => (
               <motion.div key={index} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
@@ -170,6 +163,18 @@ export default function HomePage() {
               </motion.div>
             ))}
           </motion.div>
+
+          {/* 按类别浏览 */}
+          <div className="mt-8 mb-10">
+            <h3 className="text-lg font-semibold text-slate-700 mb-4">按类别浏览分享</h3>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/share?type=all" className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium transition-colors">全部</Link>
+              <Link href="/share?type=image" className="px-4 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-medium transition-colors">图片</Link>
+              <Link href="/share?type=video" className="px-4 py-2 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 text-sm font-medium transition-colors">视频</Link>
+              <Link href="/share?type=audio" className="px-4 py-2 rounded-lg bg-green-50 hover:bg-green-100 text-green-700 text-sm font-medium transition-colors">音频</Link>
+              <Link href="/share?type=document" className="px-4 py-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 text-sm font-medium transition-colors">文档</Link>
+            </div>
+          </div>
         </div>
 
         {/* 特色功能 */}
@@ -248,10 +253,24 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 文件网格 */}
+        {/* 热门下载 */}
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+              <TrendingUp className="w-6 h-6 text-amber-500" />
+              热门下载
+            </h2>
+            <Link href="/share?sort=popular" className="text-blue-600 hover:text-blue-700 font-medium">
+              查看更多 →
+            </Link>
+          </div>
+          <FileGrid sort="popular" limit={8} showFilters={false} />
+        </div>
+
+        {/* 最新文件 */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">最新文件</h2>
+            <h2 className="text-2xl font-bold text-gray-900">最新分享</h2>
             <Link href="/share" className="text-blue-600 hover:text-blue-700 font-medium">
               浏览全部文件 →
             </Link>

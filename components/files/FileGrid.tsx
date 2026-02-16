@@ -5,7 +5,13 @@ import { FileItem } from '@/lib/supabase'
 import { Search, Filter, FileText, Image, Video, Music, File } from 'lucide-react'
 import FileCard from './FileCard'
 
-export default function FileGrid() {
+interface FileGridProps {
+  sort?: 'newest' | 'popular'
+  limit?: number
+  showFilters?: boolean
+}
+
+export default function FileGrid({ sort = 'newest', limit = 40, showFilters = true }: FileGridProps) {
   const [files, setFiles] = useState<FileItem[]>([])
   const [filteredFiles, setFilteredFiles] = useState<FileItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -14,7 +20,7 @@ export default function FileGrid() {
 
   useEffect(() => {
     fetchFiles()
-  }, [])
+  }, [sort, limit])
 
   useEffect(() => {
     filterFiles()
@@ -23,7 +29,8 @@ export default function FileGrid() {
   const fetchFiles = async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/files/public?limit=40')
+      const params = new URLSearchParams({ limit: String(limit), sort })
+      const res = await fetch(`/api/files/public?${params}`)
       const result = await res.json()
       if (result.success && result.files) {
         setFiles(result.files)
@@ -48,13 +55,26 @@ export default function FileGrid() {
       )
     }
 
-    // 文件类型过滤
+    // 文件类型过滤（从 file_type 或 mime_type/扩展名推断）
     if (fileTypeFilter !== 'all') {
-      // 文件类型过滤暂时禁用，因为file_type字段不存在
-      // filtered = filtered.filter(file => file.file_type === fileTypeFilter)
+      filtered = filtered.filter(file => {
+        const type = file.file_type || inferFileType(file)
+        return type === fileTypeFilter
+      })
     }
 
     setFilteredFiles(filtered)
+  }
+
+  const inferFileType = (file: FileItem): string => {
+    const mime = (file as any).mime_type || ''
+    const name = file.original_name || ''
+    const ext = name.toLowerCase().split('.').pop() || ''
+    if (mime.startsWith('image/') || ['jpg','jpeg','png','gif','webp','svg','bmp'].includes(ext)) return 'image'
+    if (mime.startsWith('video/') || ['mp4','webm','mov','mkv','avi','wmv','flv'].includes(ext)) return 'video'
+    if (mime.startsWith('audio/') || ['mp3','wav','flac','aac','ogg'].includes(ext)) return 'audio'
+    if (['pdf','doc','docx','txt','xls','xlsx','ppt','pptx'].includes(ext)) return 'document'
+    return 'file'
   }
 
   const getFileTypeIcon = (fileType: string) => {
@@ -91,6 +111,7 @@ export default function FileGrid() {
   return (
     <div>
       {/* 搜索和过滤 */}
+      {showFilters && (
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row gap-4">
           {/* 搜索框 */}
@@ -124,6 +145,7 @@ export default function FileGrid() {
           </div>
         </div>
       </div>
+      )}
 
       {/* 文件统计 */}
       <div className="mb-6">
