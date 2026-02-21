@@ -170,7 +170,7 @@ export default function Navbar() {
               {uiMode === 'desktop' ? '电脑版' : '手机版'}
             </button>
             <a
-              href={process.env.NEXT_PUBLIC_INTRO_SITE_URL || 'https://weavelink-intro.pages.dev'}
+              href={process.env.NEXT_PUBLIC_INTRO_SITE_URL || 'https://hiweave.pages.dev'}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group"
@@ -311,7 +311,7 @@ export default function Navbar() {
                 {uiMode === 'desktop' ? '切换到手机版布局' : '切换到电脑版布局'}
               </button>
               <a
-                href={process.env.NEXT_PUBLIC_INTRO_SITE_URL || 'https://weavelink-intro.pages.dev'}
+                href={process.env.NEXT_PUBLIC_INTRO_SITE_URL || 'https://hiweave.pages.dev'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
