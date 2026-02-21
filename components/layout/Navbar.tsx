@@ -169,18 +169,16 @@ export default function Navbar() {
             >
               {uiMode === 'desktop' ? '电脑版' : '手机版'}
             </button>
-            {process.env.NEXT_PUBLIC_INTRO_SITE_URL && (
-              <a
-                href={process.env.NEXT_PUBLIC_INTRO_SITE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group"
-                title="官网介绍"
-              >
-                <Globe className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-medium">官网介绍</span>
-              </a>
-            )}
+            <a
+              href={process.env.NEXT_PUBLIC_INTRO_SITE_URL || 'https://weavelink-intro.pages.dev'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group"
+              title="官网介绍"
+            >
+              <Globe className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium">官网介绍</span>
+            </a>
             <Link href="/" data-tutorial="nav-home" className="flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors group" title="首页">
               <Home className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </Link>
@@ -312,18 +310,16 @@ export default function Navbar() {
               >
                 {uiMode === 'desktop' ? '切换到手机版布局' : '切换到电脑版布局'}
               </button>
-              {process.env.NEXT_PUBLIC_INTRO_SITE_URL && (
-                <a
-                  href={process.env.NEXT_PUBLIC_INTRO_SITE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <Globe className="w-5 h-5" />
-                  官网介绍
-                </a>
-              )}
+              <a
+                href={process.env.NEXT_PUBLIC_INTRO_SITE_URL || 'https://weavelink-intro.pages.dev'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Globe className="w-5 h-5" />
+                官网介绍
+              </a>
               <Link 
                 href="/" 
                 className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
