@@ -145,9 +145,20 @@ export default function HomePage() {
             <strong>资源与你同频，信息予你无限。</strong> 我们提供安全、便捷的文件存储、分享与管理服务，
             支持云盘、公开分享、私信传输，同时提供论坛社区、占卜等丰富功能。
           </p>
-          <p className="text-slate-600 leading-relaxed">
+          <p className="text-slate-600 leading-relaxed mb-4">
             上传文件最大 50MB，支持图片、视频、音频、文档、压缩包等多种格式。注册即可获得云盘空间，分享资源、交流想法。
           </p>
+          {process.env.NEXT_PUBLIC_INTRO_SITE_URL && (
+            <a
+              href={process.env.NEXT_PUBLIC_INTRO_SITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+            >
+              <Globe className="w-4 h-4" />
+              官网介绍
+            </a>
+          )}
         </div>
 
         {/* 主要内容 */}
