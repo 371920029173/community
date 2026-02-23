@@ -57,7 +57,7 @@ export default function PrivacyPage() {
               </p>
               <ul className="list-disc list-inside space-y-2 text-gray-700">
                 <li>获得您的明确同意</li>
-                <li>遵守法律法规或政府要求</li>
+                <li>遵守法律法规或监管要求</li>
                 <li>保护我们的权利、财产或安全</li>
                 <li>与服务提供商共享（如云存储服务），但仅限于提供服务所需</li>
               </ul>

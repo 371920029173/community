@@ -147,6 +147,35 @@ export default function HomePage() {
           <p className="text-slate-600 leading-relaxed mb-4">
             上传文件最大 50MB，支持图片、视频、音频、文档、压缩包等多种格式。注册即可获得云盘空间，分享资源、交流想法。
           </p>
+          {/* 实质性内容：提升页面信息价值，便于用户与审核理解平台 */}
+          <section className="mt-8 p-6 rounded-2xl bg-slate-50/80 border border-slate-200/80">
+            <h2 className="text-xl font-semibold text-slate-800 mb-3">为什么选择 Weavelink？</h2>
+            <p className="text-slate-700 leading-relaxed mb-3">
+              Weavelink 面向需要轻量、稳定文件协作与分享的用户设计。与仅提供单一网盘或仅提供外链的工具不同，
+              本平台将个人云盘、公开分享、私信传输与论坛讨论整合在同一站点：您可以在云盘中整理自己的资源，
+              通过分享页面向任何人发布链接，在私信中与好友点对点传文件，或在论坛里按主题交流与沉淀内容。
+            </p>
+            <p className="text-slate-700 leading-relaxed mb-3">
+              我们采用业界常用的技术栈（如 Next.js、Supabase）构建，数据存储在受控的数据库中，并遵循隐私政策与服务条款。
+              单文件 50MB 上限与明确的存储空间规则，便于个人与小团队在不依赖重型企业软件的情况下完成日常分享与备份。
+            </p>
+            <h3 className="text-lg font-semibold text-slate-800 mt-4 mb-2">适用场景</h3>
+            <p className="text-slate-700 leading-relaxed mb-2">
+              <strong>个人备份与分享：</strong>将照片、文档、小视频上传至云盘并生成分享链接，发给朋友或留作自用。
+            </p>
+            <p className="text-slate-700 leading-relaxed mb-2">
+              <strong>小组协作：</strong>通过私信收发文件、在论坛中发布主题与回复，便于兴趣小组或班级内部交流资料。
+            </p>
+            <p className="text-slate-700 leading-relaxed">
+              <strong>公开资源发布：</strong>在分享区按类型浏览他人公开的文件，或上传自己的资源供他人下载，形成良性循环。
+            </p>
+            <p className="text-slate-600 text-sm mt-4">
+              更多说明请参阅
+              <Link href="/about" className="text-blue-600 hover:text-blue-700 font-medium mx-1">关于我们</Link>
+              与
+              <Link href="/help" className="text-blue-600 hover:text-blue-700 font-medium ml-1">使用帮助</Link>。
+            </p>
+          </section>
         </div>
 
         {/* 主要内容 */}

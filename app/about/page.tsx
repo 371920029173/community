@@ -20,8 +20,28 @@ export default function AboutPage() {
                 文件分享平台是一个现代化的资源分享与社区交流平台。我们致力于为用户提供安全、便捷的文件存储、分享和管理服务，
                 同时打造一个活跃的社区环境，让用户能够交流想法、分享资源、创建论坛。
               </p>
-              <p className="text-gray-700 leading-relaxed">
+              <p className="text-gray-700 leading-relaxed mb-4">
                 我们的使命是"资源与你同频，信息予你无限"，希望通过技术的力量，让信息流动更加顺畅，让知识分享更加便捷。
+              </p>
+              <p className="text-gray-700 leading-relaxed mb-4">
+                Weavelink 不追求大而全的臃肿功能，而是把「云盘 + 分享链接 + 私信 + 论坛」四类核心能力做在同一产品里，
+                避免用户在多平台之间来回切换。无论是临时传一个文件给同事，还是长期在论坛里维护一个话题，都可以在同一个账号下完成。
+              </p>
+              <p className="text-gray-700 leading-relaxed">
+                平台面向个人与小团队设计，上传与存储规则清晰（如单文件 50MB、免费用户云盘空间等），
+                并配有完整的隐私政策、服务条款与使用帮助，方便用户了解自己的权利与使用方式。
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">技术架构与数据安全</h2>
+              <p className="text-gray-700 leading-relaxed mb-4">
+                我们使用 Next.js 构建前端、Supabase 作为后端与数据库，部署在 Cloudflare Pages 上。
+                用户密码与敏感信息经加密处理，文件元数据与权限通过数据库行级策略进行控制，以减少未授权访问风险。
+              </p>
+              <p className="text-gray-700 leading-relaxed">
+                我们不会将您的个人数据出售给第三方。广告或统计类合作均遵循隐私政策中的披露条款。
+                若您对数据存储地、保留期限或删除方式有疑问，可查阅隐私政策或通过联系我们页面获取说明。
               </p>
             </section>
 
@@ -71,6 +91,18 @@ export default function AboutPage() {
                   </div>
                 </div>
               </div>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">适合谁用</h2>
+              <p className="text-gray-700 leading-relaxed mb-3">
+                本平台适合需要轻量级文件分享与社区功能的个人用户、兴趣小组、班级或小团队。
+                若您需要把资料备份到云端、生成分享链接发给他人、在私信里传文件，或在一个主题下持续讨论与沉淀内容，
+                Weavelink 提供的云盘、分享、私信与论坛功能可以覆盖这些场景，而无需分别使用多个不相关的产品。
+              </p>
+              <p className="text-gray-700 leading-relaxed">
+                我们不面向未成年人单独提供注册引导；若您未满相应年龄，请在使用前征得监护人同意，并遵守当地法律。
+              </p>
             </section>
 
             <section className="mb-8">

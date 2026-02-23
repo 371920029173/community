@@ -16,6 +16,11 @@ export default function HelpPage() {
             使用帮助
           </h1>
 
+          <p className="text-gray-700 leading-relaxed mb-6">
+            本页汇总了 Weavelink 文件分享平台常用功能的操作说明与常见问题。包括文件上传与管理、云盘使用、公开分享、私信、论坛、搜索与占卜等。
+            若您首次使用，建议先浏览「文件上传与管理」与「按类别浏览分享」，再根据需要查看其他章节。
+          </p>
+
           <div className="mb-8 p-4 rounded-lg bg-amber-50 border border-amber-200">
             <p className="text-amber-800 font-medium">隐私提示</p>
             <p className="text-amber-700 text-sm mt-1">
