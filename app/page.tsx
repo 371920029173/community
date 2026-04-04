@@ -26,6 +26,9 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 
+/** 首页上下流动广告位；默认隐藏，Cloudflare 设 NEXT_PUBLIC_SHOW_HOME_FLOW_ADS=true 可恢复 */
+const showHomeFlowAds = process.env.NEXT_PUBLIC_SHOW_HOME_FLOW_ADS === 'true'
+
 export default function HomePage() {
   const { user } = useAuth()
   const [forumPreview, setForumPreview] = useState<any[]>([])
@@ -123,13 +126,12 @@ export default function HomePage() {
     }
   }
 
-  // 首页有实际内容（标题、按钮、功能卡片、论坛预览、文件网格），始终显示广告
   const hasContent = true
 
   return (
     <div className="min-h-screen">
       <Navbar />
-      <TopAdBanner hasContent={hasContent} />
+      {showHomeFlowAds && <TopAdBanner hasContent={hasContent} />}
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* 配置警告 */}
@@ -307,7 +309,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <BottomAdBanner hasContent={hasContent} />
+      {showHomeFlowAds && <BottomAdBanner hasContent={hasContent} />}
     </div>
   )
 } 
