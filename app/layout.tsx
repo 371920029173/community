@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import { Inter } from 'next/font/google'
 import { Noto_Sans_SC, Noto_Serif_SC } from 'next/font/google'
 import './globals.css'
@@ -66,6 +67,12 @@ export default function RootLayout({
         ></script>
       </head>
       <body className={`${inter.className} ${notoSansSC.variable} ${notoSerifSC.variable}`}>
+        {/* Adsterra Popunder（每页一个；后台要求靠近 </head>，Next 用 beforeInteractive） */}
+        <Script
+          id="adsterra-popunder"
+          src="https://pl29043353.profitablecpmratenetwork.com/61/5f/20/615f20ff8d5f3c2e2ddc70d0bed9bfad.js"
+          strategy="beforeInteractive"
+        />
         {/* 动态粒子物理效果 */}
         <ParticlePhysics />
         
@@ -89,6 +96,12 @@ export default function RootLayout({
           </TutorialProvider>
           </ThemeProvider>
         </AuthProvider>
+        {/* Adsterra Social Bar（后台要求贴近 </body>） */}
+        <Script
+          id="adsterra-social-bar"
+          src="https://pl29043355.profitablecpmratenetwork.com/75/de/39/75de39b088000e42e0c78ff667ae23c7.js"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   )
